@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GooddayBus — Квитки на автобус</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --orange:      #F06422;
+            --orange-2:    #D95818;
+            --orange-bg:   #FFF5EE;
+            --orange-brd:  rgba(240,100,34,0.18);
+            --blue:        #1A6DB5;
+            --text:        #1A2332;
+            --text-2:      #5E6E80;
+            --text-3:      #9AAAB8;
+            --border:      #E0E8F0;
+            --bg:          #F7F9FC;
+            --white:       #FFFFFF;
+            --green:       #1A9E5E;
+            --green-bg:    #EDFBF3;
+            --red:         #D93025;
+            --r-xl: 22px; --r-lg: 14px; --r: 10px; --r-sm: 7px;
+            --sh-sm: 0 2px 8px rgba(26,35,50,0.06);
+            --sh-md: 0 8px 28px rgba(26,35,50,0.10);
+            --sh-lg: 0 20px 60px rgba(26,35,50,0.13);
+            --tr: all 0.24s cubic-bezier(0.4,0,0.2,1);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 16px; line-height: 1.6; }
+
+        /* ── HEADER ── */
+        header {
+            background: var(--white); border-bottom: 1px solid var(--border);
+            padding: 0 48px; height: 68px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: var(--sh-sm); position: relative; z-index: 10;
+        }
+        .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .logo-icon { width: 40px; height: 40px; background: var(--orange); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px; }
+        .logo-name { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; color: var(--text); }
+        .logo-name span { color: var(--orange); }
+        .hdr-phone { display: flex; align-items: center; gap: 10px; color: var(--text-2); font-size: 15px; text-decoration: none; transition: var(--tr); font-weight: 600; }
+        .hdr-phone:hover { color: var(--orange); }
+        .hdr-phone-ico { width: 36px; height: 36px; background: var(--orange-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--orange); font-size: 13px; }
+
+        /* ── HERO ── */
+        .hero {
+            background: linear-gradient(155deg, #FFF8F2 0%, #FFFFFF 55%, #EDF5FF 100%);
+            position: relative; overflow: hidden;
+            padding: 64px 24px 96px; text-align: center;
+        }
+        .hero::before { content: ''; position: absolute; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(240,100,34,0.07) 0%, transparent 70%); top: -200px; right: -80px; pointer-events: none; }
+        .hero::after  { content: ''; position: absolute; width: 400px; height: 400px; border-radius: 50%; background: radial-gradient(circle, rgba(26,109,181,0.06) 0%, transparent 70%); bottom: -150px; left: -80px; pointer-events: none; }
+        .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--orange-bg); border: 1px solid var(--orange-brd); color: var(--orange); font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; padding: 6px 16px; border-radius: 50px; margin-bottom: 24px; }
+        .hero h1 { font-family: 'Cormorant Garamond', serif; font-size: clamp(40px, 6vw, 68px); font-weight: 300; line-height: 1.08; color: var(--text); margin-bottom: 16px; }
+        .hero h1 em { font-style: italic; color: var(--orange); }
+        .hero p { font-size: 17px; color: var(--text-2); max-width: 480px; margin: 0 auto 56px; font-weight: 400; }
+
+        /* ── SEARCH ── */
+        .search-wrap { position: relative; z-index: 10; max-width: 920px; margin: 0 auto; padding: 0 20px; }
+        .search-card { background: var(--white); border-radius: var(--r-xl); padding: 28px; box-shadow: var(--sh-lg); border: 1px solid var(--border); }
+        .search-row { display: grid; grid-template-columns: 1fr 44px 1fr 1fr auto; gap: 12px; align-items: flex-end; }
+        .s-field { position: relative; }
+        .s-lbl { display: block; font-size: 12px; font-weight: 700; color: var(--text-2); margin-bottom: 8px; letter-spacing: 0.3px; }
+        .s-inp { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 2px solid var(--border); border-radius: var(--r); padding: 12px 14px; height: 50px; transition: var(--tr); cursor: text; }
+        .s-inp:focus-within { border-color: var(--orange); background: var(--white); box-shadow: 0 0 0 3px rgba(240,100,34,0.1); }
+        .s-inp i { color: var(--orange); font-size: 13px; flex-shrink: 0; }
+        .s-inp input { border: none; background: transparent; outline: none; color: var(--text); font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 600; width: 100%; }
+        .s-inp input::placeholder { color: var(--text-3); font-weight: 400; }
+        .s-inp input[type="date"] { cursor: pointer; }
+        #date-wrap { cursor: pointer; }
+        #date-display { font-size: 15px; font-weight: 600; color: var(--text); }
+        .s-inp input.date-native { position: absolute; opacity: 0; width: 1px; height: 1px; padding: 0; border: 0; pointer-events: none; }
+        .swap-btn { width: 44px; height: 50px; background: var(--orange-bg); border: 2px solid var(--orange-brd); border-radius: var(--r); display: flex; align-items: center; justify-content: center; color: var(--orange); font-size: 14px; cursor: pointer; transition: var(--tr); }
+        .swap-btn:hover { background: var(--orange); color: #fff; transform: rotate(180deg); }
+        .btn-search { height: 50px; padding: 0 32px; background: var(--orange); color: #fff; border: none; border-radius: var(--r); font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: var(--tr); display: flex; align-items: center; gap: 9px; white-space: nowrap; }
+        .btn-search:hover { background: var(--orange-2); box-shadow: 0 6px 20px rgba(240,100,34,0.3); transform: translateY(-1px); }
+        .btn-search:active { transform: translateY(0); }
+        .btn-search:disabled { background: var(--text-3); cursor: not-allowed; transform: none; box-shadow: none; }
+        .status-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 13px; color: var(--text-3); min-height: 18px; }
+        .s-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
+        .status-row.loading .s-dot { background: var(--orange); animation: dpulse 1s ease-in-out infinite; }
+        .status-row.success .s-dot { background: var(--green); }
+        .status-row.success { color: var(--green); }
+        .status-row.error .s-dot { background: var(--red); }
+        .status-row.error { color: var(--red); }
+        @keyframes dpulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.35;transform:scale(0.7)} }
+
+        /* Autocomplete */
+        .ac-list { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--white); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--sh-md); max-height: 220px; overflow-y: auto; z-index: 50; display: none; }
+        .ac-item { padding: 12px 16px; font-size: 14px; font-weight: 500; color: var(--text-2); cursor: pointer; border-bottom: 1px solid #F0F4F8; transition: var(--tr); display: flex; align-items: center; gap: 10px; }
+        .ac-item i { color: var(--text-3); font-size: 11px; }
+        .ac-item:last-child { border-bottom: none; }
+        .ac-item:hover { background: var(--orange-bg); color: var(--text); }
+        .ac-item strong { color: var(--orange); font-weight: 800; }
+
+        /* ── CONTENT ── */
+        .content { max-width: 920px; margin: 0 auto; padding: 40px 20px 20px; }
+        .res-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .res-title { font-size: 14px; font-weight: 600; color: var(--text-2); }
+        .res-badge { font-size: 12px; font-weight: 800; color: var(--orange); background: var(--orange-bg); border: 1px solid var(--orange-brd); padding: 4px 14px; border-radius: 50px; }
+        .sort-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .sort-lbl { font-size: 13px; font-weight: 700; color: var(--text-2); display: flex; align-items: center; gap: 6px; margin-right: 2px; }
+        .sort-lbl i { color: var(--text-3); }
+        .sort-btn { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-2); background: var(--white); border: 1px solid var(--border); border-radius: 50px; padding: 7px 16px; cursor: pointer; transition: var(--tr); }
+        .sort-btn:hover { border-color: var(--orange-brd); color: var(--text); }
+        .sort-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; }
+
+        /* ── TICKET ── */
+        .ticket { background: var(--white); border: 1px solid var(--border); border-radius: var(--r-lg); margin-bottom: 12px; overflow: hidden; transition: var(--tr); animation: slideUp 0.35s cubic-bezier(0.4,0,0.2,1) both; }
+        .ticket:hover { border-color: rgba(240,100,34,0.3); box-shadow: var(--sh-md); transform: translateY(-2px); }
+        @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        .t-main { display: grid; grid-template-columns: auto 1fr auto auto auto; align-items: center; padding: 20px 24px; }
+        .t-ep { display: flex; flex-direction: column; }
+        .t-time { font-size: 34px; font-weight: 800; color: var(--text); letter-spacing: -1.5px; line-height: 1; }
+        .t-city { font-size: 13px; color: var(--text-2); font-weight: 600; margin-top: 4px; }
+        .t-date { font-size: 12px; color: var(--text-3); font-weight: 700; margin-top: 3px; }
+        .t-route { display: flex; flex-direction: column; align-items: center; padding: 0 24px; }
+        .t-dur { font-size: 12px; font-weight: 700; color: var(--orange); margin-bottom: 7px; display: flex; align-items: center; gap: 5px; }
+        .t-line { display: flex; align-items: center; width: 100%; gap: 4px; }
+        .t-dot { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; }
+        .t-dash { flex: 1; height: 2px; background: repeating-linear-gradient(90deg, var(--border) 0, var(--border) 5px, transparent 5px, transparent 10px); }
+        .t-arrow { color: var(--text-3); font-size: 12px; flex-shrink: 0; }
+        .t-carrier { font-size: 11px; color: var(--text-3); margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+        .t-divider { width: 1px; height: 56px; background: var(--border); margin: 0 20px; }
+        .t-action { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; min-width: 130px; }
+        .t-pricebox { text-align: right; }
+        .t-price { font-size: 34px; font-weight: 800; color: var(--text); letter-spacing: -1.5px; line-height: 1; }
+        .t-price-sub { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+        .t-seats { font-size: 12px; color: var(--text-2); display: flex; align-items: center; justify-content: flex-end; gap: 5px; font-weight: 600; margin-top: 6px; }
+        .t-seats i { color: var(--text-3); font-size: 10px; }
+        .btn-ticket { background: var(--orange); color: #fff; border: none; border-radius: var(--r-sm); padding: 12px 20px; font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: var(--tr); white-space: nowrap; }
+        .btn-ticket:hover { background: var(--orange-2); box-shadow: 0 4px 14px rgba(240,100,34,0.3); }
+        .t-foot { border-top: 1px solid #F0F5FA; padding: 10px 24px; display: flex; align-items: center; gap: 10px; background: var(--bg); flex-wrap: wrap; }
+        .t-foot .btn-ticket { margin-left: auto; }
+        .t-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-3); padding: 3px 10px; background: var(--white); border: 1px solid var(--border); border-radius: 50px; }
+        .t-tag-hl { background: var(--orange-bg); color: var(--orange); border-color: var(--orange-brd); font-weight: 700; }
+        /* Деталі рейсу (виїзний блок) */
+        .t-toggle { background: none; border: none; color: var(--text-2); font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; padding: 4px 0; }
+        .t-toggle:hover { color: var(--orange); }
+        .t-toggle i { font-size: 11px; color: var(--orange); transition: transform 0.25s; }
+        .t-toggle.open i { transform: rotate(180deg); }
+        .t-details { display: none; padding: 4px 24px 18px; background: var(--bg); }
+        .t-details.open { display: block; animation: slideUp 0.25s ease both; }
+        .td-row { display: flex; gap: 14px; padding: 11px 0; border-bottom: 1px solid #EAF0F6; }
+        .td-row:last-child { border-bottom: none; }
+        .td-label { flex: 0 0 84px; font-size: 11px; font-weight: 800; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.4px; padding-top: 3px; }
+        .td-text { flex: 1; font-size: 13px; color: var(--text-2); line-height: 1.5; }
+        .td-amens { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; }
+        .amen { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--text); background: var(--white); border: 1px solid var(--border); border-radius: 50px; padding: 6px 13px; }
+        .amen i { color: var(--orange); font-size: 12px; }
+        @media (max-width: 760px) { .td-row { flex-direction: column; gap: 6px; } .td-label { flex: none; } }
+        .t-tag-hl i { color: var(--orange); }
+
+        /* No results */
+        .no-res { text-align: center; padding: 70px 20px; animation: slideUp 0.35s ease both; }
+        .no-res-ico { width: 72px; height: 72px; background: var(--white); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 28px; color: var(--text-3); }
+        .no-res h3 { font-size: 18px; font-weight: 700; color: var(--text-2); margin-bottom: 8px; }
+        .no-res p { font-size: 14px; color: var(--text-3); }
+        .suggest-box { margin-top: 22px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        .sg-loading { font-size: 13px; color: var(--text-3); }
+        .sg-title { font-size: 14px; font-weight: 700; color: var(--text-2); display: flex; align-items: center; gap: 7px; }
+        .sg-title i { color: var(--orange); }
+        .sg-cities { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .sg-btn { display: inline-flex; align-items: center; gap: 9px; background: var(--orange-bg); border: 1px solid var(--orange-brd); color: var(--orange); font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; padding: 11px 18px; border-radius: 50px; cursor: pointer; transition: var(--tr); }
+        .sg-btn:hover { background: var(--orange); color: #fff; box-shadow: 0 6px 18px rgba(240,100,34,0.25); }
+        .sg-dist { font-size: 12px; font-weight: 600; opacity: 0.8; }
+        .sg-none { font-size: 13px; color: var(--text-3); }
+
+        /* ── FEATURES ── */
+        .features { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-top: 40px; }
+        .f-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 24px 20px; transition: var(--tr); }
+        .f-card:hover { border-color: var(--orange-brd); box-shadow: var(--sh-sm); transform: translateY(-2px); }
+        .f-ico { width: 46px; height: 46px; background: var(--orange-bg); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--orange); font-size: 19px; margin-bottom: 14px; }
+        .f-card h3 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+        .f-card p { font-size: 13px; color: var(--text-2); line-height: 1.55; }
+
+        /* ── HOW IT WORKS (гайд) ── */
+        .how { margin-top: 28px; }
+        .how-title { text-align: center; font-size: 13px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-3); margin-bottom: 20px; }
+        .how-inner { display: flex; align-items: stretch; justify-content: center; gap: 8px; }
+        .how-step { flex: 1; max-width: 280px; background: var(--white); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 26px 22px 22px; text-align: center; position: relative; transition: var(--tr); }
+        .how-step:hover { border-color: var(--orange-brd); box-shadow: var(--sh-sm); transform: translateY(-2px); }
+        .how-num { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); width: 26px; height: 26px; background: var(--orange); color: #fff; border-radius: 50%; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 3px solid var(--white); }
+        .how-ico { width: 52px; height: 52px; margin: 6px auto 14px; background: var(--orange-bg); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: var(--orange); font-size: 21px; }
+        .how-step h4 { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 7px; }
+        .how-step p { font-size: 13px; color: var(--text-2); line-height: 1.55; }
+        .how-arrow { display: flex; align-items: center; color: var(--text-3); font-size: 16px; flex-shrink: 0; }
+        @media (max-width: 760px) {
+            .how-inner { flex-direction: column; align-items: center; gap: 22px; }
+            .how-step { max-width: 100%; width: 100%; }
+            .how-arrow { transform: rotate(90deg); }
+        }
+
+        /* ── CONTACT SECTION ── */
+        .contact-section { background: linear-gradient(150deg, #FFF8F2 0%, #FFFFFF 60%, #F0F7FF 100%); border-top: 1px solid rgba(240,100,34,0.1); padding: 72px 24px 80px; margin-top: 20px; }
+        .contact-inner { max-width: 920px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 52px; align-items: center; }
+        .contact-left h2 { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 400; color: var(--text); line-height: 1.15; margin-bottom: 16px; }
+        .contact-left h2 em { font-style: italic; color: var(--orange); }
+        .contact-left p { font-size: 16px; color: var(--text-2); line-height: 1.65; }
+        .contact-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--r-xl); padding: 28px; box-shadow: var(--sh-md); }
+        .manager-row { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; padding-bottom: 22px; border-bottom: 1px solid var(--border); }
+        .manager-ava { width: 52px; height: 52px; background: linear-gradient(135deg, #FFD6BE, var(--orange)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; flex-shrink: 0; }
+        .manager-name { font-size: 17px; font-weight: 800; color: var(--text); }
+        .manager-role { font-size: 13px; color: var(--text-2); }
+        .c-line { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; text-decoration: none; transition: var(--tr); }
+        .c-line:last-of-type { margin-bottom: 0; }
+        .c-line:hover .c-line-val { color: var(--orange); }
+        .c-ico { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+        .ci-ph { background: var(--green-bg); color: var(--green); }
+        .ci-tg { background: #EFF8FF; color: #2B9FD5; }
+        .ci-ml { background: #F5F0FF; color: #7C3AED; }
+        .c-line-val { font-size: 15px; font-weight: 700; color: var(--text); }
+        .c-line-sub { font-size: 12px; color: var(--text-3); display: block; }
+        .c-hours { display: flex; align-items: center; gap: 8px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-2); }
+        .c-hours i { color: var(--orange); }
+
+        /* ── FOOTER ── */
+        footer { background: var(--text); padding: 24px; text-align: center; }
+        footer p { font-size: 13px; color: rgba(255,255,255,0.4); }
+        footer span { color: rgba(255,255,255,0.65); }
+
+        /* ── MODAL ── */
+        .modal-bg { position: fixed; inset: 0; background: rgba(26,35,50,0.55); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.28s ease; }
+        .modal-bg.open { opacity: 1; pointer-events: all; }
+        .modal { background: var(--white); border-radius: var(--r-xl); max-width: 450px; width: 100%; box-shadow: var(--sh-lg); transform: translateY(20px) scale(0.97); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); overflow: hidden; }
+        .modal-bg.open .modal { transform: translateY(0) scale(1); }
+        .modal-head { background: linear-gradient(135deg, var(--orange-bg), var(--white)); padding: 26px 26px 22px; border-bottom: 1px solid var(--border); }
+        .modal-head h2 { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
+        .m-rtag { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--orange); background: var(--orange-bg); border: 1px solid var(--orange-brd); border-radius: 50px; padding: 5px 14px; }
+        .modal-body { padding: 22px 26px 4px; max-height: 62vh; overflow-y: auto; }
+        /* Пасажири */
+        .pax-row { padding: 16px 0; border-top: 1px dashed var(--border); }
+        .pax-row:first-child { border-top: none; padding-top: 0; }
+        .pax-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .pax-title { font-size: 14px; font-weight: 800; color: var(--text); }
+        .pax-del { background: none; border: none; color: var(--text-3); font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 4px 6px; border-radius: 6px; transition: var(--tr); }
+        .pax-del:hover { color: var(--red); background: #FDECEA; }
+        .pax-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .pax-grid .fg { margin-bottom: 0; }
+        .pax-grid .pax-phone-fg { grid-column: 1 / -1; }
+        .btn-addpax { width: 100%; margin-top: 14px; background: var(--orange-bg); border: 1.5px dashed var(--orange-brd); color: var(--orange); border-radius: var(--r); padding: 12px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; cursor: pointer; transition: var(--tr); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-addpax:hover { background: var(--orange); color: #fff; border-color: var(--orange); }
+        .fg { margin-bottom: 16px; }
+        .f-lbl { display: block; font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: 7px; }
+        .f-inp { width: 100%; background: var(--bg); border: 2px solid var(--border); border-radius: var(--r); padding: 12px 14px; color: var(--text); font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 600; outline: none; transition: var(--tr); }
+        .f-inp:focus { border-color: var(--orange); background: var(--white); box-shadow: 0 0 0 3px rgba(240,100,34,0.1); }
+        .f-inp::placeholder { color: var(--text-3); font-weight: 400; }
+        textarea.f-inp { resize: vertical; min-height: 80px; line-height: 1.5; }
+        .hp-field { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+        .disc-block { margin-top: 16px; }
+        .disc-head { display: flex; align-items: center; justify-content: space-between; }
+        .disc-title { font-size: 14px; font-weight: 800; color: var(--text); }
+        .disc-toggle { background: none; border: none; color: var(--orange); font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 4px 0; }
+        .disc-toggle:hover { color: var(--orange-2); }
+        .disc-body { margin-top: 12px; }
+        .disc-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .disc-name { flex: 0 0 95px; font-size: 13px; font-weight: 700; color: var(--text-2); }
+        select.disc-sel { flex: 1; min-width: 0; background: var(--bg); border: 2px solid var(--border); border-radius: var(--r); padding: 10px 12px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 600; color: var(--text); outline: none; cursor: pointer; }
+        select.disc-sel:focus { border-color: var(--orange); background: var(--white); }
+        .disc-price { flex: 0 0 auto; white-space: nowrap; font-size: 13px; }
+        .pp-old { color: var(--text-3); text-decoration: line-through; margin-right: 5px; }
+        .pp-new { color: var(--orange); font-weight: 800; }
+        .m-disc-note { margin-top: 14px; font-size: 12px; color: var(--text-2); background: var(--orange-bg); border: 1px solid var(--orange-brd); border-radius: var(--r); padding: 9px 12px; display: flex; align-items: center; gap: 7px; }
+        .m-disc-note i { color: var(--orange); }
+        .m-total { padding: 0 26px 4px; text-align: right; font-size: 15px; color: var(--text-2); }
+        .m-total b { color: var(--orange); font-size: 18px; }
+        .modal-foot { padding: 14px 26px 26px; display: flex; gap: 10px; }
+        .btn-cancel { flex: 1; height: 48px; background: transparent; border: 2px solid var(--border); border-radius: var(--r); color: var(--text-2); font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: var(--tr); }
+        .btn-cancel:hover { border-color: var(--text-3); color: var(--text); }
+        .btn-submit { flex: 2; height: 48px; background: var(--orange); border: none; border-radius: var(--r); color: #fff; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: var(--tr); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-submit:hover { background: var(--orange-2); box-shadow: 0 6px 20px rgba(240,100,34,0.3); }
+        .modal-ok { padding: 48px 26px; text-align: center; display: none; }
+        .ok-circle { width: 68px; height: 68px; border-radius: 50%; background: var(--green-bg); display: flex; align-items: center; justify-content: center; color: var(--green); font-size: 28px; margin: 0 auto 20px; }
+        .modal-ok h3 { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+        .modal-ok p { font-size: 14px; color: var(--text-2); line-height: 1.6; margin-bottom: 26px; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 760px) {
+            header { padding: 0 18px; }
+            .hdr-phone-txt { display: none; }
+            .search-row { grid-template-columns: 1fr; }
+            .swap-btn { width: 100%; }
+            .btn-search { width: 100%; justify-content: center; }
+            .t-main { grid-template-columns: 1fr 1fr; }
+            .t-route { grid-column: 1/-1; order: 3; padding: 12px 0 0; }
+            .t-divider { display: none; }
+            .t-action { grid-column: 1/-1; order: 4; flex-direction: row; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid var(--border); min-width: 0; }
+            .t-pricebox { text-align: left; }
+            .t-seats { justify-content: flex-start; }
+            .t-action .btn-ticket { width: auto; margin-top: 0; }
+            .features { grid-template-columns: 1fr; }
+            .contact-inner { grid-template-columns: 1fr; gap: 28px; }
+            .contact-left h2 { font-size: 32px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+    <a href="#" class="logo">
+        <div class="logo-icon"><i class="fa-solid fa-bus"></i></div>
+        <span class="logo-name">Goodday<span>Bus</span></span>
+    </a>
+    <a href="tel:+380675551234" class="hdr-phone">
+        <div class="hdr-phone-ico"><i class="fa-solid fa-phone"></i></div>
+        <span class="hdr-phone-txt">+38 (067) 555-12-34</span>
+    </a>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-badge">
+        <i class="fa-solid fa-bus" style="font-size:10px;"></i>
+        Автобусні перевезення по Україні
+    </div>
+    <h1>Ваша <em>подорож</em><br>починається тут</h1>
+    <p>Знайдіть зручний рейс за хвилину.<br>Без реєстрації та зайвих кроків.</p>
+</section>
+
+<!-- SEARCH CARD -->
+<div class="search-wrap">
+    <div class="search-card">
+        <div class="search-row">
+
+            <div class="s-field">
+                <label class="s-lbl">Звідки</label>
+                <div class="s-inp">
+                    <i class="fa-solid fa-circle-dot"></i>
+                    <input type="text" id="departure" placeholder="Місто відправлення" autocomplete="off">
+                </div>
+                <div id="departure-list" class="ac-list"></div>
+            </div>
+
+            <button class="swap-btn" id="swap-btn" title="Поміняти місцями">
+                <i class="fa-solid fa-right-left"></i>
+            </button>
+
+            <div class="s-field">
+                <label class="s-lbl">Куди</label>
+                <div class="s-inp">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <input type="text" id="arrival" placeholder="Місто прибуття" autocomplete="off">
+                </div>
+                <div id="arrival-list" class="ac-list"></div>
+            </div>
+
+            <div class="s-field">
+                <label class="s-lbl">Дата поїздки</label>
+                <div class="s-inp" id="date-wrap">
+                    <i class="fa-regular fa-calendar"></i>
+                    <span id="date-display"></span>
+                    <input type="date" id="date-input" class="date-native" tabindex="-1">
+                </div>
+            </div>
+
+            <button class="btn-search" id="search-btn" disabled>
+                <i class="fa-solid fa-magnifying-glass"></i>
+                Знайти рейс
+            </button>
+        </div>
+
+        <div class="status-row" id="status-row">
+            <div class="s-dot"></div>
+            <span id="status-txt">Завантаження...</span>
+        </div>
+    </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+    <!-- Гайд "Як це працює" -->
+    <section class="how" id="how-it-works">
+        <div class="how-title">Як це працює</div>
+        <div class="how-inner">
+            <div class="how-step">
+                <div class="how-num">1</div>
+                <div class="how-ico"><i class="fa-solid fa-magnifying-glass"></i></div>
+                <h4>Знайдіть рейс</h4>
+                <p>Оберіть звідки, куди та дату поїздки — і натисніть «Знайти рейс».</p>
+            </div>
+            <div class="how-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+            <div class="how-step">
+                <div class="how-num">2</div>
+                <div class="how-ico"><i class="fa-solid fa-circle-info"></i></div>
+                <h4>Перегляньте деталі</h4>
+                <p>Натисніть «Деталі рейсу» під потрібним рейсом — побачите зручності, пересадки та перевізника.</p>
+            </div>
+            <div class="how-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+            <div class="how-step">
+                <div class="how-num">3</div>
+                <div class="how-ico"><i class="fa-solid fa-ticket"></i></div>
+                <h4>Забронюйте</h4>
+                <p>Натисніть «Забронювати» на потрібному рейсі та вкажіть свої контакти.</p>
+            </div>
+            <div class="how-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+            <div class="how-step">
+                <div class="how-num">4</div>
+                <div class="how-ico"><i class="fa-solid fa-headset"></i></div>
+                <h4>Менеджер зв'яжеться</h4>
+                <p>Ми зв'яжемося з вами, підтвердимо бронювання та відповімо на всі питання.</p>
+            </div>
+        </div>
+    </section>
+
+    <div id="results"></div>
+</div>
+
+<!-- CONTACT SECTION -->
+<section class="contact-section">
+    <div class="contact-inner">
+        <div class="contact-left">
+            <h2>Залишились<br><em>запитання?</em></h2>
+            <p>Зверніться до нашого менеджера — відповімо на всі питання, допоможемо обрати зручний рейс та оформити поїздку. Ми на зв'язку щодня.</p>
+        </div>
+
+        <div class="contact-card">
+            <div class="manager-row">
+                <div class="manager-ava"><i class="fa-solid fa-user"></i></div>
+                <div>
+                    <div class="manager-name">Анна</div>
+                    <div class="manager-role">Менеджер GooddayBus</div>
+                </div>
+            </div>
+
+            <a href="tel:+380675551234" class="c-line">
+                <div class="c-ico ci-ph"><i class="fa-solid fa-phone"></i></div>
+                <div>
+                    <div class="c-line-val">+38 (067) 555-12-34</div>
+                    <span class="c-line-sub">Дзвоніть — завжди відповімо</span>
+                </div>
+            </a>
+
+            <a href="https://t.me/gooddaybus" target="_blank" class="c-line">
+                <div class="c-ico ci-tg"><i class="fa-brands fa-telegram"></i></div>
+                <div>
+                    <div class="c-line-val">@gooddaybus</div>
+                    <span class="c-line-sub">Telegram — відповімо швидко</span>
+                </div>
+            </a>
+
+            <a href="mailto:info@gooddaybus.ua" class="c-line">
+                <div class="c-ico ci-ml"><i class="fa-solid fa-envelope"></i></div>
+                <div>
+                    <div class="c-line-val">info@gooddaybus.ua</div>
+                    <span class="c-line-sub">Для письмових запитів</span>
+                </div>
+            </a>
+
+            <div class="c-hours">
+                <i class="fa-regular fa-clock"></i>
+                Працюємо <strong style="color:var(--text);margin-left:4px;">Пн–Нд, 7:00 – 23:00</strong>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <p>© 2026 <span>GooddayBus</span> — Пасажирські перевезення по Україні</p>
+</footer>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal-bg">
+    <div class="modal">
+
+        <div id="m-form">
+            <div class="modal-head">
+                <h2>Забронювати поїздку</h2>
+                <div class="m-rtag" id="m-route">
+                    <i class="fa-solid fa-bus"></i><span>—</span>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="pax-list"></div>
+                <button type="button" class="btn-addpax" id="add-pax"><i class="fa-solid fa-plus"></i> Додати пасажира</button>
+                <div class="fg" style="margin:16px 0 0">
+                    <label class="f-lbl">Коментар (необов'язково)</label>
+                    <textarea id="c-comment" class="f-inp" placeholder="Побажання, місце біля вікна тощо..."></textarea>
+                </div>
+                <div id="disc-block" class="disc-block" style="display:none"></div>
+                <div class="m-disc-note" id="m-disc-note" style="display:none"><i class="fa-solid fa-circle-info"></i> Знижка діє за наявності підтверджуючого документа.</div>
+                <!-- honeypot: приховане поле, люди його не бачать, заповнюють лише боти -->
+                <input type="text" id="c-hp" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+            </div>
+            <div class="m-total" id="m-total"></div>
+            <div class="modal-foot">
+                <button class="btn-cancel" id="m-cancel">Скасувати</button>
+                <button class="btn-submit" id="m-submit">
+                    <i class="fa-solid fa-paper-plane"></i> Надіслати
+                </button>
+            </div>
+        </div>
+
+        <div class="modal-ok" id="m-ok">
+            <div class="ok-circle"><i class="fa-solid fa-check"></i></div>
+            <h3>Заявку прийнято!</h3>
+            <p>Наш менеджер Анна зв'яжеться<br>з вами найближчим часом.</p>
+            <button class="btn-submit" id="m-close" style="display:block;width:100%;">Закрити</button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const PROXY_BASE = 'http://localhost:3000/api';
+    let cities = [], depId = null, arrId = null, selRoute = null;
+    let _routes = [], _view = [], _dep = '', _arr = '', _date = '', _sortBy = 'departure';
+
+    function setStatus(txt, type = '') {
+        document.getElementById('status-row').className = `status-row ${type}`;
+        document.getElementById('status-txt').textContent = txt;
+    }
+
+    async function loadCities() {
+        setStatus('Завантаження міст...', 'loading');
+        try {
+            const r = await fetch(`${PROXY_BASE}/cities`);
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            cities = await r.json();
+            setStatus(`${cities.length} міст у наявності — оберіть напрямок`, 'success');
+            document.getElementById('search-btn').disabled = false;
+        } catch (e) { setStatus(`Помилка: ${e.message}`, 'error'); }
+    }
+
+    function ac(inputId, listId, isDep) {
+        const inp = document.getElementById(inputId);
+        const lst = document.getElementById(listId);
+        inp.addEventListener('input', function () {
+            const q = this.value.trim().toLowerCase();
+            lst.innerHTML = '';
+            if (q.length < 2 || !cities.length) { lst.style.display = 'none'; return; }
+            const res = cities.filter(c => c.name.toLowerCase().includes(q)).slice(0, 9);
+            if (!res.length) { lst.style.display = 'none'; return; }
+            res.forEach(city => {
+                const el = document.createElement('div');
+                el.className = 'ac-item';
+                el.innerHTML = `<i class="fa-solid fa-location-dot"></i><span>` + city.name.replace(new RegExp(`(${q})`, 'gi'), '<strong>$1</strong>') + `</span>`;
+                el.addEventListener('click', () => {
+                    inp.value = city.name; lst.style.display = 'none';
+                    isDep ? (depId = city.id) : (arrId = city.id);
+                });
+                lst.appendChild(el);
+            });
+            lst.style.display = 'block';
+        });
+        document.addEventListener('click', e => { if (e.target !== inp) lst.style.display = 'none'; });
+    }
+
+    document.getElementById('swap-btn').addEventListener('click', () => {
+        const d = document.getElementById('departure'), a = document.getElementById('arrival');
+        [d.value, a.value] = [a.value, d.value];
+        [depId, arrId] = [arrId, depId];
+    });
+
+    async function search() {
+        if (!depId || !arrId) { setStatus('Оберіть міста зі списку підказок', 'error'); setTimeout(() => setStatus('',''), 3000); return; }
+        if (depId === arrId) { setStatus('Вкажіть різні міста', 'error'); return; }
+        const [y, m, d] = document.getElementById('date-input').value.split('-');
+        const date = `${d}.${m}.${y}`;
+        setStatus('Шукаємо рейси...', 'loading');
+        document.getElementById('search-btn').disabled = true;
+        document.getElementById('results').innerHTML = '';
+        try {
+            const r = await fetch(`${PROXY_BASE}/search`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ from_id: depId, to_id: arrId, date })
+            });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            renderResults(await r.json(), date);
+        } catch (e) { setStatus(`Помилка: ${e.message}`, 'error'); }
+        finally { document.getElementById('search-btn').disabled = false; }
+    }
+
+    const UA_MONTHS = ['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
+    // "06.06.2026" -> "6 чер"
+    function fmtNiceDate(d) {
+        if (!d) return '';
+        const [day, m] = d.split('.');
+        if (!day || !m) return d;
+        return `${parseInt(day, 10)} ${UA_MONTHS[parseInt(m, 10) - 1] || ''}`;
+    }
+    // travel_time (секунди) -> "49 год" або "2 дні 1 год"
+    function fmtDuration(sec) {
+        if (!sec || isNaN(sec)) return '';
+        const h = Math.round(sec / 3600);
+        if (h < 24) return `${h} год`;
+        const days = Math.floor(h / 24), rh = h % 24;
+        return `${days} ${days === 1 ? 'день' : (days < 5 ? 'дні' : 'днів')}${rh ? ' ' + rh + ' год' : ''}`;
+    }
+
+    // Стислий опис пересадок: "2 пересадки · Дніпро, Хмельницький" (повний текст — у tooltip)
+    function fmtTransfers(text) {
+        if (!text || !text.trim()) return null;
+        const cities = [];
+        const re = /м\.\s*([А-ЯІЇЄҐ][а-яіїєґА-ЯІЇЄҐ'’\- ]*?)(?=,|\.|\s+та\s|$)/g;
+        let m;
+        while ((m = re.exec(text)) !== null) {
+            const c = m[1].trim().replace(/\s+/g, ' ');
+            if (c && !cities.includes(c)) cities.push(c);
+        }
+        const n = cities.length;
+        if (!n) { const t = text.trim(); return { label: t.length > 36 ? t.slice(0, 36) + '…' : t, full: text }; }
+        const word = n === 1 ? 'пересадка' : (n < 5 ? 'пересадки' : 'пересадок');
+        return { label: `${n} ${word} · ${cities.join(', ')}`, full: text };
+    }
+
+    // Узгодження слова "рейс" з числом
+    function routeWord(n) {
+        if (n % 10 === 1 && n % 100 !== 11) return 'рейс';
+        if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'рейси';
+        return 'рейсів';
+    }
+
+    // Підказка, коли рейсів немає: найближча дата або найближчі міста
+    async function fetchSuggest(date) {
+        try {
+            const r = await fetch(`${PROXY_BASE}/suggest`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ from_id: depId, to_id: arrId, date })
+            });
+            const s = await r.json();
+            const box = document.getElementById('suggest-box');
+            if (!box) return;
+            if (s.type === 'date') {
+                box.innerHTML = `<div class="sg-title"><i class="fa-regular fa-lightbulb"></i> Найближчий рейс на цьому напрямку:</div>
+                    <button class="sg-btn" id="sg-date"><i class="fa-regular fa-calendar-check"></i> ${s.date} — ${s.count} ${routeWord(s.count)}</button>`;
+                document.getElementById('sg-date').addEventListener('click', () => setDateAndSearch(s.date));
+            } else if (s.type === 'cities') {
+                window._alts = s.alternatives;
+                box.innerHTML = `<div class="sg-title"><i class="fa-regular fa-lightbulb"></i> Прямих рейсів немає. Можливо, підійдуть найближчі міста:</div>
+                    <div class="sg-cities">${s.alternatives.map((a, i) =>
+                        `<button class="sg-btn sg-city" data-ai="${i}"><i class="fa-solid fa-location-dot"></i> ${a.name} <span class="sg-dist">~${a.distance_km} км · ${a.count} ${routeWord(a.count)}</span></button>`
+                    ).join('')}</div>`;
+                box.querySelectorAll('.sg-city').forEach(b => b.addEventListener('click', () => {
+                    const a = window._alts[b.dataset.ai];
+                    setCityAndSearch(a.id, a.name);
+                }));
+            } else {
+                box.innerHTML = `<div class="sg-none">Спробуйте іншу дату чи напрямок або зверніться до менеджера нижче.</div>`;
+            }
+        } catch (e) {
+            const box = document.getElementById('suggest-box');
+            if (box) box.innerHTML = '';
+        }
+    }
+
+    function setDateAndSearch(ddmmyyyy) {
+        const [d, m, y] = ddmmyyyy.split('.');
+        document.getElementById('date-input').value = `${y}-${m}-${d}`;
+        updateDateDisplay();
+        search();
+    }
+    function setCityAndSearch(cid, cname) {
+        document.getElementById('arrival').value = cname;
+        arrId = cid;
+        search();
+    }
+
+    // Екранування тексту з API для вставки в HTML
+    const escTxt = s => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+    // Ціна з урахуванням валюти рейсу (UAH/EUR/...). Рейси з Європи приходять у євро!
+    const CUR = { UAH: '₴', EUR: '€', USD: '$', PLN: 'zł', GBP: '£', CZK: 'Kč', MDL: 'lei', RON: 'lei' };
+    const fmtPrice = rt => (rt && rt.price) ? `${rt.price} ${CUR[rt.currency] || rt.currency || '₴'}` : '';
+
+    // Зручності рейсу: код API → іконка + назва
+    const AMENITIES = {
+        wifi: { i: 'fa-wifi', t: 'Wi-Fi' },
+        power: { i: 'fa-plug', t: 'Розетки' },
+        air: { i: 'fa-snowflake', t: 'Кондиціонер' },
+        wc: { i: 'fa-restroom', t: 'Туалет' },
+        pets: { i: 'fa-paw', t: 'Можна з тваринами' },
+        gps: { i: 'fa-location-crosshairs', t: 'GPS-трекінг' },
+        seatselect: { i: 'fa-chair', t: 'Вибір місця' },
+        addstop: { i: 'fa-map-pin', t: 'Додаткові зупинки' },
+        '16_noaccompany': { i: 'fa-child-reaching', t: 'Діти 16+ без супроводу' },
+        noprepayment: { i: 'fa-hand-holding-dollar', t: 'Без передоплати' },
+        norefund: { i: 'fa-ban', t: 'Без повернення квитка' }
+    };
+    function amenitiesHtml(codes) {
+        if (!Array.isArray(codes) || !codes.length) return '';
+        const chips = codes.map(code => {
+            const a = AMENITIES[code] || { i: 'fa-circle-info', t: code };
+            return `<span class="amen"><i class="fa-solid ${a.i}"></i> ${escTxt(a.t)}</span>`;
+        }).join('');
+        return `<div class="td-row"><div class="td-label">Зручності</div><div class="td-amens">${chips}</div></div>`;
+    }
+
+    function renderResults(routes, date) {
+        const el = document.getElementById('results');
+        const dep = document.getElementById('departure').value;
+        const arr = document.getElementById('arrival').value;
+        document.getElementById('how-it-works').style.display = 'none';
+
+        if (!Array.isArray(routes) || !routes.length) {
+            el.innerHTML = `<div class="no-res">
+                <div class="no-res-ico"><i class="fa-solid fa-bus-simple"></i></div>
+                <h3>Рейсів не знайдено</h3>
+                <p>На ${date} за напрямком ${dep} → ${arr} рейсів немає.</p>
+                <div class="suggest-box" id="suggest-box">
+                    <div class="sg-loading"><i class="fa-solid fa-spinner fa-spin"></i> Шукаємо найближчі варіанти...</div>
+                </div>
+            </div>`;
+            setStatus('Рейсів не знайдено', '');
+            fetchSuggest(date);
+            return;
+        }
+        setStatus(`Знайдено рейсів: ${routes.length}`, 'success');
+        _routes = routes; _dep = dep; _arr = arr; _date = date;
+
+        el.innerHTML = `
+            <div class="res-hdr">
+                <div class="res-title">${dep} → ${arr} · ${date}</div>
+                <div class="res-badge">${routes.length} рейсів</div>
+            </div>
+            <div class="sort-bar">
+                <span class="sort-lbl"><i class="fa-solid fa-arrow-down-short-wide"></i> Сортувати:</span>
+                <button class="sort-btn" data-sort="price">Найдешевші</button>
+                <button class="sort-btn" data-sort="duration">Найшвидші</button>
+                <button class="sort-btn" data-sort="departure">За часом виїзду</button>
+            </div>
+            <div id="tickets"></div>`;
+
+        el.querySelectorAll('.sort-btn').forEach(b => b.addEventListener('click', () => {
+            _sortBy = b.dataset.sort;
+            renderTickets();
+        }));
+        renderTickets();
+    }
+
+    // Час "HH:MM" -> хвилини; повна дата+час рейсу -> timestamp для сортування за виїздом
+    function routeDepartTs(rt) {
+        const [dd, mm, yy] = (rt.date || _date || '').split('.');
+        const [h, mi] = (rt.departure_time || rt.time_from || '0:0').split(':');
+        return new Date(+yy || 0, (+mm || 1) - 1, +dd || 1, +h || 0, +mi || 0).getTime();
+    }
+
+    function renderTickets() {
+        const tickets = document.getElementById('tickets');
+        document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === _sortBy));
+
+        _view = _routes.slice().sort((a, b) => {
+            if (_sortBy === 'price')    return (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0);
+            if (_sortBy === 'duration') return (a.travel_time || Infinity) - (b.travel_time || Infinity);
+            return routeDepartTs(a) - routeDepartTs(b); // departure
+        });
+
+        tickets.innerHTML = _view.map((rt, i) => {
+            const dt    = rt.departure_time || rt.time_from || '—:—';
+            const at    = rt.arrival_time   || rt.time_to   || '—:—';
+            const ddate = fmtNiceDate(rt.date || _date);
+            const adate = fmtNiceDate(rt.arrival_date);
+            const fromCity = rt.from || _dep;
+            const toCity   = rt.to   || _arr;
+            const pr    = fmtPrice(rt) || '—';
+            const st    = rt.free_seats !== undefined ? rt.free_seats : '?';
+            const car   = rt.carrier || rt.company || 'Автобус';
+            const dur   = fmtDuration(rt.travel_time);
+            return `<div class="ticket" style="animation-delay:${i*0.06}s">
+                <div class="t-main">
+                    <div class="t-ep">
+                        <div class="t-time">${dt}</div>
+                        <div class="t-city">${fromCity}</div>
+                        ${ddate ? `<div class="t-date">${ddate}</div>` : ''}
+                    </div>
+                    <div class="t-route">
+                        ${dur ? `<div class="t-dur"><i class="fa-regular fa-clock"></i> ${dur} в дорозі</div>` : ''}
+                        <div class="t-line"><div class="t-dot"></div><div class="t-dash"></div><div class="t-arrow"><i class="fa-solid fa-chevron-right"></i></div></div>
+                        <div class="t-carrier"><i class="fa-solid fa-bus"></i>${car}</div>
+                    </div>
+                    <div class="t-ep" style="text-align:right">
+                        <div class="t-time">${at}</div>
+                        <div class="t-city">${toCity}</div>
+                        ${adate ? `<div class="t-date">${adate}</div>` : ''}
+                    </div>
+                    <div class="t-divider"></div>
+                    <div class="t-action">
+                        <div class="t-pricebox">
+                            <div class="t-price">${pr}</div>
+                            <div class="t-price-sub">за місце</div>
+                            <div class="t-seats"><i class="fa-solid fa-chair"></i> ${st} вільних</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="t-foot">
+                    <button class="t-toggle" type="button" data-i="${i}">Деталі рейсу <i class="fa-solid fa-chevron-down"></i></button>
+                    <button class="btn-ticket" data-i="${i}">Забронювати</button>
+                </div>
+                <div class="t-details">
+                    ${amenitiesHtml(rt.carrier_amenities)}
+                    <div class="td-row"><div class="td-label">Знижки</div><div class="td-text td-disc">—</div></div>
+                    <div class="td-row"><div class="td-label">Пересадки</div><div class="td-text">${rt.change_info ? escTxt(rt.change_info) : 'Без пересадок, прямий рейс'}</div></div>
+                    <div class="td-row"><div class="td-label">Перевізник</div><div class="td-text">${escTxt(car)}${rt.carrier_rating ? ` · ★ ${escTxt(rt.carrier_rating)}` : ''}${rt.carrier_reliability ? ` · надійність ${escTxt(rt.carrier_reliability)}%` : ''}</div></div>
+                    ${rt.baggage ? `<div class="td-row"><div class="td-label">Багаж</div><div class="td-text">${escTxt(rt.baggage)}</div></div>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+
+        tickets.querySelectorAll('.btn-ticket').forEach(b =>
+            b.addEventListener('click', () => openModal(_view[b.dataset.i], _dep, _arr, _date)));
+        tickets.querySelectorAll('.t-toggle').forEach(b => b.addEventListener('click', () => {
+            const ticket = b.closest('.ticket');
+            const det = ticket.querySelector('.t-details');
+            const open = det.classList.toggle('open');
+            b.classList.toggle('open', open);
+            if (open && det.dataset.discLoaded !== '1') {
+                det.dataset.discLoaded = '1';
+                loadDiscounts(_view[b.dataset.i], ticket.querySelector('.td-disc'));
+            }
+        }));
+    }
+
+    // Підвантаження знижок рейсу при відкритті деталей
+    async function loadDiscounts(rt, el) {
+        if (!el) return;
+        if (!rt || !rt.data_bundle) { el.textContent = 'Інформація недоступна'; return; }
+        el.textContent = 'Завантаження…';
+        try {
+            const r = await fetch(`${PROXY_BASE}/discounts`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data_bundle: rt.data_bundle })
+            });
+            const d = await r.json();
+            const real = (Array.isArray(d) ? d : []).filter(x => x.percent > 0);
+            el.innerHTML = real.length ? real.map(x => escTxt(x.description)).join('<br>') : 'Спеціальних знижок немає';
+        } catch (e) { el.textContent = '—'; }
+    }
+
+    // ---------- Пасажири + знижки ----------
+    let _modalDiscounts = [];   // знижки поточного рейсу
+    let _paxDiscSel = [];        // обрана знижка (id) для кожного пасажира за індексом
+    let _discOpen = false;       // блок знижок розгорнутий?
+
+    function paxRowHtml() {
+        return `<div class="pax-row">
+            <div class="pax-head">
+                <span class="pax-title"></span>
+                <button type="button" class="pax-del"><i class="fa-solid fa-circle-xmark"></i> Видалити</button>
+            </div>
+            <div class="pax-grid">
+                <div class="fg"><label class="f-lbl">Ім'я</label><input type="text" class="f-inp pax-name" placeholder="Іван"></div>
+                <div class="fg"><label class="f-lbl">Прізвище</label><input type="text" class="f-inp pax-surname" placeholder="Петренко"></div>
+                <div class="fg pax-phone-fg"><label class="f-lbl">Телефон</label><input type="tel" class="f-inp pax-phone" placeholder="+380 XX XXX XX XX" inputmode="tel"></div>
+            </div>
+        </div>`;
+    }
+    function renumberPax() {
+        const rows = document.querySelectorAll('#pax-list .pax-row');
+        rows.forEach((row, i) => {
+            row.querySelector('.pax-title').textContent = `Пасажир №${i + 1}`;
+            row.querySelector('.pax-del').style.display = rows.length > 1 ? '' : 'none';
+        });
+    }
+    const seatWord = n => n === 1 ? 'місце' : (n < 5 ? 'місця' : 'місць');
+
+    // Блок знижок під коментарем — згорнутий, розкривається кнопкою
+    function renderDiscBlock() {
+        const block = document.getElementById('disc-block');
+        const rows = [...document.querySelectorAll('#pax-list .pax-row')];
+        const real = _modalDiscounts.filter(d => d.percent > 0); // ховаємо "Повний" та 0% (напр. промокод)
+        if (!real.length || !rows.length) { block.style.display = 'none'; block.innerHTML = ''; document.getElementById('m-disc-note').style.display = 'none'; updateTotal(); return; }
+        block.style.display = '';
+        // опції: "Повний квиток" (за замовчуванням) + реальні знижки
+        const opts = [{ id: '', percent: 0, label: 'Повний квиток' }].concat(real.map(d => ({ id: d.id, percent: d.percent, label: d.description })));
+        block.innerHTML = `
+            <div class="disc-head">
+                <span class="disc-title">Знижка</span>
+                <button type="button" class="disc-toggle" id="disc-toggle">${_discOpen ? '<i class="fa-solid fa-chevron-up"></i> Згорнути' : '<i class="fa-solid fa-plus"></i> Додати знижку'}</button>
+            </div>
+            <div class="disc-body" style="display:${_discOpen ? 'block' : 'none'}">
+                ${rows.map((r, i) => {
+                    const cur = _paxDiscSel[i] != null ? String(_paxDiscSel[i]) : '';
+                    return `<div class="disc-row">
+                        <span class="disc-name">Пасажир №${i + 1}</span>
+                        <select class="f-inp disc-sel" data-i="${i}">${opts.map(o => `<option value="${o.id}" data-pct="${o.percent}" ${String(o.id) === cur ? 'selected' : ''}>${escTxt(o.label)}</option>`).join('')}</select>
+                        <span class="disc-price" data-i="${i}"></span>
+                    </div>`;
+                }).join('')}
+            </div>`;
+        document.getElementById('disc-toggle').addEventListener('click', () => {
+            _discOpen = !_discOpen;
+            if (!_discOpen) _paxDiscSel = []; // згорнули → повний квиток усім
+            renderDiscBlock();
+        });
+        block.querySelectorAll('.disc-sel').forEach(s => s.addEventListener('change', () => { _paxDiscSel[+s.dataset.i] = s.value; refreshDisc(); }));
+        refreshDisc();
+    }
+    function paxPct(i) {
+        if (!_discOpen) return 0;
+        const s = document.querySelector(`#disc-block .disc-sel[data-i="${i}"]`);
+        return (s && s.selectedOptions[0]) ? (+s.selectedOptions[0].dataset.pct || 0) : 0;
+    }
+    function refreshDisc() {
+        const base = parseFloat(selRoute && selRoute.price) || 0;
+        const cur = CUR[selRoute && selRoute.currency] || (selRoute && selRoute.currency) || '₴';
+        let anyDisc = false;
+        document.querySelectorAll('#disc-block .disc-sel').forEach(s => {
+            const pct = +s.selectedOptions[0].dataset.pct || 0;
+            if (pct > 0) anyDisc = true;
+            const price = Math.round(base * (1 - pct / 100) * 100) / 100;
+            const pe = document.querySelector(`#disc-block .disc-price[data-i="${s.dataset.i}"]`);
+            if (pe) pe.innerHTML = base ? (pct > 0 ? `<span class="pp-old">${base} ${cur}</span> <b class="pp-new">${price} ${cur}</b>` : `<b class="pp-new">${price} ${cur}</b>`) : '';
+        });
+        document.getElementById('m-disc-note').style.display = (_discOpen && anyDisc) ? '' : 'none';
+        updateTotal();
+    }
+    function updateTotal() {
+        const base = parseFloat(selRoute && selRoute.price) || 0;
+        const rows = [...document.querySelectorAll('#pax-list .pax-row')];
+        const cur = CUR[selRoute && selRoute.currency] || (selRoute && selRoute.currency) || '₴';
+        let total = 0;
+        rows.forEach((r, i) => { total += base * (1 - paxPct(i) / 100); });
+        document.getElementById('m-total').innerHTML = base
+            ? `Разом за ${rows.length} ${seatWord(rows.length)}: <b>${Math.round(total * 100) / 100} ${cur}</b>`
+            : '';
+    }
+    function addPax() {
+        const list = document.getElementById('pax-list');
+        list.insertAdjacentHTML('beforeend', paxRowHtml());
+        const row = list.lastElementChild;
+        row.querySelector('.pax-del').addEventListener('click', () => {
+            const idx = [...list.children].indexOf(row);
+            row.remove();
+            if (idx >= 0) _paxDiscSel.splice(idx, 1);
+            renumberPax(); renderDiscBlock();
+        });
+        renumberPax();
+        renderDiscBlock();
+        return row;
+    }
+    document.getElementById('add-pax').addEventListener('click', () => {
+        const row = addPax();
+        row.querySelector('.pax-name').focus();
+        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    // Підвантажити знижки рейсу
+    async function loadModalDiscounts(rt) {
+        _modalDiscounts = [];
+        if (rt && rt.data_bundle) {
+            try {
+                const r = await fetch(`${PROXY_BASE}/discounts`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data_bundle: rt.data_bundle })
+                });
+                const d = await r.json();
+                _modalDiscounts = Array.isArray(d) ? d : [];
+            } catch (e) { _modalDiscounts = []; }
+        }
+        renderDiscBlock();
+    }
+
+    function openModal(rt, dep, arr, date) {
+        selRoute = rt;
+        _modalDiscounts = []; _paxDiscSel = []; _discOpen = false;
+        const dt = rt.departure_time || rt.time_from || '';
+        document.querySelector('#m-route span').textContent = `${dep} → ${arr}${dt ? ', ' + dt : ''}`;
+        document.getElementById('m-form').style.display = 'block';
+        document.getElementById('m-ok').style.display = 'none';
+        document.getElementById('c-comment').value = '';
+        document.getElementById('c-hp').value = '';
+        document.getElementById('disc-block').innerHTML = '';
+        document.getElementById('m-disc-note').style.display = 'none';
+        document.getElementById('pax-list').innerHTML = '';
+        addPax(); // один порожній пасажир за замовчуванням
+        document.getElementById('modal-bg').classList.add('open');
+        loadModalDiscounts(rt); // підвантажуємо знижки асинхронно
+    }
+
+    document.getElementById('m-cancel').addEventListener('click', () => document.getElementById('modal-bg').classList.remove('open'));
+    document.getElementById('modal-bg').addEventListener('click', e => { if (e.target === document.getElementById('modal-bg')) document.getElementById('modal-bg').classList.remove('open'); });
+    document.getElementById('m-submit').addEventListener('click', async () => {
+        const rows = [...document.querySelectorAll('#pax-list .pax-row')];
+        const passengers = [];
+        let firstError = null;
+        rows.forEach((row, i) => {
+            const nameEl = row.querySelector('.pax-name'), surEl = row.querySelector('.pax-surname'), phEl = row.querySelector('.pax-phone');
+            const name = nameEl.value.trim(), surname = surEl.value.trim(), phone = phEl.value.trim();
+            const digits = (phone.match(/\d/g) || []).length;
+            [nameEl, surEl, phEl].forEach(el => el.style.borderColor = '');
+            let ok = true;
+            if (name.length < 1) { nameEl.style.borderColor = 'var(--red)'; ok = false; }
+            if (surname.length < 1) { surEl.style.borderColor = 'var(--red)'; ok = false; }
+            if (!phone || digits < 9) { phEl.style.borderColor = 'var(--red)'; ok = false; if (phone && digits < 9 && !firstError) firstError = 'Перевірте номер телефону — здається, він введений неповністю.'; }
+            if (!ok && !firstError) firstError = 'Заповніть дані всіх пасажирів.';
+            // знижка (якщо обрана) — з блоку під коментарем за індексом пасажира
+            const sel = _discOpen ? document.querySelector(`#disc-block .disc-sel[data-i="${i}"]`) : null;
+            let ticket_type = '', discount_label = '', discount_percent = 0;
+            if (sel && sel.selectedOptions[0] && +sel.selectedOptions[0].dataset.pct > 0) {
+                ticket_type = sel.value;
+                discount_label = sel.selectedOptions[0].textContent;
+                discount_percent = +sel.selectedOptions[0].dataset.pct || 0;
+            }
+            passengers.push({ name, surname, phone, ticket_type, discount_label, discount_percent });
+        });
+        if (firstError) { alert(firstError); return; }
+
+        const btn = document.getElementById('m-submit');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Надсилаємо...';
+
+        const rt = selRoute || {};
+        const payload = {
+            passengers,
+            comment: document.getElementById('c-comment').value.trim(),
+            route_from: document.getElementById('departure').value,
+            route_to: document.getElementById('arrival').value,
+            route_date: (document.getElementById('date-input').value.split('-').reverse().join('.')),
+            route_time: rt.departure_time || rt.time_from || '',
+            route_price: fmtPrice(rt),
+            route_carrier: rt.carrier || rt.company || '',
+            route_from_station: rt.departure_station || '',
+            route_to_station: rt.arrival_station || '',
+            data_bundle: rt.data_bundle || '', // для перевірки чорного списку/дублів
+            hp: document.getElementById('c-hp').value // honeypot
+        };
+
+        try {
+            const r = await fetch(`${PROXY_BASE}/order`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!r.ok) {
+                const err = await r.json().catch(() => ({}));
+                throw new Error(err.error || `HTTP ${r.status}`);
+            }
+            document.getElementById('m-form').style.display = 'none';
+            document.getElementById('m-ok').style.display = 'block';
+        } catch (e) {
+            alert('Не вдалося надіслати заявку: ' + e.message + '\n\nСпробуйте ще раз або зателефонуйте менеджеру.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Надіслати';
+        }
+    });
+    document.getElementById('m-close').addEventListener('click', () => document.getElementById('modal-bg').classList.remove('open'));
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') search(); });
+
+    // Європейський формат дати: YYYY-MM-DD -> DD.MM.YYYY
+    function updateDateDisplay() {
+        const inp = document.getElementById('date-input');
+        const span = document.getElementById('date-display');
+        if (!inp.value) { span.textContent = 'Оберіть дату'; span.style.color = 'var(--text-3)'; return; }
+        const [y, m, d] = inp.value.split('-');
+        span.textContent = `${d}.${m}.${y}`;
+        span.style.color = 'var(--text)';
+    }
+
+    // Дата поїздки за замовчуванням — сьогодні (і не даємо обрати минуле)
+    function setTodayDate() {
+        const d = new Date();
+        const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const inp = document.getElementById('date-input');
+        inp.value = today;
+        inp.min = today;
+        updateDateDisplay();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Лічильник візитів — один раз на сесію
+        if (!sessionStorage.getItem('gdb_visited')) {
+            sessionStorage.setItem('gdb_visited', '1');
+            fetch(`${PROXY_BASE}/visit`, { method: 'POST' }).catch(() => {});
+        }
+        setTodayDate();
+        const dateInput = document.getElementById('date-input');
+        dateInput.addEventListener('change', updateDateDisplay);
+        document.getElementById('date-wrap').addEventListener('click', () => {
+            if (typeof dateInput.showPicker === 'function') dateInput.showPicker();
+            else dateInput.focus();
+        });
+        loadCities();
+        ac('departure', 'departure-list', true);
+        ac('arrival', 'arrival-list', false);
+        document.getElementById('search-btn').addEventListener('click', search);
+    });
+</script>
+</body>
+</html>

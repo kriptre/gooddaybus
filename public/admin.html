@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GooddayBus — Панель менеджера</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --orange:#F06422; --orange-2:#D95818; --orange-bg:#FFF5EE; --orange-brd:rgba(240,100,34,0.18);
+            --blue:#1A6DB5; --text:#1A2332; --text-2:#5E6E80; --text-3:#9AAAB8;
+            --border:#E0E8F0; --bg:#F7F9FC; --white:#FFFFFF;
+            --green:#1A9E5E; --green-bg:#EDFBF3; --red:#D93025; --red-bg:#FDECEA;
+            --amber:#C77700; --amber-bg:#FFF6E5; --gray:#5E6E80; --gray-bg:#EEF2F6;
+            --r-xl:22px; --r-lg:14px; --r:10px; --r-sm:7px;
+            --sh-sm:0 2px 8px rgba(26,35,50,0.06); --sh-md:0 8px 28px rgba(26,35,50,0.10); --sh-lg:0 20px 60px rgba(26,35,50,0.13);
+            --tr:all 0.2s cubic-bezier(0.4,0,0.2,1);
+        }
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.5}
+
+        header{background:var(--white);border-bottom:1px solid var(--border);padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--sh-sm);position:sticky;top:0;z-index:20}
+        .logo{display:flex;align-items:center;gap:11px}
+        .logo-icon{width:38px;height:38px;background:var(--orange);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px}
+        .logo-name{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:500}
+        .logo-name span{color:var(--orange)}
+        .logo-sub{font-size:12px;color:var(--text-3);font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-left:8px;padding-left:12px;border-left:1px solid var(--border)}
+        .hdr-right{display:flex;align-items:center;gap:14px}
+        .refresh-info{font-size:12px;color:var(--text-3)}
+        .btn-logout{background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 14px;font-family:inherit;font-size:13px;font-weight:700;color:var(--text-2);cursor:pointer;transition:var(--tr)}
+        .btn-logout:hover{border-color:var(--red);color:var(--red)}
+
+        .wrap{max-width:1000px;margin:0 auto;padding:26px 20px 60px}
+
+        /* Tabs */
+        .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+        .tab{display:flex;align-items:center;gap:8px;background:var(--white);border:1px solid var(--border);border-radius:50px;padding:9px 18px;font-family:inherit;font-size:14px;font-weight:700;color:var(--text-2);cursor:pointer;transition:var(--tr)}
+        .tab:hover{border-color:var(--orange-brd)}
+        .tab.active{background:var(--orange);border-color:var(--orange);color:#fff}
+        .tab .cnt{font-size:12px;font-weight:800;background:var(--bg);color:var(--text-2);border-radius:50px;padding:1px 9px;min-width:22px;text-align:center}
+        .tab.active .cnt{background:rgba(255,255,255,0.25);color:#fff}
+        .tab-clients{margin-left:auto}
+        .client-card{cursor:pointer}
+        .client-card:hover{border-color:var(--orange-brd)}
+        .client-hint{font-size:12px;color:var(--text-3);display:inline-flex;align-items:center;gap:6px;margin-left:auto}
+        .client-hint i{color:var(--orange)}
+
+        /* Toolbar: пошук + експорт */
+        .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+        .search-box{flex:1;min-width:240px;display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:0 14px;height:46px;transition:var(--tr)}
+        .search-box:focus-within{border-color:var(--orange);box-shadow:0 0 0 3px rgba(240,100,34,0.1)}
+        .search-box i{color:var(--text-3);font-size:14px}
+        .search-box input{flex:1;border:none;outline:none;background:transparent;font-family:inherit;font-size:15px;font-weight:600;color:var(--text)}
+        .search-box input::placeholder{color:var(--text-3);font-weight:400}
+        .search-clear{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:15px;padding:4px;line-height:1}
+        .search-clear:hover{color:var(--red)}
+        .btn-export{display:flex;align-items:center;gap:8px;background:var(--green-bg);color:var(--green);border:1px solid rgba(26,158,94,0.25);border-radius:var(--r);padding:0 18px;height:46px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:var(--tr);white-space:nowrap}
+        .btn-export:hover{background:var(--green);color:#fff;border-color:var(--green)}
+
+        /* Order card */
+        .order{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);margin-bottom:14px;overflow:hidden;box-shadow:var(--sh-sm);transition:var(--tr)}
+        .order:hover{box-shadow:var(--sh-md)}
+        .o-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 22px;flex-wrap:wrap}
+        .o-client{display:flex;align-items:center;gap:13px}
+        .o-ava{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#FFD6BE,var(--orange));display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:800;flex-shrink:0;text-transform:uppercase}
+        .o-name{font-size:17px;font-weight:800}
+        .o-phone{font-size:14px;color:var(--text-2);font-weight:700;text-decoration:none}
+        .o-phone:hover{color:var(--orange)}
+        .o-meta{text-align:right;font-size:12px;color:var(--text-3)}
+        .o-id{font-weight:800;color:var(--text-3)}
+
+        .badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;border-radius:50px;padding:5px 13px;white-space:nowrap}
+        .b-new{background:var(--orange-bg);color:var(--orange)}
+        .b-in_progress{background:var(--amber-bg);color:var(--amber)}
+        .b-done{background:var(--green-bg);color:var(--green)}
+        .b-cancelled{background:var(--gray-bg);color:var(--gray)}
+
+        .o-route{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:0 22px 16px;color:var(--text-2);font-size:14px}
+        .o-route .rt{display:flex;align-items:center;gap:7px;font-weight:700;color:var(--text)}
+        .o-route .rt i{color:var(--orange);font-size:12px}
+        .o-route .sep{color:var(--text-3)}
+        .o-stations{margin:0 22px 14px;display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--text-2)}
+        .o-stations i{color:var(--orange);width:14px;text-align:center;margin-right:4px}
+        .o-pax{margin:0 22px 14px;display:flex;flex-direction:column;gap:5px}
+        .o-pax-title{font-size:12px;font-weight:800;color:var(--text-2);display:flex;align-items:center;gap:6px}
+        .o-pax-title i{color:var(--orange)}
+        .pax-item{font-size:13px;color:var(--text-2)}
+        .pax-item b{color:var(--text-3);margin-right:4px}
+        .pax-item a{color:var(--text);font-weight:700;text-decoration:none}
+        .pax-item a:hover{color:var(--orange)}
+        .pax-disc-badge{font-size:11px;font-weight:800;color:var(--orange);background:var(--orange-bg);border:1px solid var(--orange-brd);border-radius:50px;padding:1px 9px;margin-left:4px}
+        .o-comment{margin:0 22px 16px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;font-size:13px;color:var(--text-2)}
+        .o-comment i{color:var(--text-3);margin-right:6px}
+
+        .o-note{padding:0 22px 14px}
+        .o-note textarea{width:100%;background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:9px 12px;font-family:inherit;font-size:13px;color:var(--text);resize:vertical;min-height:40px;outline:none;transition:var(--tr)}
+        .o-note textarea:focus{border-color:var(--orange);background:var(--white)}
+
+        .o-actions{border-top:1px solid #F0F5FA;background:var(--bg);padding:13px 22px;display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+        .act{display:flex;align-items:center;gap:7px;border:none;border-radius:var(--r-sm);padding:9px 16px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:var(--tr)}
+        .act-take{background:var(--amber);color:#fff}
+        .act-take:hover{filter:brightness(1.07)}
+        .act-done{background:var(--green);color:#fff}
+        .act-done:hover{filter:brightness(1.07)}
+        .act-cancel{background:var(--white);border:1px solid var(--border);color:var(--text-2)}
+        .act-cancel:hover{border-color:var(--red);color:var(--red)}
+        .act-reopen{background:var(--white);border:1px solid var(--border);color:var(--text-2)}
+        .act-reopen:hover{border-color:var(--orange);color:var(--orange)}
+        .act-save{background:var(--white);border:1px solid var(--border);color:var(--text-2);margin-left:auto}
+        .act-save:hover{border-color:var(--orange);color:var(--orange)}
+        .act-del{background:var(--white);border:1px solid var(--border);color:var(--text-3)}
+        .act-del:hover{border-color:var(--red);color:var(--red)}
+        .act-pdf{background:var(--blue);color:#fff;text-decoration:none;margin-left:auto}
+        .act-pdf:hover{filter:brightness(1.08)}
+        .client-card .o-actions{justify-content:flex-end}
+
+        .empty{text-align:center;padding:80px 20px;color:var(--text-3)}
+        .empty i{font-size:42px;margin-bottom:16px;display:block;color:var(--border)}
+        .empty h3{font-size:18px;color:var(--text-2);font-weight:700;margin-bottom:6px}
+
+        /* Login */
+        .login-bg{position:fixed;inset:0;background:linear-gradient(155deg,#FFF8F2,#fff 55%,#EDF5FF);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+        .login-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--sh-lg);padding:36px 32px;max-width:380px;width:100%;text-align:center}
+        .login-card .logo-icon{margin:0 auto 16px;width:52px;height:52px;font-size:22px}
+        .login-card h2{font-size:21px;font-weight:800;margin-bottom:6px}
+        .login-card p{font-size:14px;color:var(--text-2);margin-bottom:24px}
+        .login-card input{width:100%;background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:13px 15px;font-family:inherit;font-size:15px;font-weight:600;outline:none;margin-bottom:14px;transition:var(--tr)}
+        .login-card input:focus{border-color:var(--orange);background:var(--white)}
+        .login-card button{width:100%;height:48px;background:var(--orange);border:none;border-radius:var(--r);color:#fff;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer;transition:var(--tr)}
+        .login-card button:hover{background:var(--orange-2)}
+        .login-err{color:var(--red);font-size:13px;font-weight:700;margin-bottom:12px;min-height:18px}
+        .hidden{display:none!important}
+    </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-bg" id="login">
+    <div class="login-card">
+        <div class="logo-icon"><i class="fa-solid fa-bus"></i></div>
+        <h2>Панель менеджера</h2>
+        <p>Введіть ключ доступу, щоб переглянути заявки клієнтів</p>
+        <div class="login-err" id="login-err"></div>
+        <input type="password" id="key-input" placeholder="Ключ доступу" autocomplete="current-password">
+        <button id="login-btn">Увійти</button>
+    </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+    <header>
+        <div class="logo">
+            <div class="logo-icon"><i class="fa-solid fa-bus"></i></div>
+            <span class="logo-name">Goodday<span>Bus</span></span>
+            <span class="logo-sub">Заявки</span>
+        </div>
+        <div class="hdr-right">
+            <span class="refresh-info" id="refresh-info">Оновлено щойно</span>
+            <a href="stats.html" class="btn-logout" style="text-decoration:none"><i class="fa-solid fa-chart-column"></i> Аналітика</a>
+            <button class="btn-logout" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Вийти</button>
+        </div>
+    </header>
+
+    <div class="wrap">
+        <div class="toolbar">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-input" placeholder="Пошук за прізвищем, ім'ям або телефоном...">
+                <button class="search-clear hidden" id="search-clear" title="Очистити"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <button class="btn-export" id="export-btn"><i class="fa-solid fa-file-csv"></i> Експорт CSV</button>
+        </div>
+        <div class="tabs" id="tabs">
+            <button class="tab active" data-status="">Всі <span class="cnt" id="c-all">0</span></button>
+            <button class="tab" data-status="new">🔴 Нові <span class="cnt" id="c-new">0</span></button>
+            <button class="tab" data-status="in_progress">🟡 В роботі <span class="cnt" id="c-in_progress">0</span></button>
+            <button class="tab" data-status="done">🟢 Опрацьовані <span class="cnt" id="c-done">0</span></button>
+            <button class="tab" data-status="cancelled">⚪ Відмова <span class="cnt" id="c-cancelled">0</span></button>
+            <button class="tab" data-view="clients">👥 Клієнти <span class="cnt" id="c-clients">0</span></button>
+            <button class="tab" data-view="sales">💺 Продажі <span class="cnt" id="c-sales">0</span></button>
+        </div>
+        <div id="list"></div>
+    </div>
+</div>
+
+<script>
+    const API = 'http://localhost:3000/api';
+    let adminKey = localStorage.getItem('gdb_admin_key') || '';
+    let currentStatus = '';
+    let currentView = 'orders';
+    let searchQ = '';
+    let refreshTimer = null;
+
+    const STATUS_LABEL = { new:'Новий', in_progress:'В роботі', done:'Опрацьовано', cancelled:'Відмова' };
+
+    // ---------- Login ----------
+    function showApp() {
+        document.getElementById('login').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        load();
+        refreshTimer = setInterval(refresh, 20000); // автооновлення кожні 20 с
+    }
+    function showLogin(err) {
+        document.getElementById('app').classList.add('hidden');
+        document.getElementById('login').classList.remove('hidden');
+        document.getElementById('login-err').textContent = err || '';
+        clearInterval(refreshTimer);
+    }
+    async function tryLogin(key) {
+        try {
+            const r = await fetch(`${API}/orders?key=${encodeURIComponent(key)}`);
+            if (r.status === 401) { showLogin('Невірний ключ доступу'); return; }
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            adminKey = key;
+            localStorage.setItem('gdb_admin_key', key);
+            showApp();
+        } catch (e) { showLogin('Сервер недоступний: ' + e.message); }
+    }
+    document.getElementById('login-btn').addEventListener('click', () => tryLogin(document.getElementById('key-input').value.trim()));
+    document.getElementById('key-input').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-btn').click(); });
+    document.getElementById('logout-btn').addEventListener('click', () => { localStorage.removeItem('gdb_admin_key'); adminKey=''; showLogin(''); });
+
+    // ---------- Tabs ----------
+    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        if (t.dataset.view === 'clients') {
+            currentView = 'clients';
+            loadClients();
+        } else if (t.dataset.view === 'sales') {
+            currentView = 'sales';
+            loadSales();
+        } else {
+            currentView = 'orders';
+            currentStatus = t.dataset.status;
+            load();
+        }
+    }));
+
+    // Один цикл оновлення для всіх режимів
+    function refresh() {
+        if (currentView === 'clients') loadClients();
+        else if (currentView === 'sales') loadSales();
+        else load();
+    }
+
+    // ---------- Search ----------
+    let searchTimer;
+    const searchInput = document.getElementById('search-input');
+    searchInput.addEventListener('input', () => {
+        document.getElementById('search-clear').classList.toggle('hidden', !searchInput.value);
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => { searchQ = searchInput.value.trim(); refresh(); }, 250);
+    });
+    document.getElementById('search-clear').addEventListener('click', () => {
+        searchInput.value = ''; searchQ = '';
+        document.getElementById('search-clear').classList.add('hidden');
+        searchInput.focus(); refresh();
+    });
+
+    // ---------- Export CSV ----------
+    document.getElementById('export-btn').addEventListener('click', () => {
+        const params = new URLSearchParams({ key: adminKey });
+        if (searchQ) params.set('q', searchQ); // якщо є пошук — експортуємо знайдене
+        window.location.href = `${API}/orders/export.csv?${params}`;
+    });
+
+    // ---------- Load orders ----------
+    async function load() {
+        try {
+            const params = new URLSearchParams({ key: adminKey });
+            if (searchQ) params.set('q', searchQ);          // пошук — глобальний, по всіх статусах
+            else if (currentStatus) params.set('status', currentStatus);
+            const r = await fetch(`${API}/orders?${params}`);
+            if (r.status === 401) { showLogin('Сесію завершено. Увійдіть знову.'); return; }
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const data = await r.json();
+            render(data.orders);
+            updateCounts(data.counts);
+            stampRefresh();
+        } catch (e) { console.error(e); }
+    }
+
+    function updateCounts(c) {
+        document.getElementById('c-all').textContent = c.all;
+        document.getElementById('c-new').textContent = c.new;
+        document.getElementById('c-in_progress').textContent = c.in_progress;
+        document.getElementById('c-done').textContent = c.done;
+        document.getElementById('c-cancelled').textContent = c.cancelled;
+        document.getElementById('c-clients').textContent = c.clients;
+    }
+    function stampRefresh() {
+        document.getElementById('refresh-info').textContent = 'Оновлено ' + new Date().toLocaleTimeString('uk-UA', {hour:'2-digit',minute:'2-digit'});
+    }
+
+    // ---------- Clients ----------
+    async function loadClients() {
+        try {
+            const params = new URLSearchParams({ key: adminKey });
+            if (searchQ) params.set('q', searchQ);
+            const r = await fetch(`${API}/clients?${params}`);
+            if (r.status === 401) { showLogin('Сесію завершено. Увійдіть знову.'); return; }
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const data = await r.json();
+            renderClients(data.clients);
+            updateCounts(data.counts);
+            stampRefresh();
+        } catch (e) { console.error(e); }
+    }
+
+    function renderClients(clients) {
+        const list = document.getElementById('list');
+        if (!clients.length) {
+            list.innerHTML = `<div class="empty"><i class="fa-regular fa-address-book"></i><h3>Клієнтів не знайдено</h3><p>Тут з'являться клієнти після перших заявок</p></div>`;
+            return;
+        }
+        list.innerHTML = clients.map(c => {
+            const initial = (c.client_name || '?').trim().charAt(0);
+            const word = c.trips === 1 ? 'поїздка' : (c.trips < 5 ? 'поїздки' : 'поїздок');
+            return `<div class="order client-card" data-phone="${esc(c.client_phone)}">
+                <div class="o-top">
+                    <div class="o-client">
+                        <div class="o-ava">${esc(initial)}</div>
+                        <div>
+                            <div class="o-name">${esc(c.client_name)}</div>
+                            <a href="tel:${esc(c.client_phone)}" class="o-phone" onclick="event.stopPropagation()"><i class="fa-solid fa-phone" style="font-size:11px"></i> ${esc(c.client_phone)}</a>
+                        </div>
+                    </div>
+                    <div class="o-meta">
+                        <div class="badge b-new">${c.trips} ${word}</div>
+                        <div style="margin-top:6px">остання: ${fmtDate(c.last_order)}</div>
+                    </div>
+                </div>
+                <div class="o-route">
+                    <span class="rt"><i class="fa-solid fa-location-dot"></i> ${esc(c.last_from) || '—'} → ${esc(c.last_to) || '—'}</span>
+                    ${c.last_date ? `<span class="sep">·</span><span><i class="fa-regular fa-calendar" style="color:var(--orange)"></i> ${esc(c.last_date)}</span>` : ''}
+                    <span class="client-hint"><i class="fa-solid fa-clock-rotate-left"></i> натисніть, щоб побачити всі поїздки</span>
+                </div>
+                <div class="o-actions">
+                    <button class="act act-del" data-delphone="${esc(c.client_phone)}" data-name="${esc(c.client_name)}" data-trips="${c.trips}"><i class="fa-solid fa-trash"></i> Видалити клієнта</button>
+                </div>
+            </div>`;
+        }).join('');
+        list.querySelectorAll('.client-card').forEach(card =>
+            card.addEventListener('click', () => openClientHistory(card.dataset.phone)));
+        list.querySelectorAll('[data-delphone]').forEach(b => b.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const { delphone, name, trips } = b.dataset;
+            if (!confirm(`Видалити клієнта «${name}» (${delphone}) з усіх заявок (${trips})?\n\nДію не можна скасувати.`)) return;
+            delClient(delphone, name);
+        }));
+    }
+
+    async function delClient(phone, name) {
+        try {
+            const r = await fetch(`${API}/clients?phone=${encodeURIComponent(phone)}&name=${encodeURIComponent(name || '')}`, { method: 'DELETE', headers: { 'x-admin-key': adminKey } });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            loadClients();
+        } catch (e) { alert('Помилка видалення: ' + e.message); }
+    }
+
+    async function delOrder(id) {
+        try {
+            const r = await fetch(`${API}/orders/${id}`, { method: 'DELETE', headers: { 'x-admin-key': adminKey } });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            refresh();
+        } catch (e) { alert('Помилка видалення: ' + e.message); }
+    }
+
+    // Перехід у режим заявок з фільтром по конкретному клієнту
+    function openClientHistory(phone) {
+        searchInput.value = phone;
+        searchQ = phone;
+        document.getElementById('search-clear').classList.remove('hidden');
+        currentView = 'orders';
+        currentStatus = '';
+        document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.status === ''));
+        load();
+    }
+
+    // ---------- Продажі (реальні бронювання з Contrabus) ----------
+    const CUR = { UAH: '₴', EUR: '€', USD: '$', PLN: 'zł', CZK: 'Kč' };
+    async function loadSales() {
+        try {
+            const r = await fetch(`${API}/bookings?key=${encodeURIComponent(adminKey)}`);
+            if (r.status === 401) { showLogin('Сесію завершено. Увійдіть знову.'); return; }
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const d = await r.json();
+            renderSales(d.bookings || []);
+            document.getElementById('c-sales').textContent = (d.bookings || []).length;
+            stampRefresh();
+        } catch (e) { console.error(e); }
+    }
+    function renderSales(list) {
+        const el = document.getElementById('list');
+        if (!list.length) {
+            el.innerHTML = `<div class="empty"><i class="fa-solid fa-ticket"></i><h3>Бронювань немає</h3><p>Тут — реальні бронювання з вашого акаунту Contrabus</p></div>`;
+            return;
+        }
+        el.innerHTML = list.map(b => {
+            const initial = (b.name_surname || '?').trim().charAt(0);
+            const price = b.price ? `${b.price} ${CUR[b.currency] || b.currency || ''}` : '';
+            return `<div class="order">
+                <div class="o-top">
+                    <div class="o-client">
+                        <div class="o-ava">${esc(initial)}</div>
+                        <div>
+                            <div class="o-name">${esc(b.name_surname)}</div>
+                            <a href="tel:${esc(b.phone)}" class="o-phone"><i class="fa-solid fa-phone" style="font-size:11px"></i> ${esc(b.phone)}</a>
+                        </div>
+                    </div>
+                    <div class="o-meta">
+                        <div class="badge b-done">${esc(price)}</div>
+                        <div style="margin-top:6px">${esc(b.ticket_type_name || '')}${b.booking_date ? ' · ' + esc(b.booking_date) : ''}</div>
+                    </div>
+                </div>
+                <div class="o-route">
+                    <span class="rt"><i class="fa-solid fa-location-dot"></i> ${esc(b.from)} → ${esc(b.to)}</span>
+                    <span class="sep">·</span><span><i class="fa-regular fa-calendar" style="color:var(--orange)"></i> ${esc(b.date)}${b.departure_time ? ', ' + esc(b.departure_time) : ''}</span>
+                    ${b.carrier ? `<span class="sep">·</span><span><i class="fa-solid fa-bus" style="color:var(--orange)"></i> ${esc(b.carrier)}</span>` : ''}
+                </div>
+                <div class="o-actions">
+                    <span style="font-size:12px;color:var(--text-3)">Квиток #${esc(b.ticket_id)}${b.agent ? ' · агент ' + esc(b.agent) : ''}</span>
+                    ${b.link_to_pdf ? `<a class="act act-pdf" href="${esc(b.link_to_pdf)}" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf"></i> Квиток PDF</a>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function fmtDate(iso) {
+        const d = new Date(iso);
+        return d.toLocaleString('uk-UA', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    }
+    function esc(s) { return String(s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+    function parsePax(s) { try { const a = JSON.parse(s); return Array.isArray(a) ? a : []; } catch { return []; } }
+
+    function render(orders) {
+        const list = document.getElementById('list');
+        if (!orders.length) {
+            list.innerHTML = `<div class="empty"><i class="fa-regular fa-folder-open"></i><h3>Заявок немає</h3><p>Тут з'являться нові заявки від клієнтів</p></div>`;
+            return;
+        }
+        list.innerHTML = orders.map(o => {
+            const initial = (o.client_name || '?').trim().charAt(0);
+            return `<div class="order" data-id="${o.id}">
+                <div class="o-top">
+                    <div class="o-client">
+                        <div class="o-ava">${esc(initial)}</div>
+                        <div>
+                            <div class="o-name">${esc(o.client_name)}</div>
+                            <a href="tel:${esc(o.client_phone)}" class="o-phone"><i class="fa-solid fa-phone" style="font-size:11px"></i> ${esc(o.client_phone)}</a>
+                        </div>
+                    </div>
+                    <div class="o-meta">
+                        <div class="badge b-${o.status}">${STATUS_LABEL[o.status]}</div>
+                        <div style="margin-top:6px"><span class="o-id">#${o.id}</span> · ${fmtDate(o.created_at)}</div>
+                    </div>
+                </div>
+                <div class="o-route">
+                    <span class="rt"><i class="fa-solid fa-location-dot"></i> ${esc(o.route_from)||'—'} → ${esc(o.route_to)||'—'}</span>
+                    <span class="sep">·</span><span><i class="fa-solid fa-ticket" style="color:var(--orange)"></i> ${o.seats || 1} місць</span>
+                    ${o.route_date ? `<span class="sep">·</span><span><i class="fa-regular fa-calendar" style="color:var(--orange)"></i> ${esc(o.route_date)}${o.route_time?', '+esc(o.route_time):''}</span>` : ''}
+                    ${o.route_price ? `<span class="sep">·</span><span><i class="fa-solid fa-tag" style="color:var(--orange)"></i> ${esc(o.route_price)}</span>` : ''}
+                    ${o.route_carrier ? `<span class="sep">·</span><span><i class="fa-solid fa-bus" style="color:var(--orange)"></i> ${esc(o.route_carrier)}</span>` : ''}
+                </div>
+                ${(o.route_from_station || o.route_to_station) ? `<div class="o-stations">${o.route_from_station ? `<div><i class="fa-solid fa-location-dot"></i> ${esc(o.route_from_station)}</div>` : ''}${o.route_to_station ? `<div><i class="fa-solid fa-flag-checkered"></i> ${esc(o.route_to_station)}</div>` : ''}</div>` : ''}
+                ${(() => { const pax = parsePax(o.passengers); return (pax.length > 1 || pax.some(p => p.discount_percent > 0)) ? `<div class="o-pax"><div class="o-pax-title"><i class="fa-solid fa-users"></i> Пасажири:</div>${pax.map((p, i) => `<span class="pax-item"><b>${i + 1}.</b> ${esc(p.name)} ${esc(p.surname)} — <a href="tel:${esc(p.phone)}">${esc(p.phone)}</a>${p.discount_percent > 0 ? ` <span class="pax-disc-badge">🏷 ${esc(p.discount_label || 'пільга')}</span>` : ''}</span>`).join('')}</div>` : ''; })()}
+                ${o.comment ? `<div class="o-comment"><i class="fa-solid fa-comment-dots"></i>${esc(o.comment)}</div>` : ''}
+                <div class="o-note">
+                    <textarea placeholder="Нотатка менеджера (напр. «передзвонити після 18:00»)" data-note="${o.id}">${esc(o.manager_note)}</textarea>
+                </div>
+                <div class="o-actions">
+                    ${o.status !== 'in_progress' && o.status !== 'done' ? `<button class="act act-take" data-set="in_progress" data-id="${o.id}"><i class="fa-solid fa-hand"></i> Взяти в роботу</button>` : ''}
+                    ${o.status !== 'done' ? `<button class="act act-done" data-set="done" data-id="${o.id}"><i class="fa-solid fa-check"></i> Опрацьовано</button>` : ''}
+                    ${o.status !== 'cancelled' ? `<button class="act act-cancel" data-set="cancelled" data-id="${o.id}"><i class="fa-solid fa-xmark"></i> Відмова</button>` : ''}
+                    ${o.status === 'done' || o.status === 'cancelled' ? `<button class="act act-reopen" data-set="new" data-id="${o.id}"><i class="fa-solid fa-rotate-left"></i> Повернути</button>` : ''}
+                    <button class="act act-save" data-savenote="${o.id}"><i class="fa-solid fa-floppy-disk"></i> Зберегти нотатку</button>
+                    <button class="act act-del" data-del="${o.id}" title="Видалити заявку"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>`;
+        }).join('');
+
+        // status buttons
+        list.querySelectorAll('[data-set]').forEach(b => b.addEventListener('click', () => {
+            const note = list.querySelector(`textarea[data-note="${b.dataset.id}"]`).value;
+            patch(b.dataset.id, { status: b.dataset.set, manager_note: note });
+        }));
+        // save note buttons
+        list.querySelectorAll('[data-savenote]').forEach(b => b.addEventListener('click', () => {
+            const note = list.querySelector(`textarea[data-note="${b.dataset.savenote}"]`).value;
+            patch(b.dataset.savenote, { manager_note: note }, b);
+        }));
+        // delete order buttons
+        list.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => {
+            if (!confirm(`Видалити заявку #${b.dataset.del}?\n\nДію не можна скасувати.`)) return;
+            delOrder(b.dataset.del);
+        }));
+    }
+
+    async function patch(id, body, btn) {
+        if (btn) { btn.disabled = true; }
+        try {
+            const r = await fetch(`${API}/orders/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+                body: JSON.stringify(body)
+            });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            if (btn) { btn.innerHTML = '<i class="fa-solid fa-check"></i> Збережено'; setTimeout(load, 700); }
+            else load();
+        } catch (e) { alert('Помилка: ' + e.message); if (btn) btn.disabled = false; }
+    }
+
+    // ---------- Start ----------
+    if (adminKey) tryLogin(adminKey); else showLogin('');
+</script>
+</body>
+</html>

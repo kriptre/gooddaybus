@@ -1,0 +1,11 @@
+# Залежності
+node_modules/
+
+# Секрети
+.env
+
+# База даних та бекапи
+orders.db
+orders.db-journal
+orders.db-wal
+backups/

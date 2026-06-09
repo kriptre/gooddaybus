@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GooddayBus — Аналітика</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root{
+            --orange:#F06422;--orange-2:#D95818;--orange-bg:#FFF5EE;--orange-brd:rgba(240,100,34,0.18);
+            --blue:#1A6DB5;--text:#1A2332;--text-2:#5E6E80;--text-3:#9AAAB8;
+            --border:#E0E8F0;--bg:#F7F9FC;--white:#FFFFFF;
+            --green:#1A9E5E;--green-bg:#EDFBF3;--red:#D93025;--red-bg:#FDECEA;
+            --amber:#C77700;--amber-bg:#FFF6E5;--gray:#5E6E80;--gray-bg:#EEF2F6;
+            --r-xl:22px;--r-lg:14px;--r:10px;--r-sm:7px;
+            --sh-sm:0 2px 8px rgba(26,35,50,0.06);--sh-md:0 8px 28px rgba(26,35,50,0.10);--sh-lg:0 20px 60px rgba(26,35,50,0.13);
+            --tr:all 0.2s cubic-bezier(0.4,0,0.2,1);
+        }
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        html,body{overflow-x:hidden}
+        body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.5}
+
+        header{background:var(--white);border-bottom:1px solid var(--border);padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--sh-sm);position:sticky;top:0;z-index:20}
+        .logo{display:flex;align-items:center;gap:11px}
+        .logo-icon{width:38px;height:38px;background:var(--orange);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px}
+        .logo-name{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:500}
+        .logo-name span{color:var(--orange)}
+        .logo-sub{font-size:12px;color:var(--text-3);font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-left:8px;padding-left:12px;border-left:1px solid var(--border)}
+        .hdr-right{display:flex;align-items:center;gap:12px}
+        .refresh-info{font-size:12px;color:var(--text-3)}
+        .hbtn{background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 14px;font-family:inherit;font-size:13px;font-weight:700;color:var(--text-2);cursor:pointer;transition:var(--tr);text-decoration:none;display:inline-flex;align-items:center;gap:7px}
+        .hbtn:hover{border-color:var(--orange);color:var(--orange)}
+
+        .wrap{max-width:1040px;margin:0 auto;padding:26px 20px 60px}
+
+        /* Cards */
+        .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+        .card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;box-shadow:var(--sh-sm);min-width:0}
+        .card .c-num{font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1}
+        .card .c-lbl{font-size:13px;color:var(--text-2);font-weight:600;margin-top:6px}
+        .card .c-sub{font-size:12px;color:var(--text-3);margin-top:3px}
+        .card.accent{background:linear-gradient(150deg,#FFF8F2,#fff);border-color:var(--orange-brd)}
+        .card.accent .c-num{color:var(--orange)}
+
+        /* Panels grid */
+        .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        .panel{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;box-shadow:var(--sh-sm);min-width:0}
+        .panel.full{grid-column:1/-1}
+        .panel h3{font-size:15px;font-weight:800;margin-bottom:4px}
+        .panel .hint{font-size:12px;color:var(--text-3);margin-bottom:16px}
+
+        /* Vertical day chart */
+        .vchart{display:flex;align-items:flex-end;gap:6px;height:130px;padding-top:18px;overflow:hidden}
+        .vbar-wrap{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:5px}
+        .vbar-val{font-size:11px;font-weight:800;color:var(--text-2);height:14px}
+        .vbar{width:100%;max-width:26px;background:var(--orange);border-radius:5px 5px 0 0;min-height:3px;transition:var(--tr)}
+        .vbar.blue{background:var(--blue)}
+        .vbar.gray{background:var(--text-3)}
+        .vbar-day{font-size:10px;color:var(--text-3);font-weight:700}
+
+        /* Horizontal bars list */
+        .hrow{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+        .hrow:last-child{margin-bottom:0}
+        .hlabel{flex:0 0 42%;min-width:0;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .hbar-track{flex:1;background:var(--bg);border-radius:50px;height:18px;overflow:hidden}
+        .hbar{height:100%;background:var(--orange);border-radius:50px;min-width:2px;transition:width .4s ease}
+        .hbar.amber{background:var(--amber)}.hbar.red{background:var(--red)}.hbar.green{background:var(--green)}.hbar.gray{background:var(--text-3)}
+        .hval{flex:0 0 32px;text-align:right;font-size:13px;font-weight:800;color:var(--text-2)}
+
+        .empty-s{font-size:13px;color:var(--text-3);padding:8px 0}
+        .sr-stats{display:flex;flex-wrap:wrap;gap:14px;margin-top:6px}
+        .sr-stat{flex:1;min-width:140px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+        .sr-num{font-size:22px;font-weight:800;letter-spacing:-0.5px;line-height:1.1}
+        .sr-lbl{font-size:12px;color:var(--text-2);font-weight:600;margin-top:5px}
+
+        /* Clients table */
+        .ctable{width:100%;border-collapse:collapse}
+        .ctable td{padding:9px 0;border-bottom:1px solid #F0F4F8;font-size:14px}
+        .ctable tr:last-child td{border-bottom:none}
+        .ctable .ph{color:var(--text-2);font-weight:700}
+        .ctable .tr-badge{display:inline-block;background:var(--orange-bg);color:var(--orange);font-size:12px;font-weight:800;border-radius:50px;padding:2px 11px}
+        .ctable .rank{color:var(--text-3);font-weight:800;width:24px}
+
+        /* Login */
+        .login-bg{position:fixed;inset:0;background:linear-gradient(155deg,#FFF8F2,#fff 55%,#EDF5FF);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+        .login-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--sh-lg);padding:36px 32px;max-width:380px;width:100%;text-align:center}
+        .login-card .logo-icon{margin:0 auto 16px;width:52px;height:52px;font-size:22px}
+        .login-card h2{font-size:21px;font-weight:800;margin-bottom:6px}
+        .login-card p{font-size:14px;color:var(--text-2);margin-bottom:24px}
+        .login-card input{width:100%;background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:13px 15px;font-family:inherit;font-size:15px;font-weight:600;outline:none;margin-bottom:14px;transition:var(--tr)}
+        .login-card input:focus{border-color:var(--orange);background:var(--white)}
+        .login-card button{width:100%;height:48px;background:var(--orange);border:none;border-radius:var(--r);color:#fff;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer}
+        .login-card button:hover{background:var(--orange-2)}
+        .login-err{color:var(--red);font-size:13px;font-weight:700;margin-bottom:12px;min-height:18px}
+        /* Period filter */
+        .period{position:relative}
+        .period-menu{position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-md);min-width:230px;z-index:30;padding:6px;max-height:78vh;overflow:auto}
+        .pm-item{display:block;width:100%;text-align:left;background:none;border:none;font-family:inherit;font-size:14px;font-weight:600;color:var(--text);padding:9px 12px;border-radius:7px;cursor:pointer}
+        .pm-item:hover{background:var(--bg)}
+        .pm-item.active{background:var(--orange-bg);color:var(--orange);font-weight:800}
+        .pm-div{height:1px;background:var(--border);margin:6px 4px}
+        .pm-custom{padding:8px 10px;display:flex;flex-direction:column;gap:8px}
+        .pm-custom label{font-size:11px;font-weight:800;color:var(--text-3);text-transform:uppercase}
+        .pm-custom input{border:1.5px solid var(--border);border-radius:7px;padding:8px;font-family:inherit;font-size:13px;outline:none}
+        .pm-custom input:focus{border-color:var(--orange)}
+        .pm-custom button{background:var(--orange);color:#fff;border:none;border-radius:7px;padding:9px;font-weight:800;cursor:pointer;font-family:inherit}
+        .hidden{display:none!important}
+        @media (max-width:760px){ .cards{grid-template-columns:repeat(2,1fr)} .grid{grid-template-columns:1fr} .period-menu{right:auto;left:0} }
+    </style>
+</head>
+<body>
+
+<div class="login-bg" id="login">
+    <div class="login-card">
+        <div class="logo-icon"><i class="fa-solid fa-chart-column"></i></div>
+        <h2>Аналітика</h2>
+        <p>Введіть ключ доступу</p>
+        <div class="login-err" id="login-err"></div>
+        <input type="password" id="key-input" placeholder="Ключ доступу" autocomplete="current-password">
+        <button id="login-btn">Увійти</button>
+    </div>
+</div>
+
+<div id="app" class="hidden">
+    <header>
+        <div class="logo">
+            <div class="logo-icon"><i class="fa-solid fa-bus"></i></div>
+            <span class="logo-name">Goodday<span>Bus</span></span>
+            <span class="logo-sub">Аналітика</span>
+        </div>
+        <div class="hdr-right">
+            <span class="refresh-info" id="refresh-info"></span>
+            <div class="period">
+                <button class="hbtn" id="period-btn"><i class="fa-regular fa-calendar"></i> <span id="period-label">Останні 28 днів</span> <i class="fa-solid fa-chevron-down" style="font-size:10px"></i></button>
+                <div class="period-menu hidden" id="period-menu"></div>
+            </div>
+            <a href="admin.html" class="hbtn"><i class="fa-solid fa-list-check"></i> Заявки</a>
+            <button class="hbtn" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Вийти</button>
+        </div>
+    </header>
+
+    <div class="wrap">
+        <div class="cards" id="cards"></div>
+        <div id="sales-report"></div>
+        <div class="grid" id="grid"></div>
+    </div>
+</div>
+
+<script>
+    const API = 'http://localhost:3000/api';
+    let adminKey = localStorage.getItem('gdb_admin_key') || '';
+    let timer = null;
+
+    const STATUS = { new:{t:'Нові',c:'red'}, in_progress:{t:'В роботі',c:'amber'}, done:{t:'Опрацьовані',c:'green'}, cancelled:{t:'Відмова',c:'gray'} };
+    const esc = s => String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+    // ---------- Фільтр періоду ----------
+    const MONTHS_FULL = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+    const pad = n => String(n).padStart(2,'0');
+    const fmtD = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const todayStr = () => fmtD(new Date());
+    const daysAgoStr = n => { const d=new Date(); d.setDate(d.getDate()-n); return fmtD(d); };
+    let period = JSON.parse(localStorage.getItem('gdb_period') || 'null') || { from: daysAgoStr(27), to: todayStr(), label: 'Останні 28 днів' };
+
+    function periodOptions(){
+        const t=new Date(), cur=t.getFullYear();
+        const monthRange = off => { const d=new Date(t.getFullYear(), t.getMonth()-off, 1); const from=new Date(d.getFullYear(),d.getMonth(),1); const last=new Date(d.getFullYear(),d.getMonth()+1,0); return {from:fmtD(from), to: off===0?todayStr():fmtD(last), m:d.getMonth(), y:d.getFullYear()}; };
+        const o=[
+            {label:'Останні 7 днів', from:daysAgoStr(6), to:todayStr()},
+            {label:'Останні 28 днів', from:daysAgoStr(27), to:todayStr()},
+            {label:'Останні 90 днів', from:daysAgoStr(89), to:todayStr()},
+            {label:'Останні 365 днів', from:daysAgoStr(364), to:todayStr()},
+            {label:'Весь час', from:null, to:null},
+            {div:true}
+        ];
+        for(let i=0;i<3;i++){ const r=monthRange(i); o.push({label:`${MONTHS_FULL[r.m]} ${r.y}`, from:r.from, to:r.to}); }
+        o.push({div:true});
+        for(const y of [cur,cur-1]) o.push({label:String(y), from:`${y}-01-01`, to: y===cur?todayStr():`${y}-12-31`});
+        o.push({div:true},{custom:true});
+        return o;
+    }
+    function renderMenu(){
+        const menu=document.getElementById('period-menu');
+        menu.innerHTML = periodOptions().map((o,i)=>{
+            if(o.div) return '<div class="pm-div"></div>';
+            if(o.custom) return `<div class="pm-custom"><label>Інший діапазон</label><input type="date" id="cf-from" value="${period.from||''}"><input type="date" id="cf-to" value="${period.to||todayStr()}"><button id="cf-apply">Застосувати</button></div>`;
+            return `<button class="pm-item${o.label===period.label?' active':''}" data-i="${i}">${o.label}</button>`;
+        }).join('');
+        const opts=periodOptions();
+        menu.querySelectorAll('.pm-item').forEach(b=>b.addEventListener('click',()=>{
+            const o=opts[b.dataset.i];
+            period={from:o.from, to:o.to, label:o.label};
+            localStorage.setItem('gdb_period', JSON.stringify(period));
+            document.getElementById('period-label').textContent=o.label;
+            menu.classList.add('hidden'); load();
+        }));
+        const apply=menu.querySelector('#cf-apply');
+        if(apply) apply.addEventListener('click',()=>{
+            const f=menu.querySelector('#cf-from').value, t=menu.querySelector('#cf-to').value;
+            if(!f||!t){ alert('Оберіть обидві дати'); return; }
+            period={from:f, to:t, label:`${f} — ${t}`};
+            localStorage.setItem('gdb_period', JSON.stringify(period));
+            document.getElementById('period-label').textContent=period.label;
+            menu.classList.add('hidden'); load();
+        });
+    }
+    document.getElementById('period-btn').addEventListener('click',e=>{
+        e.stopPropagation();
+        const menu=document.getElementById('period-menu');
+        if(menu.classList.contains('hidden')){ renderMenu(); menu.classList.remove('hidden'); } else menu.classList.add('hidden');
+    });
+    document.addEventListener('click',e=>{ const m=document.getElementById('period-menu'); if(!m.classList.contains('hidden') && !e.target.closest('.period')) m.classList.add('hidden'); });
+
+    function showApp(){ login.classList.add('hidden'); app.classList.remove('hidden'); load(); timer=setInterval(load,30000); }
+    function showLogin(err){ app.classList.add('hidden'); login.classList.remove('hidden'); document.getElementById('login-err').textContent=err||''; clearInterval(timer); }
+
+    async function tryLogin(key){
+        try{
+            const r=await fetch(`${API}/stats?key=${encodeURIComponent(key)}`);
+            if(r.status===401){ showLogin('Невірний ключ доступу'); return; }
+            if(!r.ok) throw new Error('HTTP '+r.status);
+            adminKey=key; localStorage.setItem('gdb_admin_key',key); showApp();
+        }catch(e){ showLogin('Сервер недоступний: '+e.message); }
+    }
+    document.getElementById('login-btn').addEventListener('click',()=>tryLogin(document.getElementById('key-input').value.trim()));
+    document.getElementById('key-input').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('login-btn').click(); });
+    document.getElementById('logout-btn').addEventListener('click',()=>{ localStorage.removeItem('gdb_admin_key'); adminKey=''; showLogin(''); });
+
+    async function load(){
+        try{
+            document.getElementById('period-label').textContent=period.label;
+            const qs=new URLSearchParams({key:adminKey});
+            if(period.from) qs.set('from',period.from);
+            if(period.to) qs.set('to',period.to);
+            const r=await fetch(`${API}/stats?${qs}`);
+            if(r.status===401){ showLogin('Сесію завершено. Увійдіть знову.'); return; }
+            const d=await r.json();
+            renderCards(d); renderGrid(d);
+            loadSalesReport();
+            document.getElementById('refresh-info').textContent='Оновлено '+new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
+        }catch(e){ console.error(e); }
+    }
+
+    const CURSYM={UAH:'₴',EUR:'€',PLN:'zł',CZK:'Kč',USD:'$'};
+    async function loadSalesReport(){
+        const box=document.getElementById('sales-report');
+        try{
+            const qs=new URLSearchParams({key:adminKey});
+            if(period.from) qs.set('from',period.from);
+            if(period.to) qs.set('to',period.to);
+            const r=await fetch(`${API}/sales-report?${qs}`);
+            if(!r.ok){ box.innerHTML=''; return; }
+            const d=await r.json();
+            const pct=d.commission_percent||0;
+            const cur=Object.entries(d.sums||{}).filter(([k,v])=>v>0);
+            const money = cur.length ? cur.map(([k,v])=>`<div class="sr-stat"><div class="sr-num">${v.toLocaleString('uk-UA')} ${CURSYM[k]||k}</div><div class="sr-lbl">Виручка (${k})</div></div>`).join('') : '<div class="sr-stat"><div class="sr-num">0</div><div class="sr-lbl">Виручки немає</div></div>';
+            const comm = cur.map(([k,v])=>`${Math.round(v*pct/100).toLocaleString('uk-UA')} ${CURSYM[k]||k}`).join(' · ') || '—';
+            box.innerHTML=`<div class="panel full" style="margin-bottom:16px;border-color:var(--orange-brd)">
+                <h3>💺 Реальні продажі (Contrabus)</h3>
+                <div class="hint">Підтверджені бронювання на агентському акаунті за обраний період</div>
+                <div class="sr-stats">
+                    <div class="sr-stat"><div class="sr-num" style="color:var(--orange)">${d.count}</div><div class="sr-lbl">Бронювань</div></div>
+                    ${money}
+                    <div class="sr-stat"><div class="sr-num" style="color:var(--green)">${comm}</div><div class="sr-lbl">Комісія (${pct}%)</div></div>
+                </div>
+                ${(d.topRoutes&&d.topRoutes.length)?`<div style="margin-top:14px">${hlist(d.topRoutes,'route','green')}</div>`:''}
+            </div>`;
+        }catch(e){ box.innerHTML=''; }
+    }
+
+    function renderCards(d){
+        const s=d.summary;
+        const conv = s.searchesTotal ? Math.round(s.ordersTotal/s.searchesTotal*100) : null;
+        const range = d.range ? `${d.range.from} — ${d.range.to}` : '';
+        const cards=[
+            {num:s.ordersTotal, lbl:'Заявок за період', sub:range, accent:true},
+            {num:s.visitsTotal, lbl:'Візитів на сайт', sub:'сесій з відкриттям'},
+            {num:s.searchesTotal, lbl:'Пошуків рейсів', sub: conv!==null?`конверсія в заявку ~${conv}%`:'—'},
+            {num:s.clientsTotal, lbl:'Клієнтів', sub:`${s.passengersTotal} пасажирів`}
+        ];
+        document.getElementById('cards').innerHTML=cards.map(c=>`<div class="card${c.accent?' accent':''}"><div class="c-num">${c.num}</div><div class="c-lbl">${c.lbl}</div><div class="c-sub">${c.sub}</div></div>`).join('');
+    }
+
+    function vchart(series, cls){
+        const max=Math.max(1,...series.map(s=>s.n));
+        return `<div class="vchart">${series.map(s=>{
+            const h=Math.round(s.n/max*100);
+            return `<div class="vbar-wrap"><div class="vbar-val">${s.n||''}</div><div class="vbar ${cls||''}" style="height:${s.n?Math.max(h,4):0}%"></div><div class="vbar-day">${esc(s.label)}</div></div>`;
+        }).join('')}</div>`;
+    }
+    function hlist(rows, key, cls){
+        if(!rows.length) return '<div class="empty-s">Поки немає даних</div>';
+        const max=Math.max(1,...rows.map(r=>r.n));
+        return rows.map(r=>`<div class="hrow"><div class="hlabel">${esc(r[key])}</div><div class="hbar-track"><div class="hbar ${cls||''}" style="width:${Math.round(r.n/max*100)}%"></div></div><div class="hval">${r.n}</div></div>`).join('');
+    }
+    function statusBars(rows){
+        const map={}; rows.forEach(r=>map[r.status]=r.n);
+        const order=['new','in_progress','done','cancelled'];
+        const max=Math.max(1,...order.map(k=>map[k]||0));
+        return order.map(k=>`<div class="hrow"><div class="hlabel">${STATUS[k].t}</div><div class="hbar-track"><div class="hbar ${STATUS[k].c}" style="width:${Math.round((map[k]||0)/max*100)}%"></div></div><div class="hval">${map[k]||0}</div></div>`).join('');
+    }
+
+    function renderGrid(d){
+        document.getElementById('grid').innerHTML=`
+            <div class="panel full">
+                <h3>Заявки за період</h3>
+                <div class="hint">Скільки бронювань залишали клієнти</div>
+                ${vchart(d.ordersByDay)}
+            </div>
+            <div class="panel full">
+                <h3>Візити на сайт</h3>
+                <div class="hint">Відкриття сайту (сесії)</div>
+                ${vchart(d.visitsByDay,'blue')}
+            </div>
+            <div class="panel full">
+                <h3>Пошуки рейсів</h3>
+                <div class="hint">Скільки разів шукали рейси</div>
+                ${vchart(d.searchesByDay,'gray')}
+            </div>
+            <div class="panel">
+                <h3>Популярні напрямки <span style="font-weight:600;color:var(--text-3)">(за заявками)</span></h3>
+                <div class="hint">Куди реально бронюють</div>
+                ${hlist(d.topRoutes,'route')}
+            </div>
+            <div class="panel">
+                <h3>Що шукають найчастіше</h3>
+                <div class="hint">Попит за пошуками на сайті</div>
+                ${hlist(d.topSearches,'route','amber')}
+            </div>
+            <div class="panel">
+                <h3>Заявки за статусами</h3>
+                <div class="hint">Якість обробки лідів</div>
+                ${statusBars(d.byStatus)}
+            </div>
+            <div class="panel">
+                <h3>Напрямки без рейсів</h3>
+                <div class="hint">Шукали, але рейсів немає — незадоволений попит</div>
+                ${hlist(d.noResults,'route','red')}
+            </div>
+            <div class="panel full">
+                <h3>Топ клієнтів за поїздками</h3>
+                <div class="hint">Постійні клієнти — кому варто подзвонити / запропонувати знижку</div>
+                ${d.topClients.length ? `<table class="ctable">${d.topClients.map((c,i)=>`<tr><td class="rank">${i+1}</td><td>${esc(c.name)}</td><td class="ph">${esc(c.phone)}</td><td style="text-align:right"><span class="tr-badge">${c.trips} ${c.trips===1?'поїздка':(c.trips<5?'поїздки':'поїздок')}</span></td></tr>`).join('')}</table>` : '<div class="empty-s">Поки немає даних</div>'}
+            </div>`;
+    }
+
+    if(adminKey) tryLogin(adminKey); else showLogin('');
+</script>
+</body>
+</html>
