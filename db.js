@@ -56,7 +56,8 @@ db.exec(`
         seats         INTEGER DEFAULT 1,
         passengers    TEXT,
         route_from_station TEXT,
-        route_to_station   TEXT
+        route_to_station   TEXT,
+        check_warning TEXT
     );
 `);
 
@@ -66,6 +67,7 @@ if (!_cols.includes('seats')) db.exec('ALTER TABLE orders ADD COLUMN seats INTEG
 if (!_cols.includes('passengers')) db.exec('ALTER TABLE orders ADD COLUMN passengers TEXT');
 if (!_cols.includes('route_from_station')) db.exec('ALTER TABLE orders ADD COLUMN route_from_station TEXT');
 if (!_cols.includes('route_to_station')) db.exec('ALTER TABLE orders ADD COLUMN route_to_station TEXT');
+if (!_cols.includes('check_warning')) db.exec('ALTER TABLE orders ADD COLUMN check_warning TEXT');
 
 // Таблиці для аналітики
 db.exec(`
@@ -90,9 +92,9 @@ function createOrder(data) {
         INSERT INTO orders
             (created_at, updated_at, status, client_name, client_phone, comment,
              route_from, route_to, route_date, route_time, route_price, route_carrier, manager_note, seats, passengers,
-             route_from_station, route_to_station)
+             route_from_station, route_to_station, check_warning)
         VALUES
-            (?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?)
+            (?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?)
     `);
     const passengers = Array.isArray(data.passengers) ? data.passengers : [];
     const seats = passengers.length || Math.min(99, Math.max(1, parseInt(data.seats, 10) || 1));
@@ -102,7 +104,7 @@ function createOrder(data) {
         data.route_from || '', data.route_to || '', data.route_date || '',
         data.route_time || '', data.route_price || '', data.route_carrier || '', seats,
         passengers.length ? JSON.stringify(passengers) : null,
-        data.route_from_station || '', data.route_to_station || ''
+        data.route_from_station || '', data.route_to_station || '', data.check_warning || ''
     );
     return getOrder(info.lastInsertRowid);
 }

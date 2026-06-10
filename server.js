@@ -50,6 +50,8 @@ const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || `http://${getLanIp()}:${P
 
 // Статуси українською (для Telegram, CSV тощо)
 const STATUS_UA = { new: 'Новий', in_progress: 'В роботі', done: 'Опрацьовано', cancelled: 'Відмова' };
+// Статуси скасованих бронювань Contrabus — не рахуємо у статистиці продажів
+const CANCELLED_BOOKING = new Set(['agent_cancel', 'carrier_cancel']);
 // ==========================================
 
 let authToken = null;
@@ -452,10 +454,9 @@ app.post('/api/order', async (req, res) => {
         const client_name = `${list[0].name} ${list[0].surname}`.trim();
         const client_phone = list[0].phone;
 
-        const order = db.createOrder({ ...req.body, passengers: list, client_name, client_phone });
-        console.log(`[Order] Нова заявка #${order.id} — ${client_name}, ${client_phone}, пасажирів: ${list.length}`);
-
-        // 5) Перевірка телефонів на чорний список / дублі (read-only, не блокує заявку)
+        // 5) Перевірка телефонів на чорний список / дублі (ДО створення — щоб зберегти пометку).
+        //    Заявку НЕ блокуємо: вона приходить, але з позначкою.
+        let check_warning = '';
         if (req.body.data_bundle) {
             try {
                 const token = await getToken();
@@ -465,11 +466,14 @@ app.post('/api/order', async (req, res) => {
                 });
                 const j = await r.json();
                 if (j && j.message && !/no possible|not found|немає/i.test(j.message)) {
-                    order.check_warning = j.message; // покажемо менеджеру в Telegram
+                    check_warning = j.message;
                     console.log(`[Order] ⚠️ allow_check: ${j.message}`);
                 }
             } catch (e) { /* перевірка не критична */ }
         }
+
+        const order = db.createOrder({ ...req.body, passengers: list, client_name, client_phone, check_warning });
+        console.log(`[Order] Нова заявка #${order.id} — ${client_name}, ${client_phone}, пасажирів: ${list.length}`);
 
         notifyTelegram(order); // не чекаємо — відправляється у фоні
         res.status(201).json({ ok: true, id: order.id });
@@ -559,11 +563,15 @@ app.get('/api/sales-report', requireAdmin, async (req, res) => {
         });
         if (!r.ok) throw new Error(`report ${r.status}`);
         const j = await r.json();
-        const bookings = Array.isArray(j.bookings) ? j.bookings : [];
+        // Виключаємо скасовані брони (agent_cancel/carrier_cancel) — рахуємо лише реальні продажі.
+        const all = Array.isArray(j.bookings) ? j.bookings : [];
+        const bookings = all.filter(b => !CANCELLED_BOOKING.has(String(b.status)));
         const routeMap = {};
         bookings.forEach(b => { const k = `${b.from} → ${b.to}`; routeMap[k] = (routeMap[k] || 0) + 1; });
         const topRoutes = Object.entries(routeMap).map(([route, n]) => ({ route, n })).sort((a, b) => b.n - a.n).slice(0, 8);
-        const sums = { UAH: +j.sum_uah || 0, EUR: +j.sum_eur || 0, PLN: +j.sum_pln || 0, CZK: +j.sum_czk || 0, USD: +j.sum_usd || 0 };
+        // Суми рахуємо самі з не-скасованих (sum_* від API може містити скасовані)
+        const sums = {};
+        bookings.forEach(b => { const c = b.currency || 'UAH'; sums[c] = (sums[c] || 0) + (+b.price || 0); });
 
         // Відсоток комісії з акаунту (кеш 1 год)
         if (!commissionCache || Date.now() - commissionCache.t > 3600 * 1000) {

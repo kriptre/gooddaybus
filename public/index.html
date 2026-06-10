@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>gooddaybus - Квитки на автобус</title>
+    <title>GoodDayBus — Квитки на автобус</title>
+    <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🚌</text></svg>'>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -218,6 +219,13 @@
         .ci-ml { background: #F5F0FF; color: #7C3AED; }
         .c-line-val { font-size: 15px; font-weight: 700; color: var(--text); }
         .c-line-sub { font-size: 12px; color: var(--text-3); display: block; }
+        .c-tel { text-decoration: none; }
+        .c-tel:hover .c-line-val { color: var(--orange); }
+        .c-msgrs { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+        .c-msgr { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; text-decoration: none; transition: var(--tr); }
+        .ci-vb { background: #EFEAFE; color: #7360F2; }
+        .ci-wa { background: #E7F8EF; color: #25D366; }
+        .c-msgr:hover { transform: translateY(-2px); }
         .c-hours { display: flex; align-items: center; gap: 8px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-2); }
         .c-hours i { color: var(--orange); }
 
@@ -307,7 +315,7 @@
 <header>
     <a href="#" class="logo">
         <div class="logo-icon"><i class="fa-solid fa-bus"></i></div>
-        <span class="logo-name">goodday<span>bus</span></span>
+        <span class="logo-name">GoodDay<span>Bus</span></span>
     </a>
     <a href="tel:+380967656732" class="hdr-phone">
         <div class="hdr-phone-ico"><i class="fa-solid fa-phone"></i></div>
@@ -430,13 +438,17 @@
                 </div>
             </div>
 
-            <a href="tel:+380675551234" class="c-line">
-                <div class="c-ico ci-ph"><i class="fa-solid fa-phone"></i></div>
-                <div>
-                    <div class="c-line-val">+38 (096) 765-67-32</div>
-                    <span class="c-line-sub">Дзвоніть - завжди відповімо</span>
+            <div class="c-line">
+                <div class="c-icons">
+                    <div class="c-ico ci-ph"><i class="fa-solid fa-phone"></i></div>
+                    <a href="viber://chat?number=%2B380967656732" class="c-msgr ci-vb" title="Viber"><i class="fa-brands fa-viber"></i></a>
+                    <a href="https://wa.me/380967656732" target="_blank" rel="noopener" class="c-msgr ci-wa" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
                 </div>
-            </a>
+                <div>
+                    <a href="tel:+380967656732" class="c-tel"><div class="c-line-val">+38 (096) 765-67-32</div></a>
+                    <span class="c-line-sub">Дзвоніть або пишіть у месенджери</span>
+                </div>
+            </div>
 
             <a href="https://t.me/gooddaybus" target="_blank" class="c-line">
                 <div class="c-ico ci-tg"><i class="fa-brands fa-telegram"></i></div>

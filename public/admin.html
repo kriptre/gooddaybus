@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GooddayBus — Панель менеджера</title>
+    <title>GoodDayBus — Панель менеджера</title>
+    <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🚌</text></svg>'>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -92,6 +93,7 @@
         .pax-item a{color:var(--text);font-weight:700;text-decoration:none}
         .pax-item a:hover{color:var(--orange)}
         .pax-disc-badge{font-size:11px;font-weight:800;color:var(--orange);background:var(--orange-bg);border:1px solid var(--orange-brd);border-radius:50px;padding:1px 9px;margin-left:4px}
+        .o-warn{margin:0 22px 14px;background:var(--red-bg);border:1px solid rgba(217,48,37,0.25);border-radius:var(--r);padding:11px 14px;font-size:13px;font-weight:700;color:var(--red);display:flex;align-items:center;gap:8px}
         .o-comment{margin:0 22px 16px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;font-size:13px;color:var(--text-2)}
         .o-comment i{color:var(--text-3);margin-right:6px}
 
@@ -389,11 +391,13 @@
             if (r.status === 401) { showLogin('Сесію завершено. Увійдіть знову.'); return; }
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             const d = await r.json();
-            renderSales(d.bookings || []);
-            document.getElementById('c-sales').textContent = (d.bookings || []).length;
+            const all = d.bookings || [];
+            renderSales(all);
+            document.getElementById('c-sales').textContent = all.filter(b => !CANCELLED_BOOKING.has(String(b.status))).length;
             stampRefresh();
         } catch (e) { console.error(e); }
     }
+    const CANCELLED_BOOKING = new Set(['agent_cancel', 'carrier_cancel']);
     function renderSales(list) {
         const el = document.getElementById('list');
         if (!list.length) {
@@ -403,7 +407,8 @@
         el.innerHTML = list.map(b => {
             const initial = (b.name_surname || '?').trim().charAt(0);
             const price = b.price ? `${b.price} ${CUR[b.currency] || b.currency || ''}` : '';
-            return `<div class="order">
+            const cancelled = CANCELLED_BOOKING.has(String(b.status));
+            return `<div class="order" style="${cancelled ? 'opacity:.6' : ''}">
                 <div class="o-top">
                     <div class="o-client">
                         <div class="o-ava">${esc(initial)}</div>
@@ -413,7 +418,7 @@
                         </div>
                     </div>
                     <div class="o-meta">
-                        <div class="badge b-done">${esc(price)}</div>
+                        ${cancelled ? `<div class="badge b-cancelled">Скасовано</div>` : `<div class="badge b-done">${esc(price)}</div>`}
                         <div style="margin-top:6px">${esc(b.ticket_type_name || '')}${b.booking_date ? ' · ' + esc(b.booking_date) : ''}</div>
                     </div>
                 </div>
@@ -468,6 +473,7 @@
                 </div>
                 ${(o.route_from_station || o.route_to_station) ? `<div class="o-stations">${o.route_from_station ? `<div><i class="fa-solid fa-location-dot"></i> ${esc(o.route_from_station)}</div>` : ''}${o.route_to_station ? `<div><i class="fa-solid fa-flag-checkered"></i> ${esc(o.route_to_station)}</div>` : ''}</div>` : ''}
                 ${(() => { const pax = parsePax(o.passengers); return (pax.length > 1 || pax.some(p => p.discount_percent > 0)) ? `<div class="o-pax"><div class="o-pax-title"><i class="fa-solid fa-users"></i> Пасажири:</div>${pax.map((p, i) => `<span class="pax-item"><b>${i + 1}.</b> ${esc(p.name)} ${esc(p.surname)} — <a href="tel:${esc(p.phone)}">${esc(p.phone)}</a>${p.discount_percent > 0 ? ` <span class="pax-disc-badge">🏷 ${esc(p.discount_label || 'пільга')}</span>` : ''}</span>`).join('')}</div>` : ''; })()}
+                ${o.check_warning ? `<div class="o-warn"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(o.check_warning)}</div>` : ''}
                 ${o.comment ? `<div class="o-comment"><i class="fa-solid fa-comment-dots"></i>${esc(o.comment)}</div>` : ''}
                 <div class="o-note">
                     <textarea placeholder="Нотатка менеджера (напр. «передзвонити після 18:00»)" data-note="${o.id}">${esc(o.manager_note)}</textarea>
