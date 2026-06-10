@@ -75,9 +75,10 @@
         .s-inp input { border: none; background: transparent; outline: none; color: var(--text); font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 600; width: 100%; }
         .s-inp input::placeholder { color: var(--text-3); font-weight: 400; }
         .s-inp input[type="date"] { cursor: pointer; }
-        #date-wrap { cursor: pointer; }
+        #date-wrap { cursor: pointer; position: relative; }
         #date-display { font-size: 15px; font-weight: 600; color: var(--text); }
-        .s-inp input.date-native { position: absolute; opacity: 0; width: 1px; height: 1px; padding: 0; border: 0; pointer-events: none; }
+        /* Нативний інпут невидимо накриває все поле — тап відкриває рідний календар на телефоні */
+        .s-inp input.date-native { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; padding: 0; border: 0; cursor: pointer; -webkit-appearance: none; }
         .swap-btn { width: 44px; height: 50px; background: var(--orange-bg); border: 2px solid var(--orange-brd); border-radius: var(--r); display: flex; align-items: center; justify-content: center; color: var(--orange); font-size: 14px; cursor: pointer; transition: var(--tr); }
         .swap-btn:hover { background: var(--orange); color: #fff; transform: rotate(180deg); }
         .btn-search { height: 50px; padding: 0 32px; background: var(--orange); color: #fff; border: none; border-radius: var(--r); font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: var(--tr); display: flex; align-items: center; gap: 9px; white-space: nowrap; }
@@ -112,6 +113,10 @@
         .sort-btn { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-2); background: var(--white); border: 1px solid var(--border); border-radius: 50px; padding: 7px 16px; cursor: pointer; transition: var(--tr); }
         .sort-btn:hover { border-color: var(--orange-brd); color: var(--text); }
         .sort-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; }
+        .sort-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+        .filter-btn i { font-size: 12px; margin-right: 4px; }
+        .filter-btn:hover { border-color: rgba(26,158,94,0.4); }
+        .filter-btn.active { background: var(--green); border-color: var(--green); color: #fff; }
 
         /* ── TICKET ── */
         .ticket { background: var(--white); border: 1px solid var(--border); border-radius: var(--r-lg); margin-bottom: 12px; overflow: hidden; transition: var(--tr); animation: slideUp 0.35s cubic-bezier(0.4,0,0.2,1) both; }
@@ -221,6 +226,7 @@
         .c-line-sub { font-size: 12px; color: var(--text-3); display: block; }
         .c-tel { text-decoration: none; }
         .c-tel:hover .c-line-val { color: var(--orange); }
+        .c-icons { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
         .c-msgrs { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
         .c-msgr { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; text-decoration: none; transition: var(--tr); }
         .ci-vb { background: #EFEAFE; color: #7360F2; }
@@ -405,8 +411,8 @@
             <div class="how-step">
                 <div class="how-num">3</div>
                 <div class="how-ico"><i class="fa-solid fa-ticket"></i></div>
-                <h4>Забронюйте</h4>
-                <p>Натисніть «Забронювати» на потрібному рейсі та вкажіть свої контакти.</p>
+                <h4>Замовте поїздку</h4>
+                <p>Натисніть «Замовити» на потрібному рейсі та вкажіть дані пасажирів.</p>
             </div>
             <div class="how-arrow"><i class="fa-solid fa-arrow-right"></i></div>
             <div class="how-step">
@@ -485,7 +491,7 @@
 
         <div id="m-form">
             <div class="modal-head">
-                <h2>Забронювати поїздку</h2>
+                <h2>Замовити поїздку</h2>
                 <div class="m-rtag" id="m-route">
                     <i class="fa-solid fa-bus"></i><span>—</span>
                 </div>
@@ -525,6 +531,7 @@
     const PROXY_BASE = '/api'; // той самий сервер, що віддає сайт (працює і локально, і на домені)
     let cities = [], depId = null, arrId = null, selRoute = null;
     let _routes = [], _view = [], _dep = '', _arr = '', _date = '', _sortBy = 'departure';
+    let _noPrepay = false; // фільтр "Без передоплати" (label_type порожній)
 
     function setStatus(txt, type = '') {
         document.getElementById('status-row').className = `status-row ${type}`;
@@ -738,13 +745,19 @@
                 <button class="sort-btn" data-sort="price">Найдешевші</button>
                 <button class="sort-btn" data-sort="duration">Найшвидші</button>
                 <button class="sort-btn" data-sort="departure">За часом виїзду</button>
+                <span class="sort-sep"></span>
+                <button class="sort-btn filter-btn" id="noprepay-btn"><i class="fa-regular fa-credit-card"></i> Без передоплати</button>
             </div>
             <div id="tickets"></div>`;
 
-        el.querySelectorAll('.sort-btn').forEach(b => b.addEventListener('click', () => {
+        el.querySelectorAll('.sort-btn[data-sort]').forEach(b => b.addEventListener('click', () => {
             _sortBy = b.dataset.sort;
             renderTickets();
         }));
+        document.getElementById('noprepay-btn').addEventListener('click', () => {
+            _noPrepay = !_noPrepay;
+            renderTickets();
+        });
         renderTickets();
     }
 
@@ -757,9 +770,18 @@
 
     function renderTickets() {
         const tickets = document.getElementById('tickets');
-        document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === _sortBy));
+        document.querySelectorAll('.sort-btn[data-sort]').forEach(b => b.classList.toggle('active', b.dataset.sort === _sortBy));
+        const npBtn = document.getElementById('noprepay-btn');
+        if (npBtn) npBtn.classList.toggle('active', _noPrepay);
 
-        _view = _routes.slice().sort((a, b) => {
+        // label_type: '' = оплата при посадці, 'prepayment' = часткова, 'full_pay' = повна передоплата
+        const pool = _noPrepay ? _routes.filter(rt => !rt.label_type) : _routes;
+        if (_noPrepay && !pool.length) {
+            tickets.innerHTML = `<div class="no-res"><div class="no-res-ico"><i class="fa-regular fa-credit-card"></i></div><h3>Таких рейсів немає</h3><p>На цьому напрямку всі рейси з передоплатою.<br>Вимкніть фільтр, щоб побачити всі варіанти.</p></div>`;
+            return;
+        }
+
+        _view = pool.slice().sort((a, b) => {
             if (_sortBy === 'price')    return (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0);
             if (_sortBy === 'duration') return (a.travel_time || Infinity) - (b.travel_time || Infinity);
             return routeDepartTs(a) - routeDepartTs(b); // departure
@@ -804,7 +826,7 @@
                 </div>
                 <div class="t-foot">
                     <button class="t-toggle" type="button" data-i="${i}">Деталі рейсу <i class="fa-solid fa-chevron-down"></i></button>
-                    <button class="btn-ticket" data-i="${i}">Забронювати</button>
+                    <button class="btn-ticket" data-i="${i}">Замовити</button>
                 </div>
                 <div class="t-details">
                     ${amenitiesHtml(rt.carrier_amenities)}
@@ -1085,9 +1107,11 @@
         setTodayDate();
         const dateInput = document.getElementById('date-input');
         dateInput.addEventListener('change', updateDateDisplay);
-        document.getElementById('date-wrap').addEventListener('click', () => {
-            if (typeof dateInput.showPicker === 'function') dateInput.showPicker();
-            else dateInput.focus();
+        // Тап тепер влучає прямо в нативний інпут (він накриває поле) — календар
+        // відкривається сам. showPicker — лише підстраховка для десктопу.
+        document.getElementById('date-wrap').addEventListener('click', e => {
+            if (e.target === dateInput) return; // нативна поведінка вже відкрила календар
+            try { if (typeof dateInput.showPicker === 'function') dateInput.showPicker(); else dateInput.focus(); } catch (err) {}
         });
         loadCities();
         ac('departure', 'departure-list', true);

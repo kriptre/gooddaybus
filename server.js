@@ -569,9 +569,11 @@ app.get('/api/sales-report', requireAdmin, async (req, res) => {
         const routeMap = {};
         bookings.forEach(b => { const k = `${b.from} → ${b.to}`; routeMap[k] = (routeMap[k] || 0) + 1; });
         const topRoutes = Object.entries(routeMap).map(([route, n]) => ({ route, n })).sort((a, b) => b.n - a.n).slice(0, 8);
-        // Суми рахуємо самі з не-скасованих (sum_* від API може містити скасовані)
+        // Суми рахуємо самі з не-скасованих (sum_* від API може містити скасовані).
+        // Ціна у звіті приходить з комою ("210,00") — нормалізуємо перед parseFloat.
+        const num = v => parseFloat(String(v == null ? '' : v).replace(/\s/g, '').replace(',', '.')) || 0;
         const sums = {};
-        bookings.forEach(b => { const c = b.currency || 'UAH'; sums[c] = (sums[c] || 0) + (+b.price || 0); });
+        bookings.forEach(b => { const c = b.currency || 'UAH'; sums[c] = Math.round(((sums[c] || 0) + num(b.price)) * 100) / 100; });
 
         // Відсоток комісії з акаунту (кеш 1 год)
         if (!commissionCache || Date.now() - commissionCache.t > 3600 * 1000) {
