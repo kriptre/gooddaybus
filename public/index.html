@@ -160,6 +160,17 @@
         .td-text { flex: 1; font-size: 13px; color: var(--text-2); line-height: 1.5; }
         .td-amens { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; }
         .amen { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--text); background: var(--white); border: 1px solid var(--border); border-radius: 50px; padding: 6px 13px; }
+        /* Тип оплати у деталях */
+        .pay-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; border-radius: 50px; padding: 5px 13px; }
+        .pb-none { background: var(--green-bg); color: var(--green); }
+        .pb-part { background: var(--amber-bg, #FFF6E5); color: #C77700; }
+        .pb-full { background: var(--orange-bg); color: var(--orange); }
+        .pay-note { margin-top: 7px; font-size: 12px; color: var(--text-3); }
+        /* Рейтинг та надійність перевізника */
+        .td-carrier { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .carr-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 800; border-radius: 50px; padding: 4px 11px; }
+        .cb-star { background: #FFF6E5; color: #C77700; }
+        .cb-rel { background: var(--green-bg); color: var(--green); }
         .amen i { color: var(--orange); font-size: 12px; }
         @media (max-width: 760px) { .td-row { flex-direction: column; gap: 6px; } .td-label { flex: none; } }
         .t-tag-hl i { color: var(--orange); }
@@ -302,6 +313,8 @@
             .search-row { grid-template-columns: 1fr; }
             .swap-btn { width: 100%; }
             .btn-search { width: 100%; justify-content: center; }
+            /* Більше повітря між картками рейсів, щоб вони не зливались при скролі */
+            .ticket { margin-bottom: 22px; box-shadow: 0 3px 12px rgba(26,35,50,0.10); border-color: #D5DEE8; }
             .t-main { grid-template-columns: 1fr 1fr; }
             .t-route { grid-column: 1/-1; order: 3; padding: 12px 0 0; }
             .t-divider { display: none; }
@@ -333,7 +346,7 @@
 <section class="hero">
     <div class="hero-badge">
         <i class="fa-solid fa-bus" style="font-size:10px;"></i>
-        Автобусні перевезення Україна-Європа
+        Автобусні перевезення Україна ⮂ Європа
     </div>
     <h1>Ваша <em>подорож</em><br>починається тут</h1>
     <p>Знайдіть зручний рейс за хвилину.<br>Без реєстрації та зайвих кроків.</p>
@@ -440,7 +453,7 @@
                 <div class="manager-ava"><i class="fa-solid fa-user"></i></div>
                 <div>
                     <div class="manager-name">Сергій</div>
-                    <div class="manager-role">Менеджер GooddayBus</div>
+                    <div class="manager-role">Менеджер GoodDayBus</div>
                 </div>
             </div>
 
@@ -482,7 +495,7 @@
 
 <!-- FOOTER -->
 <footer>
-    <p>© 2026 <span>GooddayBus</span> - Пасажирські перевезення Україна-Європа</p>
+    <p>© 2026 <span>GoodDayBus</span> — Пасажирські перевезення Україна ⮂ Європа</p>
 </footer>
 
 <!-- MODAL -->
@@ -531,7 +544,10 @@
     const PROXY_BASE = '/api'; // той самий сервер, що віддає сайт (працює і локально, і на домені)
     let cities = [], depId = null, arrId = null, selRoute = null;
     let _routes = [], _view = [], _dep = '', _arr = '', _date = '', _sortBy = 'departure';
-    let _noPrepay = false; // фільтр "Без передоплати" (label_type порожній)
+    // Фільтри за типом оплати: 'none' = без передоплати (label_type порожній),
+    // 'partial' = часткова ('prepayment'). Порожній набір = показувати всі.
+    let _payFilters = new Set();
+    const payCategory = rt => !rt.label_type ? 'none' : (rt.label_type === 'prepayment' ? 'partial' : 'full');
 
     function setStatus(txt, type = '') {
         document.getElementById('status-row').className = `status-row ${type}`;
@@ -713,6 +729,17 @@
         return `<div class="td-row"><div class="td-label">Зручності</div><div class="td-amens">${chips}</div></div>`;
     }
 
+    // Тип оплати рейсу для блоку деталей
+    function paymentHtml(rt) {
+        const cat = payCategory(rt);
+        const label = cat === 'none'
+            ? '<span class="pay-badge pb-none"><i class="fa-regular fa-credit-card"></i> Без передоплати</span>'
+            : (cat === 'partial'
+                ? '<span class="pay-badge pb-part"><i class="fa-solid fa-coins"></i> Часткова передоплата</span>'
+                : '<span class="pay-badge pb-full"><i class="fa-solid fa-money-bill-wave"></i> Повна передоплата</span>');
+        return label + (rt.price_label ? `<div class="pay-note">${escTxt(rt.price_label)}</div>` : '');
+    }
+
     function renderResults(routes, date) {
         const el = document.getElementById('results');
         const dep = document.getElementById('departure').value;
@@ -746,7 +773,8 @@
                 <button class="sort-btn" data-sort="duration">Найшвидші</button>
                 <button class="sort-btn" data-sort="departure">За часом виїзду</button>
                 <span class="sort-sep"></span>
-                <button class="sort-btn filter-btn" id="noprepay-btn"><i class="fa-regular fa-credit-card"></i> Без передоплати</button>
+                <button class="sort-btn filter-btn" data-pay="none"><i class="fa-regular fa-credit-card"></i> Без передоплати</button>
+                <button class="sort-btn filter-btn" data-pay="partial"><i class="fa-solid fa-coins"></i> Часткова передоплата</button>
             </div>
             <div id="tickets"></div>`;
 
@@ -754,10 +782,11 @@
             _sortBy = b.dataset.sort;
             renderTickets();
         }));
-        document.getElementById('noprepay-btn').addEventListener('click', () => {
-            _noPrepay = !_noPrepay;
+        el.querySelectorAll('.filter-btn').forEach(b => b.addEventListener('click', () => {
+            const k = b.dataset.pay;
+            _payFilters.has(k) ? _payFilters.delete(k) : _payFilters.add(k);
             renderTickets();
-        });
+        }));
         renderTickets();
     }
 
@@ -771,13 +800,17 @@
     function renderTickets() {
         const tickets = document.getElementById('tickets');
         document.querySelectorAll('.sort-btn[data-sort]').forEach(b => b.classList.toggle('active', b.dataset.sort === _sortBy));
-        const npBtn = document.getElementById('noprepay-btn');
-        if (npBtn) npBtn.classList.toggle('active', _noPrepay);
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', _payFilters.has(b.dataset.pay)));
 
-        // label_type: '' = оплата при посадці, 'prepayment' = часткова, 'full_pay' = повна передоплата
-        const pool = _noPrepay ? _routes.filter(rt => !rt.label_type) : _routes;
-        if (_noPrepay && !pool.length) {
-            tickets.innerHTML = `<div class="no-res"><div class="no-res-ico"><i class="fa-regular fa-credit-card"></i></div><h3>Таких рейсів немає</h3><p>На цьому напрямку всі рейси з передоплатою.<br>Вимкніть фільтр, щоб побачити всі варіанти.</p></div>`;
+        // Фільтр за типом оплати (порожній набір = усі рейси)
+        const pool = _payFilters.size ? _routes.filter(rt => _payFilters.has(payCategory(rt))) : _routes;
+
+        // Оновлюємо лічильник рейсів у шапці результатів під фільтр
+        const badge = document.querySelector('.res-badge');
+        if (badge) badge.textContent = `${pool.length} ${routeWord(pool.length)}`;
+
+        if (_payFilters.size && !pool.length) {
+            tickets.innerHTML = `<div class="no-res"><div class="no-res-ico"><i class="fa-regular fa-credit-card"></i></div><h3>Таких рейсів немає</h3><p>На цьому напрямку немає рейсів з обраним типом оплати.<br>Вимкніть фільтр, щоб побачити всі варіанти.</p></div>`;
             return;
         }
 
@@ -830,9 +863,10 @@
                 </div>
                 <div class="t-details">
                     ${amenitiesHtml(rt.carrier_amenities)}
+                    <div class="td-row"><div class="td-label">Оплата</div><div class="td-text">${paymentHtml(rt)}</div></div>
                     <div class="td-row"><div class="td-label">Знижки</div><div class="td-text td-disc">—</div></div>
                     <div class="td-row"><div class="td-label">Пересадки</div><div class="td-text">${rt.change_info ? escTxt(rt.change_info) : 'Без пересадок, прямий рейс'}</div></div>
-                    <div class="td-row"><div class="td-label">Перевізник</div><div class="td-text">${escTxt(car)}${rt.carrier_rating ? ` · ★ ${escTxt(rt.carrier_rating)}` : ''}${rt.carrier_reliability ? ` · надійність ${escTxt(rt.carrier_reliability)}%` : ''}</div></div>
+                    <div class="td-row"><div class="td-label">Перевізник</div><div class="td-text td-carrier">${escTxt(car)}${rt.carrier_rating ? ` <span class="carr-badge cb-star"><i class="fa-solid fa-star"></i> ${escTxt(rt.carrier_rating)}</span>` : ''}${rt.carrier_reliability ? ` <span class="carr-badge cb-rel"><i class="fa-solid fa-shield-halved"></i> надійність ${escTxt(rt.carrier_reliability)}%</span>` : ''}</div></div>
                     ${rt.baggage ? `<div class="td-row"><div class="td-label">Багаж</div><div class="td-text">${escTxt(rt.baggage)}</div></div>` : ''}
                 </div>
             </div>`;
@@ -1107,10 +1141,10 @@
         setTodayDate();
         const dateInput = document.getElementById('date-input');
         dateInput.addEventListener('change', updateDateDisplay);
-        // Тап тепер влучає прямо в нативний інпут (він накриває поле) — календар
-        // відкривається сам. showPicker — лише підстраховка для десктопу.
-        document.getElementById('date-wrap').addEventListener('click', e => {
-            if (e.target === dateInput) return; // нативна поведінка вже відкрила календар
+        // Клік будь-де по полю відкриває календар: на телефоні тап у нативний інпут
+        // робить це сам, на ПК додатково викликаємо showPicker (try/catch — якщо
+        // нативний пікер уже відкрився, повторний виклик просто ігнорується).
+        document.getElementById('date-wrap').addEventListener('click', () => {
             try { if (typeof dateInput.showPicker === 'function') dateInput.showPicker(); else dateInput.focus(); } catch (err) {}
         });
         loadCities();
