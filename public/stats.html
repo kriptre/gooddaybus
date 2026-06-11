@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoodDayBus — Аналітика</title>
+    <title>GoodDayBus - Аналітика</title>
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🚌</text></svg>'>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -202,7 +202,7 @@
         if(apply) apply.addEventListener('click',()=>{
             const f=menu.querySelector('#cf-from').value, t=menu.querySelector('#cf-to').value;
             if(!f||!t){ alert('Оберіть обидві дати'); return; }
-            period={from:f, to:t, label:`${f} — ${t}`};
+            period={from:f, to:t, label:`${f} - ${t}`};
             localStorage.setItem('gdb_period', JSON.stringify(period));
             document.getElementById('period-label').textContent=period.label;
             menu.classList.add('hidden'); load();
@@ -258,7 +258,7 @@
             const pct=d.commission_percent||0;
             const cur=Object.entries(d.sums||{}).filter(([k,v])=>v>0);
             const money = cur.length ? cur.map(([k,v])=>`<div class="sr-stat"><div class="sr-num">${v.toLocaleString('uk-UA')} ${CURSYM[k]||k}</div><div class="sr-lbl">Виручка (${k})</div></div>`).join('') : '<div class="sr-stat"><div class="sr-num">0</div><div class="sr-lbl">Виручки немає</div></div>';
-            const comm = cur.map(([k,v])=>`${Math.round(v*pct/100).toLocaleString('uk-UA')} ${CURSYM[k]||k}`).join(' · ') || '—';
+            const comm = cur.map(([k,v])=>`${Math.round(v*pct/100).toLocaleString('uk-UA')} ${CURSYM[k]||k}`).join(' · ') || '-';
             box.innerHTML=`<div class="panel full" style="margin-bottom:16px;border-color:var(--orange-brd)">
                 <h3>💺 Реальні продажі (Contrabus)</h3>
                 <div class="hint">Підтверджені бронювання на агентському акаунті за обраний період</div>
@@ -275,11 +275,11 @@
     function renderCards(d){
         const s=d.summary;
         const conv = s.searchesTotal ? Math.round(s.ordersTotal/s.searchesTotal*100) : null;
-        const range = d.range ? `${d.range.from} — ${d.range.to}` : '';
+        const range = d.range ? `${d.range.from} - ${d.range.to}` : '';
         const cards=[
             {num:s.ordersTotal, lbl:'Заявок за період', sub:range, accent:true},
             {num:s.visitsTotal, lbl:'Візитів на сайт', sub:'сесій з відкриттям'},
-            {num:s.searchesTotal, lbl:'Пошуків рейсів', sub: conv!==null?`конверсія в заявку ~${conv}%`:'—'},
+            {num:s.searchesTotal, lbl:'Пошуків рейсів', sub: conv!==null?`конверсія в заявку ~${conv}%`:'-'},
             {num:s.clientsTotal, lbl:'Клієнтів', sub:`${s.passengersTotal} пасажирів`}
         ];
         document.getElementById('cards').innerHTML=cards.map(c=>`<div class="card${c.accent?' accent':''}"><div class="c-num">${c.num}</div><div class="c-lbl">${c.lbl}</div><div class="c-sub">${c.sub}</div></div>`).join('');
@@ -338,12 +338,12 @@
             </div>
             <div class="panel">
                 <h3>Напрямки без рейсів</h3>
-                <div class="hint">Шукали, але рейсів немає — незадоволений попит</div>
+                <div class="hint">Шукали, але рейсів немає - незадоволений попит</div>
                 ${hlist(d.noResults,'route','red')}
             </div>
             <div class="panel full">
                 <h3>Топ клієнтів за поїздками</h3>
-                <div class="hint">Постійні клієнти — кому варто подзвонити / запропонувати знижку</div>
+                <div class="hint">Постійні клієнти - кому варто подзвонити / запропонувати знижку</div>
                 ${d.topClients.length ? `<table class="ctable">${d.topClients.map((c,i)=>`<tr><td class="rank">${i+1}</td><td>${esc(c.name)}</td><td class="ph">${esc(c.phone)}</td><td style="text-align:right"><span class="tr-badge">${c.trips} ${c.trips===1?'поїздка':(c.trips<5?'поїздки':'поїздок')}</span></td></tr>`).join('')}</table>` : '<div class="empty-s">Поки немає даних</div>'}
             </div>`;
     }

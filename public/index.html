@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoodDayBus — Квитки на автобус</title>
+    <title>GoodDayBus - Квитки на автобус</title>
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🚌</text></svg>'>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -77,7 +77,7 @@
         .s-inp input[type="date"] { cursor: pointer; }
         #date-wrap { cursor: pointer; position: relative; }
         #date-display { font-size: 15px; font-weight: 600; color: var(--text); }
-        /* Нативний інпут невидимо накриває все поле — тап відкриває рідний календар на телефоні */
+        /* Нативний інпут невидимо накриває все поле - тап відкриває рідний календар на телефоні */
         .s-inp input.date-native { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; padding: 0; border: 0; cursor: pointer; -webkit-appearance: none; }
         .swap-btn { width: 44px; height: 50px; background: var(--orange-bg); border: 2px solid var(--orange-brd); border-radius: var(--r); display: flex; align-items: center; justify-content: center; color: var(--orange); font-size: 14px; cursor: pointer; transition: var(--tr); }
         .swap-btn:hover { background: var(--orange); color: #fff; transform: rotate(180deg); }
@@ -159,11 +159,16 @@
         .td-row { display: flex; gap: 14px; padding: 11px 0; border-bottom: 1px solid #EAF0F6; }
         .td-row:last-child { border-bottom: none; }
         .td-label { flex: 0 0 84px; font-size: 11px; font-weight: 800; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.4px; padding-top: 3px; }
-        .td-text { flex: 1; font-size: 13px; color: var(--text-2); line-height: 1.5; }
+        /* Увесь текст у деталях на одній вертикалі: звичайний текст з відступом 34px,
+           а текст усередині чипів (13px падінг + 15px іконка + 6px зазор = 34px) лягає
+           на ту саму лінію - рамки чипів трохи виступають ліворуч, як буллети. */
+        .td-text { flex: 1; font-size: 13px; color: var(--text-2); line-height: 1.5; padding-left: 34px; }
+        .td-text .pay-badge { margin-left: -34px; }
         .td-amens { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; }
         .amen { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--text); background: var(--white); border: 1px solid var(--border); border-radius: 50px; padding: 6px 13px; }
         /* Тип оплати у деталях */
         .pay-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; border-radius: 50px; padding: 5px 13px; }
+        .pay-badge i { width: 1.25em; text-align: center; }
         .pb-none { background: var(--green-bg); color: var(--green); }
         .pb-part { background: var(--amber-bg, #FFF6E5); color: #C77700; }
         .pb-full { background: var(--orange-bg); color: var(--orange); }
@@ -173,7 +178,7 @@
         .carr-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 800; border-radius: 50px; padding: 4px 11px; }
         .cb-star { background: #FFF6E5; color: #C77700; }
         .cb-rel { background: var(--green-bg); color: var(--green); }
-        .amen i { color: var(--orange); font-size: 12px; }
+        .amen i { color: var(--orange); font-size: 12px; width: 1.25em; text-align: center; }
         @media (max-width: 760px) { .td-row { flex-direction: column; gap: 6px; } .td-label { flex: none; } }
         .t-tag-hl i { color: var(--orange); }
 
@@ -497,7 +502,7 @@
 
 <!-- FOOTER -->
 <footer>
-    <p>© 2026 <span>GoodDayBus</span> — Пасажирські перевезення Україна <i class="fa-solid fa-arrow-right-arrow-left" style="font-size:10px"></i> Європа</p>
+    <p>© 2026 <span>GoodDayBus</span> - Пасажирські перевезення Україна <i class="fa-solid fa-arrow-right-arrow-left" style="font-size:10px"></i> Європа</p>
 </footer>
 
 <!-- MODAL -->
@@ -508,7 +513,7 @@
             <div class="modal-head">
                 <h2>Замовити поїздку</h2>
                 <div class="m-rtag" id="m-route">
-                    <i class="fa-solid fa-bus"></i><span>—</span>
+                    <i class="fa-solid fa-bus"></i><span>-</span>
                 </div>
             </div>
             <div class="modal-body">
@@ -550,9 +555,12 @@
     // 'direct' = без пересадок. Порожній набір = показувати всі.
     let _filters = new Set();
     const payCategory = rt => !rt.label_type ? 'none' : (rt.label_type === 'prepayment' ? 'partial' : 'full');
+    // Прямий рейс: change_info порожній АБО не містить слова "пересад"
+    // (API часто пише туди текст на кшталт "Прямий рейс")
+    const isDirect = rt => !rt.change_info || !/пересад/i.test(rt.change_info);
     const matchesFilters = rt =>
         (!_filters.has('noprepay') || !rt.label_type) &&
-        (!_filters.has('direct') || !rt.change_info);
+        (!_filters.has('direct') || isDirect(rt));
 
     function setStatus(txt, type = '') {
         document.getElementById('status-row').className = `status-row ${type}`;
@@ -565,7 +573,7 @@
             const r = await fetch(`${PROXY_BASE}/cities`);
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             cities = await r.json();
-            setStatus(`${cities.length} міст у наявності — оберіть напрямок`, 'success');
+            setStatus(`${cities.length} міст у наявності - оберіть напрямок`, 'success');
             document.getElementById('search-btn').disabled = false;
         } catch (e) { setStatus(`Помилка: ${e.message}`, 'error'); }
     }
@@ -602,7 +610,7 @@
             lst.style.display = 'block';
         });
 
-        // Стрілки вгору/вниз + Enter для вибору міста (на телефоні просто не спрацьовує — там тапи)
+        // Стрілки вгору/вниз + Enter для вибору міста (на телефоні просто не спрацьовує - там тапи)
         inp.addEventListener('keydown', e => {
             const open = lst.style.display === 'block';
             if (!open) return;
@@ -664,7 +672,7 @@
         return `${days} ${days === 1 ? 'день' : (days < 5 ? 'дні' : 'днів')}${rh ? ' ' + rh + ' год' : ''}`;
     }
 
-    // Стислий опис пересадок: "2 пересадки · Дніпро, Хмельницький" (повний текст — у tooltip)
+    // Стислий опис пересадок: "2 пересадки · Дніпро, Хмельницький" (повний текст - у tooltip)
     function fmtTransfers(text) {
         if (!text || !text.trim()) return null;
         const cities = [];
@@ -699,7 +707,7 @@
             if (!box) return;
             if (s.type === 'date') {
                 box.innerHTML = `<div class="sg-title"><i class="fa-regular fa-lightbulb"></i> Найближчий рейс на цьому напрямку:</div>
-                    <button class="sg-btn" id="sg-date"><i class="fa-regular fa-calendar-check"></i> ${s.date} — ${s.count} ${routeWord(s.count)}</button>`;
+                    <button class="sg-btn" id="sg-date"><i class="fa-regular fa-calendar-check"></i> ${s.date} - ${s.count} ${routeWord(s.count)}</button>`;
                 document.getElementById('sg-date').addEventListener('click', () => setDateAndSearch(s.date));
             } else if (s.type === 'cities') {
                 window._alts = s.alternatives;
@@ -755,8 +763,8 @@
     };
     function amenitiesHtml(codes) {
         if (!Array.isArray(codes) || !codes.length) return '';
-        // 'noprepayment' — послуга перевізника загалом і може суперечити умовам
-        // конкретного рейсу (label_type) — тип оплати показуємо лише у рядку "Оплата"
+        // 'noprepayment' - послуга перевізника загалом і може суперечити умовам
+        // конкретного рейсу (label_type) - тип оплати показуємо лише у рядку "Оплата"
         const chips = codes.filter(c => c !== 'noprepayment').map(code => {
             const a = AMENITIES[code] || { i: 'fa-circle-info', t: code };
             return `<span class="amen"><i class="fa-solid ${a.i}"></i> ${escTxt(a.t)}</span>`;
@@ -865,13 +873,13 @@
         });
 
         tickets.innerHTML = _view.map((rt, i) => {
-            const dt    = rt.departure_time || rt.time_from || '—:—';
-            const at    = rt.arrival_time   || rt.time_to   || '—:—';
+            const dt    = rt.departure_time || rt.time_from || '-:-';
+            const at    = rt.arrival_time   || rt.time_to   || '-:-';
             const ddate = fmtNiceDate(rt.date || _date);
             const adate = fmtNiceDate(rt.arrival_date);
             const fromCity = rt.from || _dep;
             const toCity   = rt.to   || _arr;
-            const pr    = fmtPrice(rt) || '—';
+            const pr    = fmtPrice(rt) || '-';
             const st    = rt.free_seats !== undefined ? rt.free_seats : '?';
             const car   = rt.carrier || rt.company || 'Автобус';
             const dur   = fmtDuration(rt.travel_time);
@@ -910,7 +918,7 @@
                 <div class="t-details">
                     ${amenitiesHtml(rt.carrier_amenities)}
                     <div class="td-row"><div class="td-label">Оплата</div><div class="td-text">${paymentHtml(rt)}</div></div>
-                    <div class="td-row"><div class="td-label">Знижки</div><div class="td-text td-disc">—</div></div>
+                    <div class="td-row"><div class="td-label">Знижки</div><div class="td-text td-disc">-</div></div>
                     <div class="td-row"><div class="td-label">Пересадки</div><div class="td-text">${rt.change_info ? escTxt(rt.change_info) : 'Без пересадок, прямий рейс'}</div></div>
                     <div class="td-row"><div class="td-label">Перевізник</div><div class="td-text td-carrier">${escTxt(car)}${rt.carrier_rating ? ` <span class="carr-badge cb-star"><i class="fa-solid fa-star"></i> ${escTxt(rt.carrier_rating)}</span>` : ''}${rt.carrier_reliability ? ` <span class="carr-badge cb-rel"><i class="fa-solid fa-shield-halved"></i> надійність ${escTxt(rt.carrier_reliability)}%</span>` : ''}</div></div>
                     ${rt.baggage ? `<div class="td-row"><div class="td-label">Багаж</div><div class="td-text">${escTxt(rt.baggage)}</div></div>` : ''}
@@ -945,7 +953,7 @@
             const d = await r.json();
             const real = (Array.isArray(d) ? d : []).filter(x => x.percent > 0);
             el.innerHTML = real.length ? real.map(x => escTxt(x.description)).join('<br>') : 'Спеціальних знижок немає';
-        } catch (e) { el.textContent = '—'; }
+        } catch (e) { el.textContent = '-'; }
     }
 
     // ---------- Пасажири + знижки ----------
@@ -975,7 +983,7 @@
     }
     const seatWord = n => n === 1 ? 'місце' : (n < 5 ? 'місця' : 'місць');
 
-    // Блок знижок під коментарем — згорнутий, розкривається кнопкою
+    // Блок знижок під коментарем - згорнутий, розкривається кнопкою
     function renderDiscBlock() {
         const block = document.getElementById('disc-block');
         const rows = [...document.querySelectorAll('#pax-list .pax-row')];
@@ -1103,9 +1111,9 @@
             let ok = true;
             if (name.length < 1) { nameEl.style.borderColor = 'var(--red)'; ok = false; }
             if (surname.length < 1) { surEl.style.borderColor = 'var(--red)'; ok = false; }
-            if (!phone || digits < 9) { phEl.style.borderColor = 'var(--red)'; ok = false; if (phone && digits < 9 && !firstError) firstError = 'Перевірте номер телефону — здається, він введений неповністю.'; }
+            if (!phone || digits < 9) { phEl.style.borderColor = 'var(--red)'; ok = false; if (phone && digits < 9 && !firstError) firstError = 'Перевірте номер телефону - здається, він введений неповністю.'; }
             if (!ok && !firstError) firstError = 'Заповніть дані всіх пасажирів.';
-            // знижка (якщо обрана) — з блоку під коментарем за індексом пасажира
+            // знижка (якщо обрана) - з блоку під коментарем за індексом пасажира
             const sel = _discOpen ? document.querySelector(`#disc-block .disc-sel[data-i="${i}"]`) : null;
             let ticket_type = '', discount_label = '', discount_percent = 0;
             if (sel && sel.selectedOptions[0] && +sel.selectedOptions[0].dataset.pct > 0) {
@@ -1168,7 +1176,7 @@
         span.style.color = 'var(--text)';
     }
 
-    // Дата поїздки за замовчуванням — сьогодні (і не даємо обрати минуле)
+    // Дата поїздки за замовчуванням - сьогодні (і не даємо обрати минуле)
     function setTodayDate() {
         const d = new Date();
         const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -1179,7 +1187,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Лічильник візитів — один раз на сесію
+        // Лічильник візитів - один раз на сесію
         if (!sessionStorage.getItem('gdb_visited')) {
             sessionStorage.setItem('gdb_visited', '1');
             fetch(`${PROXY_BASE}/visit`, { method: 'POST' }).catch(() => {});
@@ -1188,7 +1196,7 @@
         const dateInput = document.getElementById('date-input');
         dateInput.addEventListener('change', updateDateDisplay);
         // Клік будь-де по полю відкриває календар: на телефоні тап у нативний інпут
-        // робить це сам, на ПК додатково викликаємо showPicker (try/catch — якщо
+        // робить це сам, на ПК додатково викликаємо showPicker (try/catch - якщо
         // нативний пікер уже відкрився, повторний виклик просто ігнорується).
         document.getElementById('date-wrap').addEventListener('click', () => {
             try { if (typeof dateInput.showPicker === 'function') dateInput.showPicker(); else dateInput.focus(); } catch (err) {}

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoodDayBus — Панель менеджера</title>
+    <title>GoodDayBus - Панель менеджера</title>
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🚌</text></svg>'>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -266,7 +266,7 @@
     // ---------- Export CSV ----------
     document.getElementById('export-btn').addEventListener('click', () => {
         const params = new URLSearchParams({ key: adminKey });
-        if (searchQ) params.set('q', searchQ); // якщо є пошук — експортуємо знайдене
+        if (searchQ) params.set('q', searchQ); // якщо є пошук - експортуємо знайдене
         window.location.href = `${API}/orders/export.csv?${params}`;
     });
 
@@ -274,7 +274,7 @@
     async function load() {
         try {
             const params = new URLSearchParams({ key: adminKey });
-            if (searchQ) params.set('q', searchQ);          // пошук — глобальний, по всіх статусах
+            if (searchQ) params.set('q', searchQ);          // пошук - глобальний, по всіх статусах
             else if (currentStatus) params.set('status', currentStatus);
             const r = await fetch(`${API}/orders?${params}`);
             if (r.status === 401) { showLogin('Сесію завершено. Увійдіть знову.'); return; }
@@ -337,7 +337,7 @@
                     </div>
                 </div>
                 <div class="o-route">
-                    <span class="rt"><i class="fa-solid fa-location-dot"></i> ${esc(c.last_from) || '—'} → ${esc(c.last_to) || '—'}</span>
+                    <span class="rt"><i class="fa-solid fa-location-dot"></i> ${esc(c.last_from) || '-'} → ${esc(c.last_to) || '-'}</span>
                     ${c.last_date ? `<span class="sep">·</span><span><i class="fa-regular fa-calendar" style="color:var(--orange)"></i> ${esc(c.last_date)}</span>` : ''}
                     <span class="client-hint"><i class="fa-solid fa-clock-rotate-left"></i> натисніть, щоб побачити всі поїздки</span>
                 </div>
@@ -401,7 +401,7 @@
     function renderSales(list) {
         const el = document.getElementById('list');
         if (!list.length) {
-            el.innerHTML = `<div class="empty"><i class="fa-solid fa-ticket"></i><h3>Бронювань немає</h3><p>Тут — реальні бронювання з вашого акаунту Contrabus</p></div>`;
+            el.innerHTML = `<div class="empty"><i class="fa-solid fa-ticket"></i><h3>Бронювань немає</h3><p>Тут - реальні бронювання з вашого акаунту Contrabus</p></div>`;
             return;
         }
         el.innerHTML = list.map(b => {
@@ -465,14 +465,14 @@
                     </div>
                 </div>
                 <div class="o-route">
-                    <span class="rt"><i class="fa-solid fa-location-dot"></i> ${esc(o.route_from)||'—'} → ${esc(o.route_to)||'—'}</span>
+                    <span class="rt"><i class="fa-solid fa-location-dot"></i> ${esc(o.route_from)||'-'} → ${esc(o.route_to)||'-'}</span>
                     <span class="sep">·</span><span><i class="fa-solid fa-ticket" style="color:var(--orange)"></i> ${o.seats || 1} місць</span>
                     ${o.route_date ? `<span class="sep">·</span><span><i class="fa-regular fa-calendar" style="color:var(--orange)"></i> ${esc(o.route_date)}${o.route_time?', '+esc(o.route_time):''}</span>` : ''}
                     ${o.route_price ? `<span class="sep">·</span><span><i class="fa-solid fa-tag" style="color:var(--orange)"></i> ${esc(o.route_price)}</span>` : ''}
                     ${o.route_carrier ? `<span class="sep">·</span><span><i class="fa-solid fa-bus" style="color:var(--orange)"></i> ${esc(o.route_carrier)}</span>` : ''}
                 </div>
                 ${(o.route_from_station || o.route_to_station) ? `<div class="o-stations">${o.route_from_station ? `<div><i class="fa-solid fa-location-dot"></i> ${esc(o.route_from_station)}</div>` : ''}${o.route_to_station ? `<div><i class="fa-solid fa-flag-checkered"></i> ${esc(o.route_to_station)}</div>` : ''}</div>` : ''}
-                ${(() => { const pax = parsePax(o.passengers); return (pax.length > 1 || pax.some(p => p.discount_percent > 0)) ? `<div class="o-pax"><div class="o-pax-title"><i class="fa-solid fa-users"></i> Пасажири:</div>${pax.map((p, i) => `<span class="pax-item"><b>${i + 1}.</b> ${esc(p.name)} ${esc(p.surname)} — <a href="tel:${esc(p.phone)}">${esc(p.phone)}</a>${p.discount_percent > 0 ? ` <span class="pax-disc-badge">🏷 ${esc(p.discount_label || 'пільга')}</span>` : ''}</span>`).join('')}</div>` : ''; })()}
+                ${(() => { const pax = parsePax(o.passengers); return (pax.length > 1 || pax.some(p => p.discount_percent > 0)) ? `<div class="o-pax"><div class="o-pax-title"><i class="fa-solid fa-users"></i> Пасажири:</div>${pax.map((p, i) => `<span class="pax-item"><b>${i + 1}.</b> ${esc(p.name)} ${esc(p.surname)} - <a href="tel:${esc(p.phone)}">${esc(p.phone)}</a>${p.discount_percent > 0 ? ` <span class="pax-disc-badge">🏷 ${esc(p.discount_label || 'пільга')}</span>` : ''}</span>`).join('')}</div>` : ''; })()}
                 ${o.check_warning ? `<div class="o-warn"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(o.check_warning)}</div>` : ''}
                 ${o.comment ? `<div class="o-comment"><i class="fa-solid fa-comment-dots"></i>${esc(o.comment)}</div>` : ''}
                 <div class="o-note">
