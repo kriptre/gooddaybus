@@ -304,6 +304,13 @@ function seatsWord(n) {
 function orderMessageText(order, footer) {
     const pax = parsePassengers(order);
     const seats = order.seats || pax.length || 1;
+    // Базова ціна за місце ("4200 ₴" / "107.53 €") → число + символ валюти
+    const basePrice = parseFloat(String(order.route_price || '').replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+    const curSym = String(order.route_price || '').replace(/[\d.,\s]/g, '');
+    const r2 = v => Math.round(v * 100) / 100;
+    const paxPrice = p => r2(basePrice * (1 - (+p.discount_percent || 0) / 100));
+    const hasDisc = basePrice > 0 && pax.some(p => +p.discount_percent > 0);
+
     const info = [
         order.route_carrier ? `🚍 ${escHtml(order.route_carrier)}` : '',
         `🎫 ${seats} ${seatsWord(seats)}`,
@@ -321,7 +328,15 @@ function orderMessageText(order, footer) {
     if (pax.length) {
         t += `\n\n👥 <b>Пасажири:</b>\n` +
             pax.map((p, i) => `${i + 1}. ${escHtml(p.name)} ${escHtml(p.surname)} — ${escHtml(p.phone)}` +
-                (p.discount_percent > 0 ? ` 🏷 <i>${escHtml(p.discount_label || 'пільга')}</i>` : '')).join('\n');
+                (p.discount_percent > 0
+                    ? ` 🏷 <i>${escHtml(p.discount_label || 'знижка')}</i>${basePrice ? ` → <b>${paxPrice(p)} ${escHtml(curSym)}</b>` : ''}`
+                    : '')).join('\n');
+        // Підсумок зі знижками: разом до/після
+        if (hasDisc) {
+            const full = r2(basePrice * pax.length);
+            const total = r2(pax.reduce((s, p) => s + paxPrice(p), 0));
+            t += `\n\n💰 <b>Разом зі знижками: ${total} ${escHtml(curSym)}</b> <s>${full} ${escHtml(curSym)}</s>`;
+        }
     } else {
         t += `\n\n👤 ${escHtml(order.client_name)} — ${escHtml(order.client_phone)}`;
     }

@@ -311,7 +311,12 @@ function getStats(from, to) {
         searchesByDay: bucketSeries(perDay(db.prepare(`SELECT substr(created_at,1,10) day, COUNT(*) n FROM searches WHERE ${W} GROUP BY day`).all(...R)), fromDay, toDay),
         topRoutes: db.prepare(`SELECT (route_from || ' → ' || route_to) route, COUNT(*) n FROM orders WHERE ${W} AND COALESCE(route_from,'') <> '' GROUP BY route ORDER BY n DESC LIMIT 8`).all(...R),
         topSearches: db.prepare(`SELECT (from_name || ' → ' || to_name) route, COUNT(*) n FROM searches WHERE ${W} AND COALESCE(from_name,'') <> '' GROUP BY route ORDER BY n DESC LIMIT 8`).all(...R),
-        noResults: db.prepare(`SELECT (from_name || ' → ' || to_name) route, COUNT(*) n FROM searches WHERE ${W} AND results = 0 AND COALESCE(from_name,'') <> '' GROUP BY route ORDER BY n DESC LIMIT 8`).all(...R),
+        // Пошук "на сьогодні" без результатів — не незадоволений попит (рейси на цей день
+        // просто вже відійшли), тому виключаємо рядки, де дата поїздки = день пошуку.
+        noResults: db.prepare(`SELECT (from_name || ' → ' || to_name) route, COUNT(*) n FROM searches
+            WHERE ${W} AND results = 0 AND COALESCE(from_name,'') <> ''
+            AND (substr(date,7,4) || '-' || substr(date,4,2) || '-' || substr(date,1,2)) <> substr(created_at,1,10)
+            GROUP BY route ORDER BY n DESC LIMIT 8`).all(...R),
         topClients: clients.slice().sort((a, b) => b.trips - a.trips).slice(0, 10).map(c => ({ name: c.client_name, phone: c.client_phone, trips: c.trips }))
     };
 }
