@@ -86,6 +86,14 @@ const STATUS_UA = { new: 'Новий', in_progress: 'В роботі', done: 'О
 // Статуси скасованих бронювань Contrabus — не рахуємо у статистиці продажів
 const CANCELLED_BOOKING = new Set(['agent_cancel', 'carrier_cancel']);
 
+// --- Автобронювання (Фаза 2а) ---
+// Вимкнено за замовчуванням: без BOOKING_ENABLED=1 сайт працює як раніше (лише заявки менеджеру).
+const BOOKING_ENABLED = process.env.BOOKING_ENABLED === '1';
+// Більше пасажирів за раз — лише через менеджера (захист від помилкових масових броней)
+const BOOKING_MAX_PAX = Math.max(1, parseInt(process.env.BOOKING_MAX_PAX, 10) || 5);
+// Тестовий режим: уся логіка працює, але create_booking НЕ викликається (фейкові квитки)
+const BOOKING_DRY_RUN = process.env.BOOKING_DRY_RUN === '1';
+
 const IS_PROD = process.env.NODE_ENV === 'production';
 // Єдина обробка 500: деталі — лише в лог сервера; клієнту в проді — загальний текст
 // (щоб не світити стек/внутрішні повідомлення). Локально віддаємо реальну помилку — зручніше дебажити.
@@ -159,6 +167,41 @@ app.get('/api/cities', async (req, res) => {
 const searchCache = new Map();
 const SEARCH_TTL = 2 * 60 * 1000;
 
+// Спільний пошук рейсів з кешем: для /api/search та для перевірки перед автобронюванням
+async function searchRoutes(from_id, to_id, date) {
+    const cacheKey = `${from_id}|${to_id}|${date}`;
+    const hit = searchCache.get(cacheKey);
+    if (hit && Date.now() - hit.t < SEARCH_TTL) {
+        console.log(`[Search] ${from_id} → ${to_id} на ${date} — з кешу (${hit.data.length})`);
+        return hit.data;
+    }
+    const token = await getToken();
+    console.log(`[Search] ${from_id} → ${to_id} на ${date}`);
+    const response = await fetch(`${API_BASE_URL}/info/search`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from_id, to_id, date })
+    });
+    let routes;
+    // 404 = немає рейсів на цей напрямок/дату (не помилка)
+    if (response.status === 404) {
+        routes = [];
+    } else if (!response.ok) {
+        throw new Error(`API помилка: ${response.status}`);
+    } else {
+        const data = await response.json();
+        routes = Array.isArray(data) ? data : [];
+    }
+    console.log(`[Search] Знайдено рейсів: ${routes.length}`);
+    if (searchCache.size > 500) searchCache.clear();
+    searchCache.set(cacheKey, { data: routes, t: Date.now() });
+    return routes;
+}
+
+// Рейс доступний для миттєвого бронювання: УВІМКНЕНА автобронь + БЕЗ передоплати
+// (label_type порожній; 'prepayment'/'full_pay' = потрібна оплата → лише заявка менеджеру)
+const isBookableRoute = rt => BOOKING_ENABLED && !rt.label_type && (rt.free_seats === undefined || +rt.free_seats > 0);
+
 // POST /api/search — пошук рейсів
 app.post('/api/search', async (req, res) => {
     try {
@@ -170,36 +213,10 @@ app.post('/api/search', async (req, res) => {
             return res.status(429).json({ error: 'Забагато запитів. Зачекайте хвилину.' });
         }
 
-        const cacheKey = `${from_id}|${to_id}|${date}`;
-        const hit = searchCache.get(cacheKey);
-        let routes;
-
-        if (hit && Date.now() - hit.t < SEARCH_TTL) {
-            routes = hit.data;                       // миттєва відповідь з кешу
-            console.log(`[Search] ${from_id} → ${to_id} на ${date} — з кешу (${routes.length})`);
-        } else {
-            const token = await getToken();
-            console.log(`[Search] ${from_id} → ${to_id} на ${date}`);
-            const response = await fetch(`${API_BASE_URL}/info/search`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ from_id, to_id, date })
-            });
-            // 404 = немає рейсів на цей напрямок/дату (не помилка)
-            if (response.status === 404) {
-                routes = [];
-            } else if (!response.ok) {
-                throw new Error(`API помилка: ${response.status}`);
-            } else {
-                const data = await response.json();
-                routes = Array.isArray(data) ? data : [];
-            }
-            console.log(`[Search] Знайдено рейсів: ${routes.length}`);
-            if (searchCache.size > 500) searchCache.clear();
-            searchCache.set(cacheKey, { data: routes, t: Date.now() });
-        }
-
-        res.json(routes);
+        const routes = await searchRoutes(from_id, to_id, date);
+        // Позначка bookable — лише підказка для кнопки на фронті;
+        // сервер ПЕРЕД бронюванням сам перевіряє рейс ще раз за свіжими даними contrabus
+        res.json(routes.map(r => ({ ...r, bookable: isBookableRoute(r) })));
 
         // Лог пошуку для аналітики — ПІСЛЯ відповіді, щоб не затримувати клієнта (рахуємо й кеш-хіти)
         try {
@@ -359,7 +376,7 @@ async function sendBackupToTelegram(file) {
         const buf = fs.readFileSync(file);
         const fd = new FormData();
         fd.append('chat_id', TELEGRAM_BACKUP_CHAT_ID);
-        fd.append('caption', `💾 GoodDayBus — бекап бази ${today} · ${Math.max(1, Math.round(buf.length / 1024))} КБ`);
+        fd.append('caption', `💾 GoodDayBus - бекап бази ${today} · ${Math.max(1, Math.round(buf.length / 1024))} КБ`);
         fd.append('document', new Blob([buf]), path.basename(file));
         const r = await fetch(`${TG_API}/sendDocument`, { method: 'POST', body: fd });
         const j = await r.json();
@@ -387,6 +404,10 @@ function stripCity(station, city) {
 
 function parsePassengers(order) {
     try { const a = JSON.parse(order.passengers); return Array.isArray(a) ? a : []; } catch { return []; }
+}
+
+function orderTickets(order) {
+    try { const a = JSON.parse(order.tickets); return Array.isArray(a) ? a : []; } catch { return []; }
 }
 
 function seatsWord(n) {
@@ -417,12 +438,19 @@ function orderMessageText(order, footer) {
         `📍 <b>${escHtml(order.route_from)} → ${escHtml(order.route_to)}</b>\n` +
         `🗓 ${escHtml(order.route_date)}${order.route_time ? ', ' + escHtml(order.route_time) : ''}\n` +
         info;
+    if (order.booked) {
+        const tks = orderTickets(order);
+        t += `\n\n✅ <b>ЗАБРОНЬОВАНО автоматично</b> - оплата водієві при посадці`;
+        if (tks.length) t += '\n' + tks.map((tk, i) => tk.pdf
+            ? `🎟 <a href="${tk.pdf}">Квиток ${escHtml(tk.id)}</a>`
+            : `🎟 Квиток ${escHtml(tk.id)}`).join('\n');
+    }
     if (order.route_from_station) t += `\n\n🚏 <b>Посадка:</b> ${escHtml(stripCity(order.route_from_station, order.route_from))}`;
     if (order.route_to_station) t += `\n🏁 <b>Висадка:</b> ${escHtml(stripCity(order.route_to_station, order.route_to))}`;
 
     if (pax.length) {
         t += `\n\n👥 <b>Пасажири:</b>\n` +
-            pax.map((p, i) => `${i + 1}. ${escHtml(p.name)} ${escHtml(p.surname)} — ${escHtml(p.phone)}` +
+            pax.map((p, i) => `${i + 1}. ${escHtml(p.name)} ${escHtml(p.surname)} - ${escHtml(p.phone)}` +
                 (p.discount_percent > 0
                     ? ` 🏷 <i>${escHtml(p.discount_label || 'знижка')}</i>${basePrice ? ` → <b>${paxPrice(p)} ${escHtml(curSym)}</b>` : ''}`
                     : '')).join('\n');
@@ -433,7 +461,7 @@ function orderMessageText(order, footer) {
             t += `\n\n💰 <b>Разом зі знижками: ${total} ${escHtml(curSym)}</b> <s>${full} ${escHtml(curSym)}</s>`;
         }
     } else {
-        t += `\n\n👤 ${escHtml(order.client_name)} — ${escHtml(order.client_phone)}`;
+        t += `\n\n👤 ${escHtml(order.client_name)} - ${escHtml(order.client_phone)}`;
     }
     if (order.comment) t += `\n\n💬 ${escHtml(order.comment)}`;
     if (order.check_warning) t += `\n\n⚠️ <b>Увага:</b> ${escHtml(order.check_warning)}`;
@@ -463,6 +491,16 @@ async function notifyTelegram(order) {
         });
     } catch (err) {
         console.error('[Telegram] Не вдалося надіслати сповіщення:', err.message);
+    }
+    // Якщо заявка заброньована автоматично — прикріплюємо PDF квитків документами
+    // (Telegram сам завантажує файл за URL; збій не критичний — посилання вже є в тексті)
+    if (order.booked) {
+        for (const tk of orderTickets(order)) {
+            if (!tk.pdf) continue;
+            try {
+                await tg('sendDocument', { chat_id: TELEGRAM_CHAT_ID, document: tk.pdf, caption: `🎟 Квиток ${tk.id} · заявка #${order.id}` });
+            } catch (e) { console.error('[Telegram] sendDocument:', e.message); }
+        }
     }
 }
 
@@ -511,6 +549,81 @@ async function initTelegram() {
 const phoneDigits = s => (String(s || '').match(/\d/g) || []).length;
 const cap = (v, n) => String(v == null ? '' : v).slice(0, n); // обрізаємо надто довгі рядки
 const MAX_PASSENGERS = 30;
+
+// ==========================================
+// АВТОБРОНЮВАННЯ (Фаза 2а): рейси без передоплати бронюються одразу, оплата — водієві.
+// Багатошаровий захист від бронювання платних рейсів:
+//   1. Клієнт лише ПРОСИТЬ бронь. Сервер шукає рейс у СВІЖІЙ відповіді contrabus за точним
+//      збігом data_bundle (підписаний JWT — підробити неможливо) і бронює лише якщо
+//      label_type порожній (= без передоплати) та місць достатньо.
+//   2. skip_checks:false — contrabus сам ще раз перевіряє дублі та чорний список (406 = відмова).
+//   3. Будь-який сумнів чи збій → заявка йде звичайним шляхом до менеджера, клієнт не страждає.
+// ==========================================
+
+const ticketPdfLink = id => `https://contrabus.ua/partner_download?ticket2=${encodeURIComponent(id)}`;
+
+// Чи можна бронювати цей data_bundle — за свіжими даними contrabus, а не зі слів клієнта
+async function verifyBookable(body, paxCount) {
+    if (!body.data_bundle) return { ok: false, reason: 'немає data_bundle' };
+    if (paxCount > BOOKING_MAX_PAX) return { ok: false, reason: `пасажирів більше ліміту (${BOOKING_MAX_PAX})` };
+    if (!body.from_id || !body.to_id || !body.route_date) return { ok: false, reason: 'немає from_id/to_id/дати' };
+    let routes;
+    try {
+        routes = await searchRoutes(body.from_id, body.to_id, body.route_date);
+    } catch (e) {
+        return { ok: false, reason: 'пошук рейсу недоступний' };
+    }
+    const rt = routes.find(r => r.data_bundle === body.data_bundle);
+    if (!rt) return { ok: false, reason: 'рейс не знайдено (дані застаріли)' };
+    if (rt.label_type) return { ok: false, reason: `рейс потребує передоплати (${rt.label_type})` };
+    if (rt.free_seats !== undefined && +rt.free_seats < paxCount) return { ok: false, reason: `вільних місць ${rt.free_seats}, потрібно ${paxCount}` };
+    return { ok: true, route: rt };
+}
+
+// Створення брони в contrabus → { ok, tickets:[{id,pdf}] } або { ok:false, reason }
+async function createBooking(data_bundle, passengers) {
+    if (BOOKING_DRY_RUN) {
+        console.log('[Booking] DRY RUN — бронь НЕ створюється, фейкові квитки');
+        return { ok: true, tickets: passengers.map((p, i) => ({ id: `DRYRUN-${i + 1}`, pdf: '' })) };
+    }
+    const token = await getToken();
+    const r = await fetch(`${API_BASE_URL}/bookings/create_booking`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            data_bundle,
+            skip_checks: false, // contrabus сам перевіряє дублі/чорний список
+            passengers_data: passengers.map(p => ({
+                name: p.name, surname: p.surname, phone: p.phone,
+                ticket_type: +p.ticket_type || 0,   // id знижки з get_route_discounts (0 = повний квиток)
+                booking_type: 'free',               // резерв без оплати — як бронює диспетчер (оплата водієві)
+                prepayment: 0
+            }))
+        })
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.success) {
+        return { ok: false, reason: `contrabus ${r.status}: ${cap(j.message || j.error || 'невідома помилка', 200)}` };
+    }
+    const ids = Array.isArray(j.ticket_ids) ? j.ticket_ids : [];
+    if (!ids.length) return { ok: false, reason: 'create_booking не повернув ticket_ids' };
+    console.log(`[Booking] ✅ Створено бронь: квитки ${ids.join(', ')}`);
+    // PDF-посилання: пробуємо точне з get_ticket_info, інакше будуємо за відомим шаблоном
+    const tickets = [];
+    for (const id of ids) {
+        let pdf = ticketPdfLink(id);
+        try {
+            const ti = await (await fetch(`${API_BASE_URL}/bookings/get_ticket_info`, {
+                method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ticket_id: id })
+            })).json();
+            const info = Array.isArray(ti) ? ti[0] : ti;
+            if (info && info.link_to_pdf) pdf = info.link_to_pdf;
+        } catch (e) { /* лишаємо шаблонне посилання */ }
+        tickets.push({ id, pdf });
+    }
+    return { ok: true, tickets };
+}
 
 // POST /api/order — клієнт залишає заявку зі списком пасажирів (публічний)
 app.post('/api/order', async (req, res) => {
@@ -578,6 +691,28 @@ app.post('/api/order', async (req, res) => {
             } catch (e) { /* перевірка не критична */ }
         }
 
+        // 6) Автобронювання (Фаза 2а). Будь-яка відмова — НЕ помилка: заявка просто
+        //    зберігається звичайною, менеджер бачить причину в check_warning.
+        let booked = false, tickets = [];
+        if (req.body.book && BOOKING_ENABLED) {
+            if (check_warning) {
+                check_warning += ' · Автобронь пропущено через це попередження';
+            } else {
+                const v = await verifyBookable(req.body, list.length);
+                if (!v.ok) {
+                    check_warning = `Автобронь недоступна: ${v.reason}. Обробіть вручну.`;
+                    console.log(`[Booking] Відмова у автоброні: ${v.reason}`);
+                } else {
+                    const b = await createBooking(req.body.data_bundle, list).catch(e => ({ ok: false, reason: cap(e.message, 200) }));
+                    if (b.ok) { booked = true; tickets = b.tickets; }
+                    else {
+                        check_warning = `Автобронь не вдалася: ${b.reason}. Обробіть вручну.`;
+                        console.log(`[Booking] Збій автоброні: ${b.reason}`);
+                    }
+                }
+            }
+        }
+
         const order = db.createOrder({
             ...req.body,
             comment: cap(req.body.comment, 1000),
@@ -585,12 +720,12 @@ app.post('/api/order', async (req, res) => {
             route_from_station: cap(req.body.route_from_station, 200), route_to_station: cap(req.body.route_to_station, 200),
             route_date: cap(req.body.route_date, 40), route_time: cap(req.body.route_time, 40),
             route_price: cap(req.body.route_price, 40), route_carrier: cap(req.body.route_carrier, 120),
-            passengers: list, client_name, client_phone, check_warning
+            passengers: list, client_name, client_phone, check_warning, booked, tickets
         });
-        console.log(`[Order] Нова заявка #${order.id} — ${client_name}, ${client_phone}, пасажирів: ${list.length}`);
+        console.log(`[Order] Нова заявка #${order.id} — ${client_name}, ${client_phone}, пасажирів: ${list.length}${booked ? ' · ЗАБРОНЬОВАНО' : ''}`);
 
         notifyTelegram(order); // не чекаємо — відправляється у фоні
-        res.status(201).json({ ok: true, id: order.id });
+        res.status(201).json({ ok: true, id: order.id, booked, tickets: booked ? tickets : undefined });
     } catch (err) {
         serverError(res, err, 'Order');
     }
@@ -837,6 +972,9 @@ app.listen(PORT, () => {
     if (!process.env.ADMIN_KEY || ADMIN_KEY === 'change-me' || ADMIN_KEY.length < 12) {
         console.log('   ⚠️  ADMIN_KEY відсутній або заслабкий — задай довгий випадковий ключ (≥16 символів)!');
     }
+    console.log(BOOKING_ENABLED
+        ? `   🎫 Автобронювання УВІМКНЕНО: рейси без передоплати, до ${BOOKING_MAX_PAX} пас.${BOOKING_DRY_RUN ? ' · ⚠️ DRY RUN (брони не створюються)' : ''}`
+        : '   ℹ️  Автобронювання вимкнено (BOOKING_ENABLED=1 щоб увімкнути)');
 
     // Резервна копія бази: одразу при старті та далі раз на добу (+ копія в Telegram, якщо налаштовано)
     sendBackupToTelegram(db.backupDb());

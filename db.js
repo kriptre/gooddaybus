@@ -57,7 +57,9 @@ db.exec(`
         passengers    TEXT,
         route_from_station TEXT,
         route_to_station   TEXT,
-        check_warning TEXT
+        check_warning TEXT,
+        booked        INTEGER DEFAULT 0,
+        tickets       TEXT
     );
 `);
 
@@ -68,6 +70,8 @@ if (!_cols.includes('passengers')) db.exec('ALTER TABLE orders ADD COLUMN passen
 if (!_cols.includes('route_from_station')) db.exec('ALTER TABLE orders ADD COLUMN route_from_station TEXT');
 if (!_cols.includes('route_to_station')) db.exec('ALTER TABLE orders ADD COLUMN route_to_station TEXT');
 if (!_cols.includes('check_warning')) db.exec('ALTER TABLE orders ADD COLUMN check_warning TEXT');
+if (!_cols.includes('booked')) db.exec('ALTER TABLE orders ADD COLUMN booked INTEGER DEFAULT 0');
+if (!_cols.includes('tickets')) db.exec('ALTER TABLE orders ADD COLUMN tickets TEXT');
 
 // Таблиці для аналітики
 db.exec(`
@@ -92,9 +96,9 @@ function createOrder(data) {
         INSERT INTO orders
             (created_at, updated_at, status, client_name, client_phone, comment,
              route_from, route_to, route_date, route_time, route_price, route_carrier, manager_note, seats, passengers,
-             route_from_station, route_to_station, check_warning)
+             route_from_station, route_to_station, check_warning, booked, tickets)
         VALUES
-            (?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?)
+            (?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?)
     `);
     const passengers = Array.isArray(data.passengers) ? data.passengers : [];
     const seats = passengers.length || Math.min(99, Math.max(1, parseInt(data.seats, 10) || 1));
@@ -104,7 +108,8 @@ function createOrder(data) {
         data.route_from || '', data.route_to || '', data.route_date || '',
         data.route_time || '', data.route_price || '', data.route_carrier || '', seats,
         passengers.length ? JSON.stringify(passengers) : null,
-        data.route_from_station || '', data.route_to_station || '', data.check_warning || ''
+        data.route_from_station || '', data.route_to_station || '', data.check_warning || '',
+        data.booked ? 1 : 0, Array.isArray(data.tickets) && data.tickets.length ? JSON.stringify(data.tickets) : null
     );
     return getOrder(info.lastInsertRowid);
 }

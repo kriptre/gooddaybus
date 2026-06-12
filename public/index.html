@@ -316,6 +316,10 @@
         .btn-cancel:hover { border-color: var(--text-3); color: var(--text); }
         .btn-submit { flex: 2; height: 48px; background: var(--orange); border: none; border-radius: var(--r); color: #fff; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: var(--tr); display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-submit:hover { background: var(--orange-2); box-shadow: 0 6px 20px rgba(240,100,34,0.3); }
+        .m-booknote { margin-top: 10px; font-size: 12.5px; font-weight: 700; color: var(--orange); display: flex; align-items: center; gap: 6px; }
+        .tk-link { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--orange-bg); color: var(--orange); border: 1px solid var(--orange-brd); border-radius: var(--r-sm); padding: 11px; font-weight: 800; font-size: 14px; margin-bottom: 8px; text-decoration: none; }
+        .tk-link:hover { background: var(--orange); color: #fff; }
+        #m-ok-tickets { margin-bottom: 18px; }
         .modal-ok { padding: 48px 26px; text-align: center; display: none; }
         .ok-circle { width: 68px; height: 68px; border-radius: 50%; background: var(--green-bg); display: flex; align-items: center; justify-content: center; color: var(--green); font-size: 28px; margin: 0 auto 20px; }
         .modal-ok h3 { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
@@ -440,7 +444,7 @@
                 <div class="how-num">3</div>
                 <div class="how-ico"><i class="fa-solid fa-ticket"></i></div>
                 <h4>Замовте поїздку</h4>
-                <p>Натисніть «Замовити» на потрібному рейсі та вкажіть дані пасажирів.</p>
+                <p>Натисніть кнопку на потрібному рейсі та вкажіть дані пасажирів.</p>
             </div>
             <div class="how-arrow"><i class="fa-solid fa-arrow-right"></i></div>
             <div class="how-step">
@@ -519,10 +523,11 @@
 
         <div id="m-form">
             <div class="modal-head">
-                <h2>Замовити поїздку</h2>
+                <h2 id="m-title">Замовити поїздку</h2>
                 <div class="m-rtag" id="m-route">
                     <i class="fa-solid fa-bus"></i><span>-</span>
                 </div>
+                <div class="m-booknote" id="m-booknote" style="display:none"><i class="fa-solid fa-bolt"></i> Місця бронюються одразу. Оплата - водієві при посадці.</div>
             </div>
             <div class="modal-body">
                 <div id="pax-list"></div>
@@ -547,8 +552,9 @@
 
         <div class="modal-ok" id="m-ok">
             <div class="ok-circle"><i class="fa-solid fa-check"></i></div>
-            <h3>Заявку прийнято!</h3>
-            <p>Наш менеджер зв'яжеться<br>з вами найближчим часом.</p>
+            <h3 id="m-ok-title">Заявку прийнято!</h3>
+            <p id="m-ok-text">Наш менеджер зв'яжеться<br>з вами найближчим часом.</p>
+            <div id="m-ok-tickets"></div>
             <button class="btn-submit" id="m-close" style="display:block;width:100%;">Закрити</button>
         </div>
 
@@ -927,7 +933,7 @@
                 </div>
                 <div class="t-foot">
                     <button class="t-toggle" type="button" data-i="${i}">Деталі рейсу <i class="fa-solid fa-chevron-down"></i></button>
-                    <button class="btn-ticket" data-i="${i}">Замовити</button>
+                    <button class="btn-ticket" data-i="${i}">${rt.bookable ? 'Забронювати' : 'Замовити'}</button>
                 </div>
                 <div class="t-details">
                     ${amenitiesHtml(rt.carrier_amenities)}
@@ -1094,10 +1100,17 @@
         renderDiscBlock();
     }
 
+    let _bookMode = false; // true = рейс без передоплати, бронюємо одразу
     function openModal(rt, dep, arr, date) {
         selRoute = rt;
+        _bookMode = !!rt.bookable;
         _modalDiscounts = []; _paxDiscSel = []; _discOpen = false;
         const dt = rt.departure_time || rt.time_from || '';
+        document.getElementById('m-title').textContent = _bookMode ? 'Бронювання поїздки' : 'Замовити поїздку';
+        document.getElementById('m-booknote').style.display = _bookMode ? 'flex' : 'none';
+        document.querySelector('#m-submit').innerHTML = _bookMode
+            ? '<i class="fa-solid fa-bolt"></i> Забронювати'
+            : '<i class="fa-solid fa-paper-plane"></i> Надіслати';
         document.querySelector('#m-route span').textContent = `${dep} → ${arr}${dt ? ', ' + dt : ''}`;
         document.getElementById('m-form').style.display = 'block';
         document.getElementById('m-ok').style.display = 'none';
@@ -1141,7 +1154,7 @@
 
         const btn = document.getElementById('m-submit');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Надсилаємо...';
+        btn.innerHTML = _bookMode ? '<i class="fa-solid fa-spinner fa-spin"></i> Бронюємо...' : '<i class="fa-solid fa-spinner fa-spin"></i> Надсилаємо...';
 
         const rt = selRoute || {};
         const payload = {
@@ -1155,7 +1168,9 @@
             route_carrier: rt.carrier || rt.company || '',
             route_from_station: rt.departure_station || '',
             route_to_station: rt.arrival_station || '',
-            data_bundle: rt.data_bundle || '', // для перевірки чорного списку/дублів
+            data_bundle: rt.data_bundle || '', // для перевірки чорного списку/дублів та броні
+            book: _bookMode,                   // прохання про автобронь (сервер сам вирішує, чи можна)
+            from_id: depId, to_id: arrId,      // для серверної перевірки рейсу перед бронюванням
             hp: document.getElementById('c-hp').value // honeypot
         };
 
@@ -1168,13 +1183,29 @@
                 const err = await r.json().catch(() => ({}));
                 throw new Error(err.error || `HTTP ${r.status}`);
             }
+            const j = await r.json().catch(() => ({}));
+            const tks = (j.booked && Array.isArray(j.tickets)) ? j.tickets.filter(t => t.pdf) : [];
+            if (j.booked) {
+                document.getElementById('m-ok-title').textContent = 'Місця заброньовано!';
+                document.getElementById('m-ok-text').innerHTML = tks.length
+                    ? 'Оплата - водієві при посадці.<br>Збережіть свої квитки:'
+                    : 'Оплата - водієві при посадці.<br>Квитки надішле менеджер найближчим часом.';
+                document.getElementById('m-ok-tickets').innerHTML = tks.map((tk, i) =>
+                    `<a class="tk-link" href="${escTxt(tk.pdf)}" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf"></i> Завантажити квиток${tks.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('');
+            } else {
+                document.getElementById('m-ok-title').textContent = 'Заявку прийнято!';
+                document.getElementById('m-ok-text').innerHTML = "Наш менеджер зв'яжеться<br>з вами найближчим часом.";
+                document.getElementById('m-ok-tickets').innerHTML = '';
+            }
             document.getElementById('m-form').style.display = 'none';
             document.getElementById('m-ok').style.display = 'block';
         } catch (e) {
             alert('Не вдалося надіслати заявку: ' + e.message + '\n\nСпробуйте ще раз або зателефонуйте менеджеру.');
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Надіслати';
+            btn.innerHTML = _bookMode
+                ? '<i class="fa-solid fa-bolt"></i> Забронювати'
+                : '<i class="fa-solid fa-paper-plane"></i> Надіслати';
         }
     });
     document.getElementById('m-close').addEventListener('click', () => document.getElementById('modal-bg').classList.remove('open'));

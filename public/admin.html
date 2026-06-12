@@ -78,6 +78,9 @@
         .b-in_progress{background:var(--amber-bg);color:var(--amber)}
         .b-done{background:var(--green-bg);color:var(--green)}
         .b-cancelled{background:var(--gray-bg);color:var(--gray)}
+        .b-booked{background:var(--green-bg);color:var(--green)}
+        .o-tickets{margin:0 22px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+        .o-tickets .act-pdf{margin-left:0;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;border-radius:8px;padding:7px 12px}
 
         .o-route{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:0 22px 16px;color:var(--text-2);font-size:14px}
         .o-route .rt{display:flex;align-items:center;gap:7px;font-weight:700;color:var(--text)}
@@ -473,6 +476,7 @@
                     </div>
                     <div class="o-meta">
                         <div class="badge b-${o.status}">${STATUS_LABEL[o.status]}</div>
+                        ${o.booked ? `<div class="badge b-booked" style="margin-top:4px">⚡ Автобронь</div>` : ''}
                         <div style="margin-top:6px"><span class="o-id">#${o.id}</span> · ${fmtDate(o.created_at)}</div>
                     </div>
                 </div>
@@ -485,6 +489,7 @@
                 </div>
                 ${(o.route_from_station || o.route_to_station) ? `<div class="o-stations">${o.route_from_station ? `<div><i class="fa-solid fa-location-dot"></i> ${esc(o.route_from_station)}</div>` : ''}${o.route_to_station ? `<div><i class="fa-solid fa-flag-checkered"></i> ${esc(o.route_to_station)}</div>` : ''}</div>` : ''}
                 ${(() => { const pax = parsePax(o.passengers); return (pax.length > 1 || pax.some(p => p.discount_percent > 0)) ? `<div class="o-pax"><div class="o-pax-title"><i class="fa-solid fa-users"></i> Пасажири:</div>${pax.map((p, i) => `<span class="pax-item"><b>${i + 1}.</b> ${esc(p.name)} ${esc(p.surname)} - <a href="tel:${esc(p.phone)}">${esc(p.phone)}</a>${p.discount_percent > 0 ? ` <span class="pax-disc-badge">🏷 ${esc(p.discount_label || 'пільга')}</span>` : ''}</span>`).join('')}</div>` : ''; })()}
+                ${(() => { const tks = parsePax(o.tickets); return o.booked && tks.length ? `<div class="o-tickets">${tks.map((t, i) => t.pdf ? `<a class="act act-pdf" href="${esc(t.pdf)}" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf"></i> Квиток ${tks.length > 1 ? i + 1 : ''} (${esc(t.id)})</a>` : `<span style="font-size:12px;color:var(--text-3)">🎟 ${esc(t.id)}</span>`).join(' ')}</div>` : ''; })()}
                 ${o.check_warning ? `<div class="o-warn"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(o.check_warning)}</div>` : ''}
                 ${o.comment ? `<div class="o-comment"><i class="fa-solid fa-comment-dots"></i>${esc(o.comment)}</div>` : ''}
                 <div class="o-note">
