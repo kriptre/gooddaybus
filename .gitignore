@@ -9,3 +9,4 @@ orders.db
 orders.db-journal
 orders.db-wal
 backups/
+.claude/

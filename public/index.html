@@ -126,7 +126,9 @@
         .ticket:hover { border-color: rgba(240,100,34,0.3); box-shadow: var(--sh-md); transform: translateY(-2px); }
         @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
         /* Колонки вирівняні по верху: ціна на рівні часу, "за місце" на рівні дати */
-        .t-main { display: grid; grid-template-columns: auto 1fr auto auto auto; align-items: start; padding: 20px 24px; }
+        /* Бічні колонки — однакові частки (а не auto по тексту), щоб пунктир і стрілка
+           були на одній вертикалі в усіх картках незалежно від довжини назв станцій */
+        .t-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) auto auto; align-items: start; padding: 20px 24px; }
         .t-ep { display: flex; flex-direction: column; }
         .t-time { font-size: 34px; font-weight: 800; color: var(--text); letter-spacing: -1.5px; line-height: 1; }
         .t-city { font-size: 13px; color: var(--text-2); font-weight: 600; margin-top: 7px; }
