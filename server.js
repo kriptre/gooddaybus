@@ -62,7 +62,13 @@ app.use(express.json({ limit: '64kb' })); // захист від велетен�
 
 // Роздаємо ЛИШЕ публічну папку (index.html, admin.html, stats.html).
 // Завдяки цьому .env, orders.db, server.js та інші файли НЕ доступні через URL.
-app.use(express.static(require('path').join(__dirname, 'public')));
+// no-cache для HTML: браузер щоразу звіряє версію з сервером (ETag → дешеве 304),
+// тому після деплою користувачі одразу бачать нову версію, а не стару з кешу.
+app.use(express.static(require('path').join(__dirname, 'public'), {
+    setHeaders(res, filePath) {
+        if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+    }
+}));
 
 // ==========================================
 // КОНФІГ — усі секрети беруться з .env (див. .env.example)
