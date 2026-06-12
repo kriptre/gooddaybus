@@ -37,8 +37,25 @@
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🚌</text></svg>'>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <!-- CSS шрифтів та іконок вантажимо асинхронно (трюк media="print"): сторінка
+         малюється одразу системним шрифтом, веб-шрифти й іконки підтягуються слідом.
+         Це прибирає ~4с блокування відмальовки на мобільному 4G (PageSpeed). -->
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print">
+    <script>
+        // Вмикаємо асинхронні стилі після їх завантаження.
+        // Окремий скрипт, бо inline-атрибут onload= заблокований нашим CSP (script-src-attr).
+        document.querySelectorAll('link[rel="stylesheet"][media="print"]').forEach(l => {
+            const flip = () => { l.media = 'all'; };
+            if (l.sheet) flip(); else l.addEventListener('load', flip);
+        });
+    </script>
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    </noscript>
     <style>
         :root {
             --orange:      #F06422;
