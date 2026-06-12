@@ -220,8 +220,9 @@
 
     async function tryLogin(key){
         try{
-            const r=await fetch(`${API}/stats?key=${encodeURIComponent(key)}`);
+            const r=await fetch(`${API}/stats`, { headers: { 'x-admin-key': key } });
             if(r.status===401){ showLogin('Невірний ключ доступу'); return; }
+            if(r.status===429){ showLogin('Забагато спроб. Спробуйте за 10 хвилин.'); return; }
             if(!r.ok) throw new Error('HTTP '+r.status);
             adminKey=key; localStorage.setItem('gdb_admin_key',key); showApp();
         }catch(e){ showLogin('Сервер недоступний: '+e.message); }
@@ -233,10 +234,10 @@
     async function load(){
         try{
             document.getElementById('period-label').textContent=period.label;
-            const qs=new URLSearchParams({key:adminKey});
+            const qs=new URLSearchParams();
             if(period.from) qs.set('from',period.from);
             if(period.to) qs.set('to',period.to);
-            const r=await fetch(`${API}/stats?${qs}`);
+            const r=await fetch(`${API}/stats?${qs}`, { headers: { 'x-admin-key': adminKey } });
             if(r.status===401){ showLogin('Сесію завершено. Увійдіть знову.'); return; }
             const d=await r.json();
             renderCards(d); renderGrid(d);
@@ -249,10 +250,10 @@
     async function loadSalesReport(){
         const box=document.getElementById('sales-report');
         try{
-            const qs=new URLSearchParams({key:adminKey});
+            const qs=new URLSearchParams();
             if(period.from) qs.set('from',period.from);
             if(period.to) qs.set('to',period.to);
-            const r=await fetch(`${API}/sales-report?${qs}`);
+            const r=await fetch(`${API}/sales-report?${qs}`, { headers: { 'x-admin-key': adminKey } });
             if(!r.ok){ box.innerHTML=''; return; }
             const d=await r.json();
             const pct=d.commission_percent||0;

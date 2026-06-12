@@ -10,7 +10,9 @@
     "node": ">=22"
   },
   "dependencies": {
+    "compression": "^1.8.1",
     "cors": "^2.8.5",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "helmet": "^8.2.0"
   }
 }

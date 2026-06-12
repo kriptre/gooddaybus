@@ -213,8 +213,9 @@
     }
     async function tryLogin(key) {
         try {
-            const r = await fetch(`${API}/orders?key=${encodeURIComponent(key)}`);
+            const r = await fetch(`${API}/orders`, { headers: { 'x-admin-key': key } });
             if (r.status === 401) { showLogin('Невірний ключ доступу'); return; }
+            if (r.status === 429) { showLogin('Забагато спроб. Спробуйте за 10 хвилин.'); return; }
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             adminKey = key;
             localStorage.setItem('gdb_admin_key', key);
@@ -264,19 +265,29 @@
     });
 
     // ---------- Export CSV ----------
-    document.getElementById('export-btn').addEventListener('click', () => {
-        const params = new URLSearchParams({ key: adminKey });
-        if (searchQ) params.set('q', searchQ); // якщо є пошук - експортуємо знайдене
-        window.location.href = `${API}/orders/export.csv?${params}`;
+    document.getElementById('export-btn').addEventListener('click', async () => {
+        try {
+            const qs = searchQ ? `?q=${encodeURIComponent(searchQ)}` : ''; // якщо є пошук - експортуємо знайдене
+            const r = await fetch(`${API}/orders/export.csv${qs}`, { headers: { 'x-admin-key': adminKey } });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const blob = await r.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `gooddaybus-zayavky-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a); a.click(); a.remove();
+            URL.revokeObjectURL(url);
+        } catch (e) { alert('Не вдалося завантажити CSV: ' + e.message); }
     });
 
     // ---------- Load orders ----------
     async function load() {
         try {
-            const params = new URLSearchParams({ key: adminKey });
+            const params = new URLSearchParams();
             if (searchQ) params.set('q', searchQ);          // пошук - глобальний, по всіх статусах
             else if (currentStatus) params.set('status', currentStatus);
-            const r = await fetch(`${API}/orders?${params}`);
+            const qs = params.toString();
+            const r = await fetch(`${API}/orders${qs ? '?' + qs : ''}`, { headers: { 'x-admin-key': adminKey } });
             if (r.status === 401) { showLogin('Сесію завершено. Увійдіть знову.'); return; }
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             const data = await r.json();
@@ -301,9 +312,10 @@
     // ---------- Clients ----------
     async function loadClients() {
         try {
-            const params = new URLSearchParams({ key: adminKey });
+            const params = new URLSearchParams();
             if (searchQ) params.set('q', searchQ);
-            const r = await fetch(`${API}/clients?${params}`);
+            const qs = params.toString();
+            const r = await fetch(`${API}/clients${qs ? '?' + qs : ''}`, { headers: { 'x-admin-key': adminKey } });
             if (r.status === 401) { showLogin('Сесію завершено. Увійдіть знову.'); return; }
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             const data = await r.json();
@@ -387,7 +399,7 @@
     const CUR = { UAH: '₴', EUR: '€', USD: '$', PLN: 'zł', CZK: 'Kč' };
     async function loadSales() {
         try {
-            const r = await fetch(`${API}/bookings?key=${encodeURIComponent(adminKey)}`);
+            const r = await fetch(`${API}/bookings`, { headers: { 'x-admin-key': adminKey } });
             if (r.status === 401) { showLogin('Сесію завершено. Увійдіть знову.'); return; }
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             const d = await r.json();

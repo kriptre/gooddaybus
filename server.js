@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
+const helmet = require('helmet');
 const os = require('os');
 const db = require('./db');
 
@@ -12,6 +14,10 @@ const PORT = process.env.PORT || 3000;
 // За реверс-проксі (Railway/Nginx) — щоб req.ip був реальним IP клієнта (для rate-limit)
 app.set('trust proxy', 1);
 
+// Глобальні запобіжники: одна необроблена помилка в проміс-ланцюжку не повинна ронити сервіс.
+process.on('unhandledRejection', err => console.error('[unhandledRejection]', err?.message || err));
+process.on('uncaughtException', err => console.error('[uncaughtException]', err?.message || err));
+
 // Локальна IP-адреса машини (Telegram не робить клікабельним "localhost",
 // а ось http://192.168.x.x:PORT — робить, і відкривається з телефону в тій же Wi-Fi).
 function getLanIp() {
@@ -23,9 +29,36 @@ function getLanIp() {
     return 'localhost';
 }
 
-// Дозволяємо запити з фронтенду (під час розробки — всі)
-app.use(cors());
-app.use(express.json());
+// Безпекові заголовки. CSP налаштований під наш інлайн-стиль/скрипти та FontAwesome CDN.
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com'],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com'],
+            fontSrc: ["'self'", 'https://cdnjs.cloudflare.com', 'https://fonts.gstatic.com', 'data:'],
+            imgSrc: ["'self'", 'data:'],
+            connectSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            frameAncestors: ["'none'"]
+        }
+    },
+    crossOriginEmbedderPolicy: false
+}));
+app.use(compression()); // gzip відповідей (HTML/JSON/CSS) — менше трафіку, швидше завантаження
+
+// CORS: у проді дозволяємо лише наш домен; локально — будь-який (зручно для розробки).
+// Сам сайт працює same-origin (фронт віддається цим же сервером), тож на нього це не впливає.
+const CORS_ALLOW = (process.env.CORS_ORIGINS ||
+    'https://gooddaybus.com,https://www.gooddaybus.com').split(',').map(s => s.trim());
+app.use(cors({
+    origin(origin, cb) {
+        // origin відсутній у same-origin/мобільних/curl запитах — дозволяємо
+        if (!origin || process.env.NODE_ENV !== 'production' || CORS_ALLOW.includes(origin)) return cb(null, true);
+        cb(null, false);
+    }
+}));
+app.use(express.json({ limit: '64kb' })); // захист від велетенських тіл запитів
 
 // Роздаємо ЛИШЕ публічну папку (index.html, admin.html, stats.html).
 // Завдяки цьому .env, orders.db, server.js та інші файли НЕ доступні через URL.
@@ -52,6 +85,14 @@ const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || `http://${getLanIp()}:${P
 const STATUS_UA = { new: 'Новий', in_progress: 'В роботі', done: 'Опрацьовано', cancelled: 'Відмова' };
 // Статуси скасованих бронювань Contrabus — не рахуємо у статистиці продажів
 const CANCELLED_BOOKING = new Set(['agent_cancel', 'carrier_cancel']);
+
+const IS_PROD = process.env.NODE_ENV === 'production';
+// Єдина обробка 500: деталі — лише в лог сервера; клієнту в проді — загальний текст
+// (щоб не світити стек/внутрішні повідомлення). Локально віддаємо реальну помилку — зручніше дебажити.
+function serverError(res, err, tag = 'API') {
+    console.error(`[${tag}]`, err?.message || err);
+    return res.status(500).json({ error: IS_PROD ? 'Внутрішня помилка сервера' : (err?.message || 'error') });
+}
 // ==========================================
 
 let authToken = null;
@@ -82,24 +123,34 @@ async function getToken() {
     return authToken;
 }
 
-// GET /api/cities — список міст
+// ==========================================
+// Ліміти частоти запитів за IP — захист агентського акаунта contrabus
+// від вичерпання квоти та сервера від зловживань
+// ==========================================
+function makeRateLimiter(windowMs, max) {
+    const hits = new Map(); // ip -> [мітки часу]
+    return ip => {
+        const now = Date.now();
+        if (hits.size > 10000) hits.clear(); // запобіжник від розростання пам'яті
+        const arr = (hits.get(ip) || []).filter(t => now - t < windowMs);
+        if (arr.length >= max) { hits.set(ip, arr); return true; }
+        arr.push(now);
+        hits.set(ip, arr);
+        return false;
+    };
+}
+const searchLimited    = makeRateLimiter(60 * 1000, 30);     // пошук: 30/хв
+const suggestLimited   = makeRateLimiter(60 * 1000, 6);      // підказки (важкі): 6/хв
+const discountsLimited = makeRateLimiter(60 * 1000, 30);     // знижки: 30/хв
+const orderLimited     = makeRateLimiter(10 * 60 * 1000, 5); // заявки: 5 за 10 хв
+
+// GET /api/cities — список міст (через 30-хв кеш getCities, щоб не бити
+// contrabus на кожне відкриття сайту)
 app.get('/api/cities', async (req, res) => {
     try {
-        const token = await getToken();
-        const response = await fetch(`${API_BASE_URL}/info/get_cities`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) throw new Error(`API помилка: ${response.status}`);
-        const data = await response.json();
-        console.log(`[Cities] Завантажено міст: ${data.length}`);
-        res.json(data);
+        res.json(await getCities());
     } catch (err) {
-        console.error('[Cities] Помилка:', err.message);
-        res.status(500).json({ error: err.message });
+        serverError(res, err, 'Cities');
     }
 });
 
@@ -114,6 +165,9 @@ app.post('/api/search', async (req, res) => {
         const { from_id, to_id, date } = req.body;
         if (!from_id || !to_id || !date) {
             return res.status(400).json({ error: 'Потрібні from_id, to_id та date' });
+        }
+        if (searchLimited(req.ip || 'unknown')) {
+            return res.status(429).json({ error: 'Забагато запитів. Зачекайте хвилину.' });
         }
 
         const cacheKey = `${from_id}|${to_id}|${date}`;
@@ -145,17 +199,16 @@ app.post('/api/search', async (req, res) => {
             searchCache.set(cacheKey, { data: routes, t: Date.now() });
         }
 
-        // Лог пошуку для аналітики (рахуємо кожен пошук, навіть з кешу)
+        res.json(routes);
+
+        // Лог пошуку для аналітики — ПІСЛЯ відповіді, щоб не затримувати клієнта (рахуємо й кеш-хіти)
         try {
             const cs = await getCities();
             const nm = id => { const c = cs.find(x => String(x.id) === String(id)); return c ? c.name : ''; };
             db.logSearch(nm(from_id), nm(to_id), date, routes.length);
         } catch (e) { /* аналітика не критична */ }
-
-        res.json(routes);
     } catch (err) {
-        console.error('[Search] Помилка:', err.message);
-        res.status(500).json({ error: err.message });
+        serverError(res, err, 'Search');
     }
 });
 
@@ -209,11 +262,27 @@ function haversineKm(a, b) {
     return Math.round(2 * R * Math.asin(Math.sqrt(s)));
 }
 
-// POST /api/suggest — коли рейсів немає: найближча дата або найближчі міста
+// POST /api/suggest — коли рейсів немає: найближча дата або найближчі міста.
+// Найважчий ендпоінт (десятки запитів до contrabus) — тому жорсткий ліміт + кеш результату.
+const suggestCache = new Map();
 app.post('/api/suggest', async (req, res) => {
     try {
         const { from_id, to_id, date } = req.body;
         if (!from_id || !to_id || !date) return res.status(400).json({ error: 'Потрібні from_id, to_id, date' });
+
+        const sKey = `${from_id}|${to_id}|${date}`;
+        const sHit = suggestCache.get(sKey);
+        if (sHit && Date.now() - sHit.t < 10 * 60 * 1000) return res.json(sHit.d);
+
+        if (suggestLimited(req.ip || 'unknown')) {
+            return res.status(429).json({ error: 'Забагато запитів. Зачекайте хвилину.' });
+        }
+        const sendAndCache = obj => {
+            if (suggestCache.size > 500) suggestCache.clear();
+            suggestCache.set(sKey, { d: obj, t: Date.now() });
+            return res.json(obj);
+        };
+
         const token = await getToken();
         const tStart = Date.now();
 
@@ -224,7 +293,7 @@ app.post('/api/suggest', async (req, res) => {
             for (let i = start; i < start + 7 && i <= 14; i++) batch.push(addDays(date, i));
             const counts = await Promise.all(batch.map(d => searchCount(token, from_id, to_id, d)));
             const j = counts.findIndex(c => c > 0);
-            if (j !== -1) return res.json({ type: 'date', date: batch[j], count: counts[j] });
+            if (j !== -1) return sendAndCache({ type: 'date', date: batch[j], count: counts[j] });
         }
 
         // 2) Найближчі міста до пункту призначення, куди є рейси на цю дату.
@@ -248,13 +317,13 @@ app.post('/api/suggest', async (req, res) => {
             }
             if (found.length) {
                 found.sort((a, b) => a.distance_km - b.distance_km);
-                return res.json({ type: 'cities', alternatives: found.slice(0, 3) });
+                return sendAndCache({ type: 'cities', alternatives: found.slice(0, 3) });
             }
         }
-        return res.json({ type: 'none' });
+        return sendAndCache({ type: 'none' });
     } catch (err) {
         console.error('[Suggest]', err.message);
-        res.json({ type: 'none' }); // підказка необов'язкова — не ламаємо UX
+        res.json({ type: 'none' }); // підказка необов'язкова — не ламаємо UX (помилки не кешуємо)
     }
 });
 
@@ -274,6 +343,32 @@ async function tg(method, body) {
     const j = await r.json();
     if (!j.ok) console.error(`[Telegram] ${method} помилка:`, j.description);
     return j;
+}
+
+// Офсайт-бекап: щодня шлемо свіжу копію бази в окремий приватний чат/групу Telegram
+// (TELEGRAM_BACKUP_CHAT_ID у .env; без нього — нічого не відбувається).
+// Маркер-файл .last-sent на томі захищає від дублів при кожному рестарті/деплої.
+const TELEGRAM_BACKUP_CHAT_ID = process.env.TELEGRAM_BACKUP_CHAT_ID || '';
+async function sendBackupToTelegram(file) {
+    if (!TG_API || !TELEGRAM_BACKUP_CHAT_ID || !file) return;
+    const fs = require('fs'), path = require('path');
+    const marker = path.join(path.dirname(file), '.last-sent');
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+        if (fs.existsSync(marker) && fs.readFileSync(marker, 'utf8').trim() === today) return; // сьогодні вже надіслано
+        const buf = fs.readFileSync(file);
+        const fd = new FormData();
+        fd.append('chat_id', TELEGRAM_BACKUP_CHAT_ID);
+        fd.append('caption', `💾 GoodDayBus — бекап бази ${today} · ${Math.max(1, Math.round(buf.length / 1024))} КБ`);
+        fd.append('document', new Blob([buf]), path.basename(file));
+        const r = await fetch(`${TG_API}/sendDocument`, { method: 'POST', body: fd });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.description || `HTTP ${r.status}`);
+        fs.writeFileSync(marker, today);
+        console.log('[Backup] Копію надіслано в Telegram');
+    } catch (e) {
+        console.error('[Backup] Telegram:', e.message); // не критично — локальна копія вже збережена
+    }
 }
 
 // Екранування для parse_mode=HTML (надійніше за Markdown, бо у даних бувають _ * тощо)
@@ -413,17 +508,9 @@ async function initTelegram() {
     console.log('   🔘 Telegram-кнопки керування заявками активні');
 }
 
-// --- Простий захист від спаму на публічній формі ---
-const orderRate = new Map(); // ip -> [timestamps]
-function isRateLimited(ip) {
-    const now = Date.now(), WINDOW = 10 * 60 * 1000, MAX = 5;
-    const arr = (orderRate.get(ip) || []).filter(t => now - t < WINDOW);
-    if (arr.length >= MAX) { orderRate.set(ip, arr); return true; }
-    arr.push(now); orderRate.set(ip, arr);
-    return false;
-}
-
 const phoneDigits = s => (String(s || '').match(/\d/g) || []).length;
+const cap = (v, n) => String(v == null ? '' : v).slice(0, n); // обрізаємо надто довгі рядки
+const MAX_PASSENGERS = 30;
 
 // POST /api/order — клієнт залишає заявку зі списком пасажирів (публічний)
 app.post('/api/order', async (req, res) => {
@@ -436,11 +523,15 @@ app.post('/api/order', async (req, res) => {
             return res.status(201).json({ ok: true }); // вдаємо успіх, щоб бот не повторював
         }
 
-        // 2) Готуємо й перевіряємо список пасажирів
+        // 2) Готуємо й перевіряємо список пасажирів (з обмеженням довжин і кількості — захист від сміття/DoS)
+        if (Array.isArray(passengers) && passengers.length > MAX_PASSENGERS) {
+            return res.status(400).json({ error: `Забагато пасажирів (максимум ${MAX_PASSENGERS})` });
+        }
         const list = (Array.isArray(passengers) ? passengers : [])
+            .slice(0, MAX_PASSENGERS)
             .map(p => ({
-                name: String(p.name || '').trim(), surname: String(p.surname || '').trim(), phone: String(p.phone || '').trim(),
-                ticket_type: p.ticket_type || '', discount_label: String(p.discount_label || '').trim(), discount_percent: +p.discount_percent || 0
+                name: cap(String(p.name || '').trim(), 80), surname: cap(String(p.surname || '').trim(), 80), phone: cap(String(p.phone || '').trim(), 32),
+                ticket_type: cap(p.ticket_type || '', 40), discount_label: cap(String(p.discount_label || '').trim(), 80), discount_percent: +p.discount_percent || 0
             }))
             .filter(p => p.name || p.surname || p.phone);
 
@@ -460,7 +551,7 @@ app.post('/api/order', async (req, res) => {
 
         // 3) Обмеження частоти за IP
         const ip = req.ip || req.connection?.remoteAddress || 'unknown';
-        if (isRateLimited(ip)) {
+        if (orderLimited(ip)) {
             console.log(`[Order] Перевищено ліміт заявок з IP ${ip}`);
             return res.status(429).json({ error: 'Забагато заявок. Спробуйте трохи пізніше або зателефонуйте нам.' });
         }
@@ -487,14 +578,21 @@ app.post('/api/order', async (req, res) => {
             } catch (e) { /* перевірка не критична */ }
         }
 
-        const order = db.createOrder({ ...req.body, passengers: list, client_name, client_phone, check_warning });
+        const order = db.createOrder({
+            ...req.body,
+            comment: cap(req.body.comment, 1000),
+            route_from: cap(req.body.route_from, 200), route_to: cap(req.body.route_to, 200),
+            route_from_station: cap(req.body.route_from_station, 200), route_to_station: cap(req.body.route_to_station, 200),
+            route_date: cap(req.body.route_date, 40), route_time: cap(req.body.route_time, 40),
+            route_price: cap(req.body.route_price, 40), route_carrier: cap(req.body.route_carrier, 120),
+            passengers: list, client_name, client_phone, check_warning
+        });
         console.log(`[Order] Нова заявка #${order.id} — ${client_name}, ${client_phone}, пасажирів: ${list.length}`);
 
         notifyTelegram(order); // не чекаємо — відправляється у фоні
         res.status(201).json({ ok: true, id: order.id });
     } catch (err) {
-        console.error('[Order] Помилка:', err.message);
-        res.status(500).json({ error: err.message });
+        serverError(res, err, 'Order');
     }
 });
 
@@ -513,6 +611,7 @@ app.post('/api/discounts', async (req, res) => {
         const key = String(data_bundle).slice(0, 60);
         const hit = discCache.get(key);
         if (hit && Date.now() - hit.t < 6 * 60 * 60 * 1000) return res.json(hit.d);
+        if (discountsLimited(req.ip || 'unknown')) return res.json([]); // ліміт — тихо без знижок
         const token = await getToken();
         const r = await fetch(`${API_BASE_URL}/info/get_route_discounts`, {
             method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -527,9 +626,23 @@ app.post('/api/discounts', async (req, res) => {
 });
 
 // --- Захист панелі менеджера простим ключем ---
+// Анти-брутфорс: після 20 невдалих спроб з одного IP за 10 хв — блокування на час вікна.
+const adminFails = new Map(); // ip -> [мітки часу невдалих спроб]
 function requireAdmin(req, res, next) {
-    const key = req.get('x-admin-key') || req.query.key;
-    if (key !== ADMIN_KEY) return res.status(401).json({ error: 'Невірний ключ доступу' });
+    const ip = req.ip || 'unknown';
+    const now = Date.now();
+    if (adminFails.size > 10000) adminFails.clear(); // запобіжник пам'яті
+    const fails = (adminFails.get(ip) || []).filter(t => now - t < 10 * 60 * 1000);
+    if (fails.length >= 20) {
+        adminFails.set(ip, fails);
+        return res.status(429).json({ error: 'Забагато невдалих спроб. Спробуйте за 10 хвилин.' });
+    }
+    const key = req.get('x-admin-key'); // лише заголовок — ключ не потрапляє в URL/логи/історію
+    if (key !== ADMIN_KEY) {
+        fails.push(now);
+        adminFails.set(ip, fails);
+        return res.status(401).json({ error: 'Невірний ключ доступу' });
+    }
     next();
 }
 
@@ -546,7 +659,7 @@ app.get('/api/orders', requireAdmin, (req, res) => {
             counts: countsPayload()
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(res, err);
     }
 });
 
@@ -555,7 +668,7 @@ app.get('/api/stats', requireAdmin, (req, res) => {
     try {
         res.json(db.getStats(req.query.from, req.query.to));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(res, err);
     }
 });
 
@@ -606,7 +719,7 @@ app.get('/api/sales-report', requireAdmin, async (req, res) => {
         repCache.set(key, { d: data, t: Date.now() });
         res.json(data);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(res, err);
     }
 });
 
@@ -630,7 +743,7 @@ app.get('/api/bookings', requireAdmin, async (req, res) => {
     try {
         res.json({ bookings: await getContrabusBookings() });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(res, err);
     }
 });
 
@@ -642,7 +755,7 @@ app.get('/api/clients', requireAdmin, (req, res) => {
             counts: countsPayload()
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(res, err);
     }
 });
 
@@ -652,7 +765,13 @@ app.get('/api/orders/export.csv', requireAdmin, (req, res) => {
         const rows = db.listOrders(req.query.status, req.query.q);
         const headers = ['ID', 'Створено', 'Статус', "Ім'я", 'Телефон', 'Звідки', 'Куди',
                          'Станція звідки', 'Станція куди', 'Дата рейсу', 'Час', 'Місць', 'Пасажири', 'Ціна', 'Перевізник', 'Коментар', 'Нотатка менеджера'];
-        const esc = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+        // Захист від CSV-інʼєкції: значення, що починається з = + - @ (або tab/CR),
+        // Excel може виконати як формулу. Префіксуємо апострофом — клітинка лишається текстом.
+        const esc = v => {
+            let s = String(v == null ? '' : v);
+            if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+            return `"${s.replace(/"/g, '""')}"`;
+        };
         const fmtDt = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString('uk-UA'); };
         const paxStr = o => { try { const a = JSON.parse(o.passengers); return Array.isArray(a) ? a.map(p => `${p.name} ${p.surname} (${p.phone})`).join('; ') : ''; } catch { return ''; } };
         const lines = [headers.map(esc).join(',')];
@@ -669,7 +788,7 @@ app.get('/api/orders/export.csv', requireAdmin, (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
         res.send(csv);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(res, err);
     }
 });
 
@@ -680,7 +799,7 @@ app.patch('/api/orders/:id', requireAdmin, (req, res) => {
         if (!order) return res.status(404).json({ error: 'Заявку не знайдено' });
         res.json(order);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(res, err);
     }
 });
 
@@ -691,7 +810,7 @@ app.delete('/api/orders/:id', requireAdmin, (req, res) => {
         if (!n) return res.status(404).json({ error: 'Заявку не знайдено' });
         res.json({ ok: true, deleted: n });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(res, err);
     }
 });
 
@@ -704,7 +823,7 @@ app.delete('/api/clients', requireAdmin, (req, res) => {
         console.log(`[Delete] Клієнт ${req.query.name || ''} ${phone} — змінено заявок: ${n}`);
         res.json({ ok: true, deleted: n });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(res, err);
     }
 });
 
@@ -715,10 +834,13 @@ app.listen(PORT, () => {
     console.log(`   Панель (з телефону в тій же Wi-Fi): ${PUBLIC_BASE_URL}/admin.html`);
     if (!API_LOGIN || !API_PASSWORD) console.log('   ⚠️  Не задано API_LOGIN/API_PASSWORD у .env — пошук рейсів не працюватиме!');
     if (!TELEGRAM_BOT_TOKEN) console.log('   ℹ️  Telegram вимкнено (не задано TELEGRAM_BOT_TOKEN у .env)');
+    if (!process.env.ADMIN_KEY || ADMIN_KEY === 'change-me' || ADMIN_KEY.length < 12) {
+        console.log('   ⚠️  ADMIN_KEY відсутній або заслабкий — задай довгий випадковий ключ (≥16 символів)!');
+    }
 
-    // Резервна копія бази: одразу при старті та далі раз на добу
-    db.backupDb();
-    setInterval(() => db.backupDb(), 24 * 60 * 60 * 1000);
+    // Резервна копія бази: одразу при старті та далі раз на добу (+ копія в Telegram, якщо налаштовано)
+    sendBackupToTelegram(db.backupDb());
+    setInterval(() => sendBackupToTelegram(db.backupDb()), 24 * 60 * 60 * 1000);
 
     // Слухаємо натискання Telegram-кнопок
     initTelegram();

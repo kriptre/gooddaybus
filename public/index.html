@@ -606,7 +606,7 @@
             res.forEach(city => {
                 const el = document.createElement('div');
                 el.className = 'ac-item';
-                el.innerHTML = `<i class="fa-solid fa-location-dot"></i><span>` + city.name.replace(new RegExp(`(${q})`, 'gi'), '<strong>$1</strong>') + `</span>`;
+                el.innerHTML = `<i class="fa-solid fa-location-dot"></i><span>` + escTxt(city.name).replace(new RegExp(`(${escRe(q)})`, 'gi'), '<strong>$1</strong>') + `</span>`;
                 el.addEventListener('click', () => {
                     inp.value = city.name; lst.style.display = 'none'; hl = -1;
                     isDep ? (depId = city.id) : (arrId = city.id);
@@ -655,7 +655,10 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ from_id: depId, to_id: arrId, date })
             });
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            if (!r.ok) {
+                const err = await r.json().catch(() => ({}));
+                throw new Error(err.error || `HTTP ${r.status}`);
+            }
             renderResults(await r.json(), date);
         } catch (e) { setStatus(`Помилка: ${e.message}`, 'error'); }
         finally { document.getElementById('search-btn').disabled = false; }
@@ -748,6 +751,8 @@
 
     // Екранування тексту з API для вставки в HTML
     const escTxt = s => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    // Екранування для безпечної вставки рядка в RegExp (інакше "(", "[", "\" ламають підказки)
+    const escRe = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
     // Ціна з урахуванням валюти рейсу (UAH/EUR/...). Рейси з Європи приходять у євро!
     const CUR = { UAH: '₴', EUR: '€', USD: '$', PLN: 'zł', GBP: '£', CZK: 'Kč', MDL: 'lei', RON: 'lei' };
@@ -879,15 +884,16 @@
         });
 
         tickets.innerHTML = _view.map((rt, i) => {
-            const dt    = rt.departure_time || rt.time_from || '-:-';
-            const at    = rt.arrival_time   || rt.time_to   || '-:-';
-            const ddate = fmtNiceDate(rt.date || _date);
-            const adate = fmtNiceDate(rt.arrival_date);
-            const fromCity = rt.from || _dep;
-            const toCity   = rt.to   || _arr;
-            const pr    = fmtPrice(rt) || '-';
-            const st    = rt.free_seats !== undefined ? rt.free_seats : '?';
-            const car   = rt.carrier || rt.company || 'Автобус';
+            // Усі рядки з API екрануємо (escTxt) — захист на випадок несподіваного HTML у даних
+            const dt    = escTxt(rt.departure_time || rt.time_from || '-:-');
+            const at    = escTxt(rt.arrival_time   || rt.time_to   || '-:-');
+            const ddate = escTxt(fmtNiceDate(rt.date || _date));
+            const adate = escTxt(fmtNiceDate(rt.arrival_date));
+            const fromCity = escTxt(rt.from || _dep);
+            const toCity   = escTxt(rt.to   || _arr);
+            const pr    = escTxt(fmtPrice(rt) || '-');
+            const st    = escTxt(rt.free_seats !== undefined ? rt.free_seats : '?');
+            const car   = escTxt(rt.carrier || rt.company || 'Автобус');
             const dur   = fmtDuration(rt.travel_time);
             return `<div class="ticket" style="animation-delay:${i*0.06}s">
                 <div class="t-main">
@@ -926,7 +932,7 @@
                     <div class="td-row"><div class="td-label">Оплата</div><div class="td-text">${paymentHtml(rt)}</div></div>
                     <div class="td-row"><div class="td-label">Знижки</div><div class="td-text td-disc">-</div></div>
                     <div class="td-row"><div class="td-label">Пересадки</div><div class="td-text">${rt.change_info ? escTxt(rt.change_info) : 'Без пересадок, прямий рейс'}</div></div>
-                    <div class="td-row"><div class="td-label">Перевізник</div><div class="td-text td-carrier">${escTxt(car)}${rt.carrier_rating ? ` <span class="carr-badge cb-star"><i class="fa-solid fa-star"></i> ${escTxt(rt.carrier_rating)}</span>` : ''}${rt.carrier_reliability ? ` <span class="carr-badge cb-rel"><i class="fa-solid fa-shield-halved"></i> надійність ${escTxt(rt.carrier_reliability)}%</span>` : ''}</div></div>
+                    <div class="td-row"><div class="td-label">Перевізник</div><div class="td-text td-carrier">${car}${rt.carrier_rating ? ` <span class="carr-badge cb-star"><i class="fa-solid fa-star"></i> ${escTxt(rt.carrier_rating)}</span>` : ''}${rt.carrier_reliability ? ` <span class="carr-badge cb-rel"><i class="fa-solid fa-shield-halved"></i> надійність ${escTxt(rt.carrier_reliability)}%</span>` : ''}</div></div>
                     ${rt.baggage ? `<div class="td-row"><div class="td-label">Багаж</div><div class="td-text">${escTxt(rt.baggage)}</div></div>` : ''}
                 </div>
             </div>`;
@@ -1170,7 +1176,23 @@
         }
     });
     document.getElementById('m-close').addEventListener('click', () => document.getElementById('modal-bg').classList.remove('open'));
-    document.addEventListener('keydown', e => { if (e.key === 'Enter') search(); });
+    const modalBg = document.getElementById('modal-bg');
+    document.addEventListener('keydown', e => {
+        // Enter запускає пошук лише коли модалка закрита (інакше заважає заповнювати форму)
+        if (e.key === 'Enter' && !modalBg.classList.contains('open')) search();
+    });
+    // Доступність модалки: Escape закриває, Tab циклить фокус усередині (focus-trap)
+    document.addEventListener('keydown', e => {
+        if (!modalBg.classList.contains('open')) return;
+        if (e.key === 'Escape') { modalBg.classList.remove('open'); return; }
+        if (e.key !== 'Tab') return;
+        const els = [...modalBg.querySelectorAll('input, textarea, select, button, a[href]')]
+            .filter(el => el.offsetParent !== null && !el.disabled);
+        if (!els.length) return;
+        const first = els[0], last = els[els.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
 
     // Європейський формат дати: YYYY-MM-DD -> DD.MM.YYYY
     function updateDateDisplay() {
