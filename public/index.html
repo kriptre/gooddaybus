@@ -1078,6 +1078,20 @@
         renderDiscBlock();
         return row;
     }
+    // Нормалізація телефону при виході з поля: 067... → +38067..., 380... → +380...
+    // (те саме робить і сервер - тут лише щоб людина одразу бачила результат)
+    const normPhone = raw => {
+        let s = String(raw || '').trim().replace(/[\s\-().]/g, '');
+        if (/^00\d{8,}$/.test(s)) s = '+' + s.slice(2);
+        if (s.startsWith('+')) return s;
+        if (/^380\d{9}$/.test(s)) return '+' + s;
+        if (/^0\d{9}$/.test(s)) return '+38' + s;
+        return raw.trim();
+    };
+    document.getElementById('pax-list').addEventListener('focusout', e => {
+        if (e.target.classList && e.target.classList.contains('pax-phone')) e.target.value = normPhone(e.target.value);
+    });
+
     document.getElementById('add-pax').addEventListener('click', () => {
         const row = addPax();
         row.querySelector('.pax-name').focus();
@@ -1218,6 +1232,9 @@
     document.addEventListener('keydown', e => {
         if (!modalBg.classList.contains('open')) return;
         if (e.key === 'Escape') { modalBg.classList.remove('open'); return; }
+        // Мобільний баг: Enter ховає клавіатуру, але поле лишається у фокусі
+        // і блокує прокрутку модалки - тому знімаємо фокус самі
+        if (e.key === 'Enter' && e.target && e.target.matches('#modal-bg input')) { e.target.blur(); return; }
         if (e.key !== 'Tab') return;
         const els = [...modalBg.querySelectorAll('input, textarea, select, button, a[href]')]
             .filter(el => el.offsetParent !== null && !el.disabled);

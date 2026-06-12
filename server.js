@@ -548,6 +548,18 @@ async function initTelegram() {
 
 const phoneDigits = s => (String(s || '').match(/\d/g) || []).length;
 const cap = (v, n) => String(v == null ? '' : v).slice(0, n); // обрізаємо надто довгі рядки
+
+// Нормалізація телефону: люди в Україні часто вводять без коду країни (067...) або без
+// плюса (380...). Прибираємо роздільники та приводимо явно українські формати до
+// +380XXXXXXXXX. Іноземні номери з "+" чи "00" не вгадуємо - лишаємо як ввели.
+function normalizePhone(raw) {
+    let s = String(raw || '').trim().replace(/[\s\-().]/g, '');
+    if (/^00\d{8,}$/.test(s)) s = '+' + s.slice(2); // 0038067... → +38067...
+    if (s.startsWith('+')) return s;
+    if (/^380\d{9}$/.test(s)) return '+' + s;       // 380671234567 → +380671234567
+    if (/^0\d{9}$/.test(s)) return '+38' + s;       // 0671234567  → +380671234567
+    return s;
+}
 const MAX_PASSENGERS = 30;
 
 // ==========================================
@@ -562,7 +574,23 @@ const MAX_PASSENGERS = 30;
 
 const ticketPdfLink = id => `https://contrabus.ua/partner_download?ticket2=${encodeURIComponent(id)}`;
 
-// Чи можна бронювати цей data_bundle — за свіжими даними contrabus, а не зі слів клієнта
+// Корисне навантаження data_bundle (JWT contrabus) - лише для ІДЕНТИФІКАЦІЇ рейсу.
+// contrabus видає новий JWT на кожен пошук, тому точний збіг рядків працює лише поки
+// живий наш 2-хвилинний кеш. Якщо клієнт заповнював форму довше - знаходимо той самий
+// рейс у свіжій видачі за trip_id/зупинками/датою і бронюємо вже СВІЖИМ бандлом.
+// Усі рішення (передоплата, вільні місця) приймаються за свіжими даними contrabus.
+function bundlePayload(b) {
+    try { return JSON.parse(Buffer.from(String(b).split('.')[1], 'base64url').toString()).data || null; }
+    catch { return null; }
+}
+const sameTrip = (a, b) => !!a && !!b &&
+    String(a.trip_id) === String(b.trip_id) &&
+    String(a.connection_trip_id) === String(b.connection_trip_id) &&
+    String(a.from_stop_id) === String(b.from_stop_id) &&
+    String(a.to_stop_id) === String(b.to_stop_id) &&
+    String(a.date) === String(b.date);
+
+// Чи можна бронювати цей рейс - за свіжими даними contrabus, а не зі слів клієнта
 async function verifyBookable(body, paxCount) {
     if (!body.data_bundle) return { ok: false, reason: 'немає data_bundle' };
     if (paxCount > BOOKING_MAX_PAX) return { ok: false, reason: `пасажирів більше ліміту (${BOOKING_MAX_PAX})` };
@@ -573,8 +601,12 @@ async function verifyBookable(body, paxCount) {
     } catch (e) {
         return { ok: false, reason: 'пошук рейсу недоступний' };
     }
-    const rt = routes.find(r => r.data_bundle === body.data_bundle);
-    if (!rt) return { ok: false, reason: 'рейс не знайдено (дані застаріли)' };
+    let rt = routes.find(r => r.data_bundle === body.data_bundle);
+    if (!rt) {
+        const want = bundlePayload(body.data_bundle);
+        rt = want ? routes.find(r => sameTrip(bundlePayload(r.data_bundle), want)) : null;
+    }
+    if (!rt) return { ok: false, reason: 'рейс не знайдено у свіжій видачі' };
     if (rt.label_type) return { ok: false, reason: `рейс потребує передоплати (${rt.label_type})` };
     if (rt.free_seats !== undefined && +rt.free_seats < paxCount) return { ok: false, reason: `вільних місць ${rt.free_seats}, потрібно ${paxCount}` };
     return { ok: true, route: rt };
@@ -593,11 +625,18 @@ async function createBooking(data_bundle, passengers) {
         body: JSON.stringify({
             data_bundle,
             skip_checks: false, // contrabus сам перевіряє дублі/чорний список
+            // Повний набір полів зі схеми create_booking - як у реальних бронях диспетчера
+            // (відсутність будь-якого ключа дає 400 "missing some required fields")
             passengers_data: passengers.map(p => ({
                 name: p.name, surname: p.surname, phone: p.phone,
+                viber: p.phone,                     // у бронях диспетчера viber завжди = телефон
+                email: '',
+                comments: '',
                 ticket_type: +p.ticket_type || 0,   // id знижки з get_route_discounts (0 = повний квиток)
-                booking_type: 'free',               // резерв без оплати — як бронює диспетчер (оплата водієві)
-                prepayment: 0
+                discount: 0,
+                prepayment: 0,
+                seat: 0,                            // 0 = місце призначається автоматично
+                booking_type: 'free'                // резерв без оплати - як бронює диспетчер (оплата водієві)
             }))
         })
     });
@@ -643,7 +682,8 @@ app.post('/api/order', async (req, res) => {
         const list = (Array.isArray(passengers) ? passengers : [])
             .slice(0, MAX_PASSENGERS)
             .map(p => ({
-                name: cap(String(p.name || '').trim(), 80), surname: cap(String(p.surname || '').trim(), 80), phone: cap(String(p.phone || '').trim(), 32),
+                name: cap(String(p.name || '').trim(), 80), surname: cap(String(p.surname || '').trim(), 80),
+                phone: normalizePhone(cap(String(p.phone || '').trim(), 32)),
                 ticket_type: cap(p.ticket_type || '', 40), discount_label: cap(String(p.discount_label || '').trim(), 80), discount_percent: +p.discount_percent || 0
             }))
             .filter(p => p.name || p.surname || p.phone);
@@ -673,15 +713,23 @@ app.post('/api/order', async (req, res) => {
         const client_name = `${list[0].name} ${list[0].surname}`.trim();
         const client_phone = list[0].phone;
 
-        // 5) Перевірка телефонів на чорний список / дублі (ДО створення — щоб зберегти пометку).
-        //    Заявку НЕ блокуємо: вона приходить, але з позначкою.
+        // 5) Якщо просять автобронь - СПОЧАТКУ звіряємо рейс зі свіжою видачею contrabus:
+        //    це дає і дозвіл на бронь, і свіжий data_bundle (клієнтський живе ~6 годин
+        //    і перестає збігатися після перевипуску кешу пошуку).
+        const wantBook = !!(req.body.book && BOOKING_ENABLED);
+        let verdict = null;
+        if (wantBook) verdict = await verifyBookable(req.body, list.length);
+
+        // 6) Перевірка телефонів на чорний список / дублі (ДО створення - щоб зберегти позначку).
+        //    Заявку НЕ блокуємо: вона приходить, але з позначкою. Для автоброні беремо свіжий бандл.
         let check_warning = '';
-        if (req.body.data_bundle) {
+        const checkBundle = (verdict && verdict.ok) ? verdict.route.data_bundle : req.body.data_bundle;
+        if (checkBundle) {
             try {
                 const token = await getToken();
                 const r = await fetch(`${API_BASE_URL}/bookings/booking_allow_check`, {
                     method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ data_bundle: req.body.data_bundle, phones: list.map(p => p.phone) })
+                    body: JSON.stringify({ data_bundle: checkBundle, phones: list.map(p => p.phone) })
                 });
                 const j = await r.json();
                 if (j && j.message && !/no possible|not found|немає/i.test(j.message)) {
@@ -691,19 +739,20 @@ app.post('/api/order', async (req, res) => {
             } catch (e) { /* перевірка не критична */ }
         }
 
-        // 6) Автобронювання (Фаза 2а). Будь-яка відмова — НЕ помилка: заявка просто
-        //    зберігається звичайною, менеджер бачить причину в check_warning.
+        // 7) Автобронювання (Фаза 2а). Будь-яка відмова - НЕ помилка: заявка просто
+        //    зберігається звичайною, менеджер бачить причину в check_warning,
+        //    а клієнт отримує стандартне "менеджер зв'яжеться" (причину не розкриваємо).
         let booked = false, tickets = [];
-        if (req.body.book && BOOKING_ENABLED) {
-            if (check_warning) {
+        if (wantBook) {
+            if (!verdict.ok) {
+                check_warning = (check_warning ? check_warning + ' · ' : '') + `Автобронь недоступна: ${verdict.reason}. Обробіть вручну.`;
+                console.log(`[Booking] Відмова у автоброні: ${verdict.reason}`);
+            } else if (check_warning) {
                 check_warning += ' · Автобронь пропущено через це попередження';
             } else {
-                const v = await verifyBookable(req.body, list.length);
-                if (!v.ok) {
-                    check_warning = `Автобронь недоступна: ${v.reason}. Обробіть вручну.`;
-                    console.log(`[Booking] Відмова у автоброні: ${v.reason}`);
-                } else {
-                    const b = await createBooking(req.body.data_bundle, list).catch(e => ({ ok: false, reason: cap(e.message, 200) }));
+                {
+                    // Бронюємо СВІЖИМ бандлом із щойно перевіреної видачі
+                    const b = await createBooking(verdict.route.data_bundle, list).catch(e => ({ ok: false, reason: cap(e.message, 200) }));
                     if (b.ok) { booked = true; tickets = b.tickets; }
                     else {
                         check_warning = `Автобронь не вдалася: ${b.reason}. Обробіть вручну.`;
