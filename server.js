@@ -211,9 +211,24 @@ async function searchRoutes(from_id, to_id, date) {
     return routes;
 }
 
-// Рейс доступний для миттєвого бронювання: УВІМКНЕНА автобронь + БЕЗ передоплати
-// (label_type порожній; 'prepayment'/'full_pay' = потрібна оплата → лише заявка менеджеру)
-const isBookableRoute = rt => BOOKING_ENABLED && !rt.label_type && (rt.free_seats === undefined || +rt.free_seats > 0);
+// "Передоплата лише для груп" (label_type='prepayment', у тексті умови є "груп"):
+// для пасажирів МЕНШЕ порогу це фактично рейс без передоплати - дозволяємо автобронь.
+const isGroupPrepay = rt => rt.label_type === 'prepayment' && /груп/i.test(rt.price_label || '');
+// Поріг групи з тексту умови ("...для груп з трьох і більше осіб" → 3).
+// Не розпарсили - повертаємо 0 (= автобронь заборонена, діємо консервативно).
+function groupThreshold(rt) {
+    const s = String(rt.price_label || '').toLowerCase().replace(/['’ʼ]/g, '');
+    const m = s.match(/з\s+(двох|трьох|чотирьох|пяти|шести|(\d+))/);
+    if (!m) return 0;
+    if (m[2]) return parseInt(m[2], 10) || 0;
+    return { 'двох': 2, 'трьох': 3, 'чотирьох': 4, 'пяти': 5, 'шести': 6 }[m[1]] || 0;
+}
+
+// Рейс доступний для миттєвого бронювання: УВІМКНЕНА автобронь + без передоплати
+// (або передоплата лише для груп - тоді кількість пасажирів перевіряється при броні)
+const isBookableRoute = rt => BOOKING_ENABLED
+    && (!rt.label_type || (isGroupPrepay(rt) && groupThreshold(rt) > 1))
+    && (rt.free_seats === undefined || +rt.free_seats > 0);
 
 // POST /api/search — пошук рейсів
 app.post('/api/search', async (req, res) => {
@@ -620,7 +635,14 @@ async function verifyBookable(body, paxCount) {
         rt = want ? routes.find(r => sameTrip(bundlePayload(r.data_bundle), want)) : null;
     }
     if (!rt) return { ok: false, reason: 'рейс не знайдено у свіжій видачі' };
-    if (rt.label_type) return { ok: false, reason: `рейс потребує передоплати (${rt.label_type})` };
+    if (rt.label_type) {
+        // Передоплата лише для груп: бронюємо, поки пасажирів МЕНШЕ порогу перевізника
+        if (!isGroupPrepay(rt)) return { ok: false, reason: `рейс потребує передоплати (${rt.label_type})` };
+        const thr = groupThreshold(rt);
+        if (!thr || paxCount >= thr) {
+            return { ok: false, reason: `передоплата для груп від ${thr || '?'} осіб, у заявці ${paxCount}` };
+        }
+    }
     if (rt.free_seats !== undefined && +rt.free_seats < paxCount) return { ok: false, reason: `вільних місць ${rt.free_seats}, потрібно ${paxCount}` };
     return { ok: true, route: rt };
 }
