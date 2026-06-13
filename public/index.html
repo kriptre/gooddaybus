@@ -79,6 +79,10 @@
             --tr: all 0.24s cubic-bezier(0.4,0,0.2,1);
         }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        /* CSS FontAwesome вантажиться асинхронно: до його приходу порожні <i> мають
+           нульову ширину, а потім розштовхують макет (CLS). Резервуємо місце одразу
+           (line-height: 1 - як у самого FA, щоб після завантаження нічого не стрибало). */
+        i[class^="fa-"], i[class*=" fa-"] { display: inline-block; min-width: 1em; min-height: 1em; line-height: 1; text-align: center; font-style: normal; }
         html { scroll-behavior: smooth; }
         body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 16px; line-height: 1.6; }
 
@@ -189,6 +193,9 @@
         .t-dash { flex: 1; height: 2px; background: repeating-linear-gradient(90deg, var(--border) 0, var(--border) 5px, transparent 5px, transparent 10px); }
         .t-arrow { color: var(--text-3); font-size: 12px; flex-shrink: 0; }
         .t-carrier { font-size: 11px; color: var(--text-3); margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+        /* Пересадки видно одразу на картці, без відкриття деталей */
+        .t-transfer { font-size: 11px; font-weight: 700; color: var(--orange); margin-top: 3px; }
+        .t-transfer.tt-direct { color: var(--green); }
         .t-divider { width: 1px; height: 56px; background: var(--border); margin: 0 20px; align-self: center; }
         .t-action { display: flex; flex-direction: column; align-items: flex-end; min-width: 130px; }
         .t-pricebox { text-align: right; }
@@ -340,6 +347,11 @@
         .f-inp:focus { border-color: var(--orange); background: var(--white); box-shadow: 0 0 0 3px rgba(240,100,34,0.1); }
         .f-inp::placeholder { color: var(--text-3); font-weight: 400; }
         textarea.f-inp { resize: vertical; min-height: 80px; line-height: 1.5; }
+        /* iOS Safari зумить сторінку при фокусі на полі зі шрифтом < 16px - тому на
+           мобільному всі поля вводу рівно 16px (виглядає майже так само, зум зникає) */
+        @media (max-width: 760px) {
+            .s-inp input, .f-inp, select.disc-sel { font-size: 16px; }
+        }
         .hp-field { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
         .disc-block { margin-top: 16px; }
         .disc-head { display: flex; align-items: center; justify-content: space-between; }
@@ -614,15 +626,19 @@
     const PROXY_BASE = '/api'; // той самий сервер, що віддає сайт (працює і локально, і на домені)
     let cities = [], depId = null, arrId = null, selRoute = null;
     let _routes = [], _view = [], _dep = '', _arr = '', _date = '', _sortBy = 'departure';
-    // Фільтри рейсів: 'noprepay' = без передоплати (label_type порожній),
-    // 'direct' = без пересадок. Порожній набір = показувати всі.
+    // Фільтри рейсів: 'noprepay' = без передоплати, 'direct' = без пересадок.
+    // Порожній набір = показувати всі.
     let _filters = new Set();
-    const payCategory = rt => !rt.label_type ? 'none' : (rt.label_type === 'prepayment' ? 'partial' : 'full');
+    // "Передоплата лише для груп" (текст на кшталт "для груп з трьох і більше осіб"):
+    // для 1-2 пасажирів це фактично без передоплати - рахуємо такі рейси у фільтрі
+    // "Без передоплати", а умову показуємо в деталях рейсу.
+    const isGroupPrepay = rt => rt.label_type === 'prepayment' && /груп/i.test(rt.price_label || '');
+    const payCategory = rt => !rt.label_type ? 'none' : (isGroupPrepay(rt) ? 'group' : (rt.label_type === 'prepayment' ? 'partial' : 'full'));
     // Прямий рейс: change_info порожній АБО не містить слова "пересад"
     // (API часто пише туди текст на кшталт "Прямий рейс")
     const isDirect = rt => !rt.change_info || !/пересад/i.test(rt.change_info);
     const matchesFilters = rt =>
-        (!_filters.has('noprepay') || !rt.label_type) &&
+        (!_filters.has('noprepay') || !rt.label_type || isGroupPrepay(rt)) &&
         (!_filters.has('direct') || isDirect(rt));
 
     function setStatus(txt, type = '') {
@@ -854,6 +870,8 @@
         const cat = payCategory(rt);
         const label = cat === 'none'
             ? '<span class="pay-badge pb-none"><i class="fa-regular fa-credit-card"></i> Без передоплати</span>'
+            : cat === 'group'
+                ? '<span class="pay-badge pb-none"><i class="fa-regular fa-credit-card"></i> Без передоплати</span> <span class="pay-badge pb-part"><i class="fa-solid fa-users"></i> Для груп - передоплата</span>'
             : (cat === 'partial'
                 ? '<span class="pay-badge pb-part"><i class="fa-solid fa-coins"></i> Часткова передоплата</span>'
                 : '<span class="pay-badge pb-full"><i class="fa-solid fa-money-bill-wave"></i> Повна передоплата</span>');
@@ -964,6 +982,7 @@
                         ${dur ? `<div class="t-dur"><i class="fa-regular fa-clock"></i> ${dur} в дорозі</div>` : ''}
                         <div class="t-line"><div class="t-dot"></div><div class="t-dash"></div><div class="t-arrow"><i class="fa-solid fa-chevron-right"></i></div></div>
                         <div class="t-carrier"><i class="fa-solid fa-bus"></i>${car}</div>
+                        <div class="t-transfer ${isDirect(rt) ? 'tt-direct' : ''}">${isDirect(rt) ? 'Без пересадок' : 'З пересадкою'}</div>
                     </div>
                     <div class="t-ep" style="text-align:right">
                         <div class="t-time">${at}</div>
@@ -1282,8 +1301,13 @@
         if (!modalBg.classList.contains('open')) return;
         if (e.key === 'Escape') { modalBg.classList.remove('open'); return; }
         // Мобільний баг: Enter ховає клавіатуру, але поле лишається у фокусі
-        // і блокує прокрутку модалки - тому знімаємо фокус самі
-        if (e.key === 'Enter' && e.target && e.target.matches('#modal-bg input')) { e.target.blur(); return; }
+        // і блокує прокрутку модалки - тому знімаємо фокус самі.
+        // У textarea коментаря preventDefault також прибирає зайвий новий рядок.
+        if (e.key === 'Enter' && e.target && e.target.matches('#modal-bg input, #modal-bg textarea')) {
+            e.preventDefault();
+            e.target.blur();
+            return;
+        }
         if (e.key !== 'Tab') return;
         const els = [...modalBg.querySelectorAll('input, textarea, select, button, a[href]')]
             .filter(el => el.offsetParent !== null && !el.disabled);

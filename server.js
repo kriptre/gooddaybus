@@ -1024,11 +1024,12 @@ app.delete('/api/clients', requireAdmin, (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`✅ Сервер запущено: http://localhost:${PORT}`);
-    console.log(`   Сайт:             http://localhost:${PORT}/`);
-    console.log(`   Панель (локально): http://localhost:${PORT}/admin.html`);
-    console.log(`   Панель (з телефону в тій же Wi-Fi): ${PUBLIC_BASE_URL}/admin.html`);
+const server = app.listen(PORT, () => {
+    console.log(`✅ GoodDayBus запущено (порт ${PORT})`);
+    console.log(`   Сайт:   ${PUBLIC_BASE_URL}/`);
+    console.log(`   Панель: ${PUBLIC_BASE_URL}/admin.html`);
+    // Локальний запуск (без PUBLIC_BASE_URL у .env) - підказуємо адресу й для цього ПК
+    if (!process.env.PUBLIC_BASE_URL) console.log(`   Цей ПК: http://localhost:${PORT}/ (адреса вище - для телефону в тій же Wi-Fi)`);
     if (!API_LOGIN || !API_PASSWORD) console.log('   ⚠️  Не задано API_LOGIN/API_PASSWORD у .env — пошук рейсів не працюватиме!');
     if (!TELEGRAM_BOT_TOKEN) console.log('   ℹ️  Telegram вимкнено (не задано TELEGRAM_BOT_TOKEN у .env)');
     if (!process.env.ADMIN_KEY || ADMIN_KEY === 'change-me' || ADMIN_KEY.length < 12) {
@@ -1045,3 +1046,13 @@ app.listen(PORT, () => {
     // Слухаємо натискання Telegram-кнопок
     initTelegram();
 });
+
+// Граціозне завершення: Railway шле SIGTERM старому контейнеру при кожному деплої.
+// Виходимо чисто (код 0), щоб npm не сипав у логи червоне "command failed signal SIGTERM".
+for (const sig of ['SIGTERM', 'SIGINT']) {
+    process.on(sig, () => {
+        console.log(`⏻ Отримано ${sig} - завершуємо роботу`);
+        server.close(() => process.exit(0));
+        setTimeout(() => process.exit(0), 5000).unref(); // не чекаємо вічно на відкриті з'єднання
+    });
+}
