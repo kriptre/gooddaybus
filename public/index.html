@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-site-verification" content="a6A7r5AZXOGr3MyaNht_kKak8jUV5x-8YxCXUtGyMjM">
-    <title>Автобусні квитки Україна - Європа | GoodDayBus</title>
-    <meta name="description" content="Бронювання без передоплати - оплата водієві при посадці. Автобусні квитки Україна - Європа за хвилину, без реєстрації: Польща, Чехія, Німеччина.">
+    <title>GoodDayBus: Автобусні квитки Україна - Європа</title>
+    <meta name="description" content="Бронювання за хвилину без передоплати - оплата водієві при посадці. Автобусні квитки Україна - Європа, без реєстрації та зайвих кроків.">
     <link rel="canonical" href="https://gooddaybus.com/">
 
     <!-- Open Graph: як посилання виглядає у Viber/Telegram/WhatsApp -->
@@ -60,7 +60,8 @@
       ]
     }
     </script>
-    <!-- Іконки бренду: вкладка/ПК, iOS, Android/PWA -->
+    <!-- Іконки бренду: вкладка/ПК, iOS, Android/PWA. 48px - щоб Google показав іконку у пошуку -->
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -1151,9 +1152,18 @@
             </div>`;
         }).join('');
 
-        tickets.querySelectorAll('.btn-ticket').forEach(b =>
-            b.addEventListener('click', () => openModal(_view[b.dataset.i], _dep, _arr, _date)));
-        tickets.querySelectorAll('.t-toggle').forEach(b => b.addEventListener('click', () => {
+        tickets.querySelectorAll('.btn-ticket').forEach(b => {
+            b.addEventListener('click', () => openModal(_view[b.dataset.i], _dep, _arr, _date));
+            // Предзавантаження знижок ще до кліку (на наведення курсором / дотик)
+            const pf = () => prefetchDiscounts(_view[b.dataset.i]);
+            b.addEventListener('pointerenter', pf);
+            b.addEventListener('touchstart', pf, { passive: true });
+        });
+        tickets.querySelectorAll('.t-toggle').forEach(b => {
+            const pf = () => prefetchDiscounts(_view[b.dataset.i]);
+            b.addEventListener('pointerenter', pf);
+            b.addEventListener('touchstart', pf, { passive: true });
+            b.addEventListener('click', () => {
             const ticket = b.closest('.ticket');
             const det = ticket.querySelector('.t-details');
             const open = det.classList.toggle('open');
@@ -1162,23 +1172,38 @@
                 det.dataset.discLoaded = '1';
                 loadDiscounts(_view[b.dataset.i], ticket.querySelector('.td-disc'));
             }
-        }));
+            });
+        });
     }
 
     // Підвантаження знижок рейсу при відкритті деталей
+    // Кеш знижок за data_bundle: один запит на рейс за сесію (спільний для деталей і модалки)
+    const _discByBundle = new Map();
+    function fetchDiscounts(bundle) {
+        if (!bundle) return Promise.resolve([]);
+        if (_discByBundle.has(bundle)) return _discByBundle.get(bundle); // Promise або масив - await обробить обидва
+        const p = fetch(`${PROXY_BASE}/discounts`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data_bundle: bundle })
+        }).then(r => r.json()).then(d => {
+            const arr = Array.isArray(d) ? d : [];
+            _discByBundle.set(bundle, arr); // замінюємо Promise готовим масивом
+            return arr;
+        }).catch(() => { _discByBundle.delete(bundle); return []; });
+        _discByBundle.set(bundle, p); // кешуємо Promise одразу, щоб паралельні виклики не дублювали запит
+        return p;
+    }
+    // Предзавантаження на наведення/дотик - щоб на момент кліку знижки вже були готові
+    function prefetchDiscounts(rt) { if (rt && rt.data_bundle) fetchDiscounts(rt.data_bundle); }
+
     async function loadDiscounts(rt, el) {
         if (!el) return;
         if (!rt || !rt.data_bundle) { el.textContent = 'Інформація недоступна'; return; }
-        el.textContent = 'Завантаження…';
-        try {
-            const r = await fetch(`${PROXY_BASE}/discounts`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data_bundle: rt.data_bundle })
-            });
-            const d = await r.json();
-            const real = (Array.isArray(d) ? d : []).filter(x => x.percent > 0);
-            el.innerHTML = real.length ? real.map(x => escTxt(x.description)).join('<br>') : 'Спеціальних знижок немає';
-        } catch (e) { el.textContent = '-'; }
+        const cached = _discByBundle.get(rt.data_bundle);
+        if (!Array.isArray(cached)) el.textContent = 'Завантаження…'; // показуємо лише якщо реально чекаємо мережу
+        const d = await fetchDiscounts(rt.data_bundle);
+        const real = (Array.isArray(d) ? d : []).filter(x => x.percent > 0);
+        el.innerHTML = real.length ? real.map(x => escTxt(x.description)).join('<br>') : 'Спеціальних знижок немає';
     }
 
     // ---------- Пасажири + знижки ----------
@@ -1303,20 +1328,10 @@
         row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
 
-    // Підвантажити знижки рейсу
+    // Підвантажити знижки рейсу (через спільний кеш - миттєво, якщо вже предзавантажено)
     async function loadModalDiscounts(rt) {
-        _modalDiscounts = [];
-        if (rt && rt.data_bundle) {
-            try {
-                const r = await fetch(`${PROXY_BASE}/discounts`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ data_bundle: rt.data_bundle })
-                });
-                const d = await r.json();
-                _modalDiscounts = Array.isArray(d) ? d : [];
-            } catch (e) { _modalDiscounts = []; }
-        }
-        renderDiscBlock();
+        _modalDiscounts = await fetchDiscounts(rt && rt.data_bundle);
+        if (selRoute === rt) renderDiscBlock(); // оновлюємо, лише якщо модалка ще на цьому рейсі
     }
 
     let _bookMode = false; // true = рейс без передоплати, бронюємо одразу
