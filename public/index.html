@@ -411,6 +411,13 @@
             .s-inp input, .f-inp, select.disc-sel { font-size: 16px; }
         }
         .hp-field { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+        /* Згортуваний розділ "Додатково" (коментар, знижка, тварина) */
+        .more-toggle { width: 100%; margin-top: 18px; background: none; border: none; border-top: 1px solid var(--border); padding: 14px 0 0; display: flex; align-items: center; justify-content: space-between; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; color: var(--text-2); cursor: pointer; }
+        .more-toggle:hover { color: var(--orange); }
+        .more-toggle .mt-l { display: inline-flex; align-items: center; gap: 8px; }
+        .more-toggle i.fa-sliders { color: var(--orange); }
+        .pet-note { margin-top: 10px; font-size: 12px; color: var(--text-2); background: var(--orange-bg); border: 1px solid var(--orange-brd); border-radius: var(--r); padding: 9px 12px; display: flex; gap: 7px; align-items: flex-start; line-height: 1.5; }
+        .pet-note i { color: var(--orange); margin-top: 2px; flex-shrink: 0; }
         .disc-block { margin-top: 16px; }
         .disc-head { display: flex; align-items: center; justify-content: space-between; }
         .disc-title { font-size: 14px; font-weight: 800; color: var(--text); }
@@ -704,12 +711,27 @@
             <div class="modal-body">
                 <div id="pax-list"></div>
                 <button type="button" class="btn-addpax" id="add-pax"><i class="fa-solid fa-plus"></i> Додати пасажира</button>
-                <div class="fg" style="margin:16px 0 0">
-                    <label class="f-lbl">Коментар (необов'язково)</label>
-                    <textarea id="c-comment" class="f-inp" placeholder="Побажання, місце біля вікна тощо..."></textarea>
+
+                <button type="button" class="more-toggle" id="more-toggle">
+                    <span class="mt-l"><i class="fa-solid fa-sliders"></i> Додатково</span>
+                    <i class="fa-solid fa-chevron-down" id="more-chev"></i>
+                </button>
+                <div id="more-body" style="display:none">
+                    <div class="fg" id="pet-field" style="display:none;margin:16px 0 0">
+                        <label class="f-lbl"><i class="fa-solid fa-paw" style="color:var(--orange);margin-right:5px"></i>Подорож із твариною</label>
+                        <select id="pet-select" class="f-inp">
+                            <option value="no">Без тварини</option>
+                            <option value="yes">Так, із твариною</option>
+                        </select>
+                        <div class="pet-note" id="pet-note" style="display:none"><i class="fa-solid fa-circle-info"></i> Вартість перевезення тварини залежить від розміру та перевізника - менеджер уточнить ціну й підтвердить бронювання.</div>
+                    </div>
+                    <div class="fg" style="margin:16px 0 0">
+                        <label class="f-lbl">Коментар (необов'язково)</label>
+                        <textarea id="c-comment" class="f-inp" placeholder="Побажання, місце біля вікна тощо..."></textarea>
+                    </div>
+                    <div id="disc-block" class="disc-block" style="display:none"></div>
+                    <div class="m-disc-note" id="m-disc-note" style="display:none"><i class="fa-solid fa-circle-info"></i> Знижка діє за наявності підтверджуючого документа.</div>
                 </div>
-                <div id="disc-block" class="disc-block" style="display:none"></div>
-                <div class="m-disc-note" id="m-disc-note" style="display:none"><i class="fa-solid fa-circle-info"></i> Знижка діє за наявності підтверджуючого документа.</div>
                 <!-- honeypot: приховане поле, люди його не бачать, заповнюють лише боти -->
                 <input type="text" id="c-hp" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
             </div>
@@ -748,9 +770,12 @@
     // Прямий рейс: change_info порожній АБО не містить слова "пересад"
     // (API часто пише туди текст на кшталт "Прямий рейс")
     const isDirect = rt => !rt.change_info || !/пересад/i.test(rt.change_info);
+    // Рейс дозволяє перевезення тварин (код 'pets' в зручностях перевізника)
+    const allowsPets = rt => Array.isArray(rt.carrier_amenities) && rt.carrier_amenities.includes('pets');
     const matchesFilters = rt =>
         (!_filters.has('noprepay') || !rt.label_type || isGroupPrepay(rt)) &&
-        (!_filters.has('direct') || isDirect(rt));
+        (!_filters.has('direct') || isDirect(rt)) &&
+        (!_filters.has('pets') || allowsPets(rt));
 
     function setStatus(txt, type = '') {
         document.getElementById('status-row').className = `status-row ${type}`;
@@ -1025,6 +1050,7 @@
                 <span class="sort-sep"></span>
                 <button class="sort-btn filter-btn" data-filter="noprepay"><i class="fa-regular fa-credit-card"></i> Без передоплати</button>
                 <button class="sort-btn filter-btn" data-filter="direct"><i class="fa-solid fa-route"></i> Без пересадок</button>
+                <button class="sort-btn filter-btn" data-filter="pets"><i class="fa-solid fa-paw"></i> З твариною</button>
             </div>
             <div id="tickets"></div>`;
 
@@ -1294,16 +1320,23 @@
     }
 
     let _bookMode = false; // true = рейс без передоплати, бронюємо одразу
+    const petChosen = () => document.getElementById('pet-select').value === 'yes';
+    // Реальна можливість автоброні: рейс bookable І їде БЕЗ тварини (з твариною - лише менеджер)
+    const canBookNow = () => _bookMode && !petChosen();
+    // Оновлює заголовок/підказку/кнопку відповідно до того, чи буде автобронь
+    function applyBookUI() {
+        const book = canBookNow();
+        document.getElementById('m-title').textContent = book ? 'Бронювання поїздки' : 'Замовити поїздку';
+        document.getElementById('m-booknote').style.display = book ? 'flex' : 'none';
+        document.getElementById('m-submit').innerHTML = book
+            ? '<i class="fa-solid fa-bolt"></i> Забронювати'
+            : '<i class="fa-solid fa-paper-plane"></i> Надіслати';
+    }
     function openModal(rt, dep, arr, date) {
         selRoute = rt;
         _bookMode = !!rt.bookable;
         _modalDiscounts = []; _paxDiscSel = []; _discOpen = false;
         const dt = rt.departure_time || rt.time_from || '';
-        document.getElementById('m-title').textContent = _bookMode ? 'Бронювання поїздки' : 'Замовити поїздку';
-        document.getElementById('m-booknote').style.display = _bookMode ? 'flex' : 'none';
-        document.querySelector('#m-submit').innerHTML = _bookMode
-            ? '<i class="fa-solid fa-bolt"></i> Забронювати'
-            : '<i class="fa-solid fa-paper-plane"></i> Надіслати';
         document.querySelector('#m-route span').textContent = `${dep} → ${arr}${dt ? ', ' + dt : ''}`;
         document.getElementById('m-form').style.display = 'block';
         document.getElementById('m-ok').style.display = 'none';
@@ -1311,11 +1344,31 @@
         document.getElementById('c-hp').value = '';
         document.getElementById('disc-block').innerHTML = '';
         document.getElementById('m-disc-note').style.display = 'none';
+        // "Додатково" згорнуто; поле тварини - лише якщо рейс дозволяє тварин
+        document.getElementById('more-body').style.display = 'none';
+        document.getElementById('more-chev').className = 'fa-solid fa-chevron-down';
+        document.getElementById('pet-select').value = 'no';
+        document.getElementById('pet-note').style.display = 'none';
+        document.getElementById('pet-field').style.display = allowsPets(rt) ? 'block' : 'none';
         document.getElementById('pax-list').innerHTML = '';
         addPax(); // один порожній пасажир за замовчуванням
+        applyBookUI();
         document.getElementById('modal-bg').classList.add('open');
         loadModalDiscounts(rt); // підвантажуємо знижки асинхронно
     }
+
+    // Розгортання розділу "Додатково"
+    document.getElementById('more-toggle').addEventListener('click', () => {
+        const b = document.getElementById('more-body');
+        const open = b.style.display !== 'none';
+        b.style.display = open ? 'none' : 'block';
+        document.getElementById('more-chev').className = open ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
+    });
+    // Зміна "з твариною" - показуємо примітку й перемикаємо режим кнопки (бронь ↔ заявка)
+    document.getElementById('pet-select').addEventListener('change', () => {
+        document.getElementById('pet-note').style.display = petChosen() ? 'flex' : 'none';
+        applyBookUI();
+    });
 
     document.getElementById('m-cancel').addEventListener('click', () => document.getElementById('modal-bg').classList.remove('open'));
     document.getElementById('modal-bg').addEventListener('click', e => { if (e.target === document.getElementById('modal-bg')) document.getElementById('modal-bg').classList.remove('open'); });
@@ -1345,9 +1398,10 @@
         });
         if (firstError) { alert(firstError); return; }
 
+        const willBook = canBookNow();
         const btn = document.getElementById('m-submit');
         btn.disabled = true;
-        btn.innerHTML = _bookMode ? '<i class="fa-solid fa-spinner fa-spin"></i> Бронюємо...' : '<i class="fa-solid fa-spinner fa-spin"></i> Надсилаємо...';
+        btn.innerHTML = willBook ? '<i class="fa-solid fa-spinner fa-spin"></i> Бронюємо...' : '<i class="fa-solid fa-spinner fa-spin"></i> Надсилаємо...';
 
         const rt = selRoute || {};
         const payload = {
@@ -1362,7 +1416,8 @@
             route_from_station: rt.departure_station || '',
             route_to_station: rt.arrival_station || '',
             data_bundle: rt.data_bundle || '', // для перевірки чорного списку/дублів та броні
-            book: _bookMode,                   // прохання про автобронь (сервер сам вирішує, чи можна)
+            book: willBook,                    // прохання про автобронь (з твариною - вимкнено)
+            pet: petChosen(),                  // їде з твариною → лише менеджер
             from_id: depId, to_id: arrId,      // для серверної перевірки рейсу перед бронюванням
             hp: document.getElementById('c-hp').value // honeypot
         };
@@ -1396,7 +1451,7 @@
             alert('Не вдалося надіслати заявку: ' + e.message + '\n\nСпробуйте ще раз або зателефонуйте менеджеру.');
         } finally {
             btn.disabled = false;
-            btn.innerHTML = _bookMode
+            btn.innerHTML = canBookNow()
                 ? '<i class="fa-solid fa-bolt"></i> Забронювати'
                 : '<i class="fa-solid fa-paper-plane"></i> Надіслати';
         }

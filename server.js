@@ -491,6 +491,7 @@ function orderMessageText(order, footer) {
     } else {
         t += `\n\n👤 ${escHtml(order.client_name)} - ${escHtml(order.client_phone)}`;
     }
+    if (order.pet) t += `\n\n🐾 <b>Їде з твариною</b> - уточнити розмір і вартість перевезення`;
     if (order.comment) t += `\n\n💬 ${escHtml(order.comment)}`;
     if (order.check_warning) t += `\n\n⚠️ <b>Увага:</b> ${escHtml(order.check_warning)}`;
     if (footer) t += `\n<i>${escHtml(footer)}</i>`;
@@ -751,7 +752,8 @@ app.post('/api/order', async (req, res) => {
         // 5) Якщо просять автобронь - СПОЧАТКУ звіряємо рейс зі свіжою видачею contrabus:
         //    це дає і дозвіл на бронь, і свіжий data_bundle (клієнтський живе ~6 годин
         //    і перестає збігатися після перевипуску кешу пошуку).
-        const wantBook = !!(req.body.book && BOOKING_ENABLED);
+        // З твариною автобронь неможлива (ціна за тварину залежить від перевізника) - лише менеджер
+        const wantBook = !!(req.body.book && BOOKING_ENABLED) && !req.body.pet;
         let verdict = null;
         if (wantBook) verdict = await verifyBookable(req.body, list.length);
 
@@ -804,7 +806,8 @@ app.post('/api/order', async (req, res) => {
             route_from_station: cap(req.body.route_from_station, 200), route_to_station: cap(req.body.route_to_station, 200),
             route_date: cap(req.body.route_date, 40), route_time: cap(req.body.route_time, 40),
             route_price: cap(req.body.route_price, 40), route_carrier: cap(req.body.route_carrier, 120),
-            passengers: list, client_name, client_phone, check_warning, booked, tickets
+            passengers: list, client_name, client_phone, check_warning, booked, tickets,
+            pet: !!req.body.pet
         });
         console.log(`[Order] Нова заявка #${order.id} — ${client_name}, ${client_phone}, пасажирів: ${list.length}${booked ? ' · ЗАБРОНЬОВАНО' : ''}`);
 
