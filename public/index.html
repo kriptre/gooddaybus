@@ -19,22 +19,49 @@
     <meta property="og:image:height" content="630">
     <meta property="og:locale" content="uk_UA">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="GoodDayBus - автобусні квитки Україна - Європа">
+    <meta name="twitter:description" content="Знайдіть зручний рейс за хвилину. Бронювання без передоплати - оплата водієві.">
+    <meta name="twitter:image" content="https://gooddaybus.com/og-image.jpg">
 
-    <!-- Структуровані дані для Google -->
+    <!-- Структуровані дані: організація -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "TravelAgency",
       "name": "GoodDayBus",
       "url": "https://gooddaybus.com/",
+      "logo": "https://gooddaybus.com/apple-touch-icon.png",
+      "image": "https://gooddaybus.com/og-image.jpg",
       "telephone": "+380967656732",
       "description": "Пасажирські автобусні перевезення Україна - Європа",
+      "priceRange": "₴₴",
       "areaServed": ["UA", "PL", "DE", "CZ", "IT", "ES"],
+      "address": { "@type": "PostalAddress", "addressCountry": "UA" },
       "openingHours": "Mo-Su 07:00-23:00",
       "sameAs": ["https://t.me/gooddaybus"]
     }
     </script>
+    <!-- Структуровані дані: поширені запитання (відповідає видимому блоку FAQ на сторінці) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "Чи потрібна передоплата за квиток?",
+          "acceptedAnswer": { "@type": "Answer", "text": "На більшості рейсів передоплата не потрібна - бронювання безкоштовне, оплата водієві при посадці. На окремих рейсах перевізник вимагає передоплату; це завжди позначено в деталях рейсу." } },
+        { "@type": "Question", "name": "Як забронювати квиток?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Оберіть місто відправлення, призначення та дату, натисніть «Знайти рейс», виберіть зручний варіант і вкажіть дані пасажирів. Реєстрація не потрібна." } },
+        { "@type": "Question", "name": "До яких країн є рейси?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Польща, Німеччина, Чехія, Італія, Іспанія та інші країни Європи, а також рейси у зворотному напрямку - з Європи до України." } },
+        { "@type": "Question", "name": "Чи можна повернути або змінити квиток?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Так. Зверніться до нашого менеджера телефоном або в месенджери - допоможемо з поверненням чи зміною квитка згідно з умовами перевізника." } },
+        { "@type": "Question", "name": "Які документи потрібні для поїздки за кордон?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Закордонний біометричний паспорт. Для окремих категорій пасажирів можуть знадобитися додаткові документи - уточнюйте у менеджера." } }
+      ]
+    }
+    </script>
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🚌</text></svg>'>
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
@@ -301,6 +328,15 @@
         .seo-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
         .seo-tag { font-size: 13px; font-weight: 600; color: var(--text-2); background: var(--bg); border: 1px solid var(--border); border-radius: 50px; padding: 7px 15px; }
         @media (max-width: 760px) { .seo-section { padding-top: 44px; } .seo-section h2 { font-size: 30px; } }
+        /* FAQ: нативні <details> - без JS, доступно, контент у DOM (потрібно для FAQ-розмітки) */
+        .faq-section { max-width: 720px; margin: 0 auto; padding: 16px 24px 8px; }
+        .faq-item { border: 1px solid var(--border); border-radius: var(--r); background: var(--white); margin-bottom: 10px; overflow: hidden; }
+        .faq-item summary { list-style: none; cursor: pointer; padding: 16px 18px; font-size: 15px; font-weight: 700; color: var(--text); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .faq-item summary::-webkit-details-marker { display: none; }
+        .faq-item summary::after { content: '+'; font-size: 22px; font-weight: 400; color: var(--orange); line-height: 1; flex-shrink: 0; transition: transform 0.2s; }
+        .faq-item[open] summary::after { content: '\2212'; }
+        .faq-item summary:hover { color: var(--orange); }
+        .faq-item .faq-a { padding: 0 18px 16px; font-size: 14px; color: var(--text-2); line-height: 1.65; }
         .contact-section { background: linear-gradient(150deg, #FFF8F2 0%, #FFFFFF 60%, #F0F7FF 100%); border-top: 1px solid rgba(240,100,34,0.1); padding: 72px 24px 80px; margin-top: 20px; }
         .contact-inner { max-width: 920px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 52px; align-items: center; }
         .contact-left h2 { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 400; color: var(--text); line-height: 1.15; margin-bottom: 16px; }
@@ -558,6 +594,34 @@
             <span class="seo-tag">Київ - Вроцлав</span>
         </div>
     </div>
+</section>
+
+<!-- FAQ: видимий блок відповідає FAQPage-розмітці в <head> -->
+<section class="seo-section faq-wrap" style="padding-bottom:0">
+    <div class="seo-eyebrow">Поширені запитання</div>
+    <h2>Часті <em>запитання</em></h2>
+</section>
+<section class="faq-section">
+    <details class="faq-item">
+        <summary>Чи потрібна передоплата за квиток?</summary>
+        <div class="faq-a">На більшості рейсів передоплата не потрібна - бронювання безкоштовне, оплата водієві при посадці. На окремих рейсах перевізник вимагає передоплату; це завжди позначено в деталях рейсу.</div>
+    </details>
+    <details class="faq-item">
+        <summary>Як забронювати квиток?</summary>
+        <div class="faq-a">Оберіть місто відправлення, призначення та дату, натисніть «Знайти рейс», виберіть зручний варіант і вкажіть дані пасажирів. Реєстрація не потрібна.</div>
+    </details>
+    <details class="faq-item">
+        <summary>До яких країн є рейси?</summary>
+        <div class="faq-a">Польща, Німеччина, Чехія, Італія, Іспанія та інші країни Європи, а також рейси у зворотному напрямку - з Європи до України.</div>
+    </details>
+    <details class="faq-item">
+        <summary>Чи можна повернути або змінити квиток?</summary>
+        <div class="faq-a">Так. Зверніться до нашого менеджера телефоном або в месенджери - допоможемо з поверненням чи зміною квитка згідно з умовами перевізника.</div>
+    </details>
+    <details class="faq-item">
+        <summary>Які документи потрібні для поїздки за кордон?</summary>
+        <div class="faq-a">Закордонний біометричний паспорт. Для окремих категорій пасажирів можуть знадобитися додаткові документи - уточнюйте у менеджера.</div>
+    </details>
 </section>
 
 <!-- CONTACT SECTION -->
