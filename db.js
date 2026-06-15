@@ -258,6 +258,14 @@ function logVisit() {
     db.prepare('INSERT INTO visits (day, count) VALUES (?, 1) ON CONFLICT(day) DO UPDATE SET count = count + 1').run(day);
 }
 
+// Скидання аналітики (пошуки + візити). Заявки НЕ чіпаємо. Повертає скільки видалено.
+function resetAnalytics() {
+    const s = db.prepare('SELECT COUNT(*) n FROM searches').get().n;
+    const v = db.prepare('SELECT COUNT(*) n FROM visits').get().n;
+    db.exec('DELETE FROM searches; DELETE FROM visits;');
+    return { searches: s, visits: v };
+}
+
 // Розкладання подобових лічильників у стовпчики (день/тиждень/місяць — залежно від діапазону)
 const MONTHS_UA = ['січ', 'лют', 'бер', 'кві', 'тра', 'чер', 'лип', 'сер', 'вер', 'жов', 'лис', 'гру'];
 function bucketSeries(perDay, fromDay, toDay) {
@@ -329,4 +337,4 @@ function getStats(from, to) {
     };
 }
 
-module.exports = { createOrder, getOrder, listOrders, statusCounts, listClients, clientsCount, updateOrder, deleteOrder, deleteClient, backupDb, logSearch, logVisit, getStats, STATUSES };
+module.exports = { createOrder, getOrder, listOrders, statusCounts, listClients, clientsCount, updateOrder, deleteOrder, deleteClient, backupDb, logSearch, logVisit, resetAnalytics, getStats, STATUSES };

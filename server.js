@@ -60,6 +60,12 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '64kb' })); // захист від велетенських тіл запитів
 
+// Виключення з аналітики: власні (тестові) заходи не повинні псувати статистику.
+// 1) за IP - список у EXCLUDED_IPS (через кому);
+// 2) за прапором notrack у запиті - браузер, де відкрито gooddaybus.com/?notrack=1.
+const EXCLUDED_IPS = new Set((process.env.EXCLUDED_IPS || '').split(',').map(s => s.trim()).filter(Boolean));
+const skipStats = req => EXCLUDED_IPS.has(req.ip) || req.body?.notrack === true;
+
 // SEO: один канонічний домен - www.gooddaybus.com перенаправляємо на голий домен (301)
 app.use((req, res, next) => {
     const host = req.headers.host || '';
@@ -246,8 +252,9 @@ app.post('/api/search', async (req, res) => {
         // сервер ПЕРЕД бронюванням сам перевіряє рейс ще раз за свіжими даними contrabus
         res.json(routes.map(r => ({ ...r, bookable: isBookableRoute(r) })));
 
-        // Лог пошуку для аналітики — ПІСЛЯ відповіді, щоб не затримувати клієнта (рахуємо й кеш-хіти)
-        try {
+        // Лог пошуку для аналітики — ПІСЛЯ відповіді, щоб не затримувати клієнта (рахуємо й кеш-хіти).
+        // Власні/тестові заходи не рахуємо (за IP або прапором notrack).
+        if (!skipStats(req)) try {
             const cs = await getCities();
             const nm = id => { const c = cs.find(x => String(x.id) === String(id)); return c ? c.name : ''; };
             db.logSearch(nm(from_id), nm(to_id), date, routes.length);
@@ -820,7 +827,7 @@ app.post('/api/order', async (req, res) => {
 
 // POST /api/visit — лічильник відвідувань (публічний, без даних користувача)
 app.post('/api/visit', (req, res) => {
-    try { db.logVisit(); } catch (e) {}
+    if (!skipStats(req)) { try { db.logVisit(); } catch (e) {} }
     res.status(204).end();
 });
 
@@ -889,6 +896,17 @@ app.get('/api/orders', requireAdmin, (req, res) => {
 app.get('/api/stats', requireAdmin, (req, res) => {
     try {
         res.json(db.getStats(req.query.from, req.query.to));
+    } catch (err) {
+        serverError(res, err);
+    }
+});
+
+// POST /api/analytics/reset — обнулити пошуки/візити (заявки не чіпаємо). Лише для менеджера.
+app.post('/api/analytics/reset', requireAdmin, (req, res) => {
+    try {
+        const r = db.resetAnalytics();
+        console.log(`[Analytics] Скинуто: пошуків ${r.searches}, візитів ${r.visits}`);
+        res.json({ ok: true, ...r });
     } catch (err) {
         serverError(res, err);
     }

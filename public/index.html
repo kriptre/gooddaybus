@@ -871,7 +871,7 @@
         try {
             const r = await fetch(`${PROXY_BASE}/search`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ from_id: depId, to_id: arrId, date })
+                body: JSON.stringify({ from_id: depId, to_id: arrId, date, notrack: noTrack() })
             });
             if (!r.ok) {
                 const err = await r.json().catch(() => ({}));
@@ -1526,11 +1526,22 @@
         updateDateDisplay();
     }
 
+    // "Не рахувати мене у статистиці": gooddaybus.com/?notrack=1 вмикає, ?notrack=0 вимикає.
+    // Прапор зберігається у браузері й додається до запитів пошуку/візиту.
+    (() => {
+        const p = new URLSearchParams(location.search);
+        if (p.has('notrack')) {
+            if (p.get('notrack') === '0') { localStorage.removeItem('gdb_notrack'); alert('Облік увімкнено: цей браузер знову рахується у статистиці.'); }
+            else { localStorage.setItem('gdb_notrack', '1'); alert('Готово: заходи й пошуки з цього браузера більше не потраплятимуть у статистику сайту.'); }
+        }
+    })();
+    const noTrack = () => localStorage.getItem('gdb_notrack') === '1';
+
     document.addEventListener('DOMContentLoaded', () => {
-        // Лічильник візитів - один раз на сесію
+        // Лічильник візитів - один раз на сесію (крім позначених notrack)
         if (!sessionStorage.getItem('gdb_visited')) {
             sessionStorage.setItem('gdb_visited', '1');
-            fetch(`${PROXY_BASE}/visit`, { method: 'POST' }).catch(() => {});
+            fetch(`${PROXY_BASE}/visit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notrack: noTrack() }) }).catch(() => {});
         }
         setTodayDate();
         const dateInput = document.getElementById('date-input');

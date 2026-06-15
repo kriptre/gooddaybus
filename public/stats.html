@@ -140,6 +140,7 @@
                 <div class="period-menu hidden" id="period-menu"></div>
             </div>
             <a href="admin.html" class="hbtn"><i class="fa-solid fa-list-check"></i> Заявки</a>
+            <button class="hbtn" id="reset-btn" title="Обнулити пошуки та візити (заявки не чіпає)"><i class="fa-solid fa-eraser"></i> Скинути</button>
             <button class="hbtn" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Вийти</button>
         </div>
     </header>
@@ -231,6 +232,16 @@
     document.getElementById('login-btn').addEventListener('click',()=>tryLogin(document.getElementById('key-input').value.trim()));
     document.getElementById('key-input').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('login-btn').click(); });
     document.getElementById('logout-btn').addEventListener('click',()=>{ localStorage.removeItem('gdb_admin_key'); adminKey=''; showLogin(''); });
+    document.getElementById('reset-btn').addEventListener('click', async ()=>{
+        if(!confirm('Обнулити всю статистику пошуків і візитів?\n\nЦе прибере тестові дані. Заявки клієнтів НЕ зачіпаються. Дію не можна скасувати.')) return;
+        try{
+            const r=await fetch(`${API}/analytics/reset`,{method:'POST',headers:{'x-admin-key':adminKey}});
+            if(!r.ok) throw new Error('HTTP '+r.status);
+            const d=await r.json();
+            alert(`Готово. Видалено пошуків: ${d.searches}, візитів: ${d.visits}.`);
+            load();
+        }catch(e){ alert('Не вдалося скинути: '+e.message); }
+    });
 
     async function load(){
         try{
