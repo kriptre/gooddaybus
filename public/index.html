@@ -210,9 +210,11 @@
         .sort-btn:hover { border-color: var(--orange-brd); color: var(--text); }
         .sort-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; }
         .sort-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+        /* Фільтри: у вимкненому стані - нейтральні (як сортування), помітність дає підпис "Фільтри:" */
         .filter-btn i { font-size: 12px; margin-right: 4px; }
-        .filter-btn:hover { border-color: rgba(26,158,94,0.4); }
-        .filter-btn.active { background: var(--green); border-color: var(--green); color: #fff; }
+        .filter-btn:hover { border-color: rgba(26,158,94,0.45); color: var(--text); }
+        .filter-btn.active { background: var(--green); border-color: var(--green); color: #fff; box-shadow: 0 3px 10px rgba(26,158,94,0.25); }
+        .sort-lbl-f i { color: var(--green); }
 
         /* ── TICKET ── */
         .ticket { background: var(--white); border: 1px solid var(--border); border-radius: var(--r-lg); margin-bottom: 12px; overflow: hidden; transition: var(--tr); animation: slideUp 0.35s cubic-bezier(0.4,0,0.2,1) both; }
@@ -223,8 +225,8 @@
            були на одній вертикалі в усіх картках незалежно від довжини назв станцій */
         .t-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) auto auto; align-items: start; padding: 20px 24px; }
         .t-ep { display: flex; flex-direction: column; }
-        .t-time { font-size: 34px; font-weight: 800; color: var(--text); letter-spacing: -1.5px; line-height: 1; }
-        .t-city { font-size: 13px; color: var(--text-2); font-weight: 600; margin-top: 7px; }
+        .t-time { font-size: 38px; font-weight: 800; color: var(--text); letter-spacing: -1.6px; line-height: 1; }
+        .t-city { font-size: 12.5px; color: var(--text-2); font-weight: 600; margin-top: 7px; }
         .t-date { font-size: 12px; color: var(--text-3); font-weight: 700; margin-top: 3px; }
         .t-station { font-size: 11.5px; color: #7A8BA0; font-weight: 600; margin-top: 2px; line-height: 1.35; max-width: 210px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .t-ep[style*="right"] .t-station { margin-left: auto; }
@@ -244,7 +246,7 @@
         .t-divider { width: 1px; height: 56px; background: var(--border); margin: 0 20px; align-self: center; }
         .t-action { display: flex; flex-direction: column; align-items: flex-end; min-width: 130px; }
         .t-pricebox { text-align: right; }
-        .t-price { font-size: 34px; font-weight: 800; color: var(--text); letter-spacing: -1.5px; line-height: 1; }
+        .t-price { font-size: 38px; font-weight: 800; color: var(--text); letter-spacing: -1.6px; line-height: 1; }
         .t-price-sub { font-size: 12px; color: var(--text-3); margin-top: 3px; }
         .t-seats { font-size: 12px; color: var(--text-2); display: flex; align-items: center; justify-content: flex-end; gap: 5px; font-weight: 600; margin-top: 6px; }
         .t-seats i { color: var(--text-3); font-size: 10px; }
@@ -266,14 +268,19 @@
         .td-label { flex: 0 0 84px; font-size: 11px; font-weight: 800; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.4px; padding-top: 3px; }
         /* Рядки з чипами (Зручності, Оплата, Перевізник): підпис по центру висоти чипів */
         .td-row:has(.td-amens), .td-row:has(.pay-badge), .td-row:has(.carr-badge) { align-items: center; }
-        .td-row:has(.td-amens) .td-label, .td-row:has(.pay-badge) .td-label, .td-row:has(.carr-badge) .td-label { padding-top: 0; }
+        .td-row:has(.td-amens) .td-label, .td-row:has(.pay-badge) .td-label, .td-row:has(.carr-badge) .td-label, .td-row:has(.disc-chips) .td-label { padding-top: 0; }
         /* Звичайний текст вирівняний по іконках усередині чипів (13px = падінг чипа):
            рамка чипа на 0, іконка та звичайний текст - на одній вертикалі 13px. */
         .td-text { flex: 1; font-size: 13px; color: var(--text-2); line-height: 1.5; padding-left: 13px; }
         /* Бейджі оплати: флекс із відступами, щоб два бейджі не налазили один на одного */
         .td-text .pay-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-left: -13px; }
+        .td-text.td-disc { padding-left: 0; }
         .td-amens { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; }
         .amen { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--text); background: var(--white); border: 1px solid var(--border); border-radius: 50px; padding: 6px 13px; }
+        /* Знижки в деталях - зеленими бейджами (видно вигоду), а не сірим текстом */
+        .disc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .disc-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; color: var(--green); background: var(--green-bg); border: 1px solid rgba(26,158,94,0.28); border-radius: 50px; padding: 5px 12px; }
+        .disc-chip i { font-size: 10px; }
         /* Тип оплати у деталях */
         .pay-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; border-radius: 50px; padding: 5px 13px; }
         .pay-badge i { width: 1.25em; text-align: center; }
@@ -302,6 +309,17 @@
         .sg-cities { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
         .sg-btn { display: inline-flex; align-items: center; gap: 9px; background: var(--orange-bg); border: 1px solid var(--orange-brd); color: var(--orange); font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; padding: 11px 18px; border-radius: 50px; cursor: pointer; transition: var(--tr); }
         .sg-btn:hover { background: var(--orange); color: #fff; box-shadow: 0 6px 18px rgba(240,100,34,0.25); }
+        /* Головна дія на порожньому пошуку - залитою кнопкою, щоб одразу було видно, що тиснути */
+        .sg-btn.sg-primary { background: var(--orange); color: #fff; border-color: var(--orange); font-weight: 800; padding: 13px 22px; font-size: 15px; }
+        .sg-btn.sg-primary:hover { background: var(--orange-2); }
+        /* Швидкий контакт під пошуком */
+        .quick-contact { max-width: 920px; margin: 14px auto 0; padding: 0 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 14px; font-size: 13px; color: var(--text-2); }
+        .quick-contact > span { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; }
+        .quick-contact > span i { color: var(--orange); }
+        .quick-contact a { display: inline-flex; align-items: center; gap: 6px; color: var(--text); font-weight: 800; text-decoration: none; transition: var(--tr); }
+        .quick-contact a:hover { color: var(--orange); }
+        .quick-contact a.qc-tg { color: #2B9FD5; } .quick-contact a.qc-vb { color: #7360F2; } .quick-contact a.qc-wa { color: #25D366; }
+        .quick-contact a.qc-tg, .quick-contact a.qc-vb, .quick-contact a.qc-wa { font-size: 18px; }
         .sg-dist { font-size: 12px; font-weight: 600; opacity: 0.8; }
         .sg-none { font-size: 13px; color: var(--text-3); }
 
@@ -325,9 +343,15 @@
         .how-step p { font-size: 13px; color: var(--text-2); line-height: 1.55; }
         .how-arrow { display: flex; align-items: center; color: var(--text-3); font-size: 16px; flex-shrink: 0; }
         @media (max-width: 760px) {
-            .how-inner { flex-direction: column; align-items: center; gap: 22px; }
-            .how-step { max-width: 100%; width: 100%; }
-            .how-arrow { transform: rotate(90deg); }
+            /* Компактна сітка 2x2 замість довгого стовпчика - менше прокрутки на телефоні */
+            .how-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+            .how-step { max-width: none; width: auto; padding: 16px 12px 14px; }
+            .how-step:hover { transform: none; }
+            .how-arrow { display: none; }
+            .how-ico { width: 40px; height: 40px; font-size: 17px; margin: 4px auto 10px; border-radius: 11px; }
+            .how-num { width: 22px; height: 22px; font-size: 12px; top: -11px; }
+            .how-step h3 { font-size: 14px; margin-bottom: 5px; }
+            .how-step p { font-size: 12px; line-height: 1.4; }
         }
 
         /* ── CONTACT SECTION ── */
@@ -395,6 +419,14 @@
         .modal-head { background: linear-gradient(135deg, var(--orange-bg), var(--white)); padding: 26px 26px 22px; border-bottom: 1px solid var(--border); }
         .modal-head h2 { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
         .m-rtag { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--orange); background: var(--orange-bg); border: 1px solid var(--orange-brd); border-radius: 50px; padding: 5px 14px; }
+        /* Зведення рейсу в шапці вікна брони - людина бачить, що саме бронює */
+        .m-trip { margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; font-size: 13px; color: var(--text-2); }
+        .m-trip .mt-row { display: flex; align-items: center; gap: 7px; min-width: 0; }
+        .m-trip .mt-row i { color: var(--orange); width: 14px; text-align: center; flex-shrink: 0; }
+        .m-trip b { color: var(--text); font-weight: 800; }
+        .m-trip .mt-dur { color: var(--text-3); }
+        .m-trip .mt-stations { grid-column: 1/-1; display: flex; flex-direction: column; gap: 4px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 12px; }
+        .m-trip .mt-stations span { display: flex; align-items: flex-start; gap: 7px; line-height: 1.4; }
         .modal-body { padding: 22px 26px 4px; max-height: 62vh; overflow-y: auto; }
         /* Пасажири */
         .pax-row { padding: 16px 0; border-top: 1px dashed var(--border); }
@@ -568,6 +600,15 @@
     </div>
 </div>
 
+<!-- Швидкий контакт - менеджер доступний одразу, не треба гортати донизу -->
+<div class="quick-contact">
+    <span><i class="fa-solid fa-headset"></i> Питання? Менеджер допоможе:</span>
+    <a href="tel:+380967656732"><i class="fa-solid fa-phone"></i> +38 (096) 765-67-32</a>
+    <a href="https://t.me/gooddaybus" target="_blank" rel="noopener" class="qc-tg" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>
+    <a href="viber://chat?number=%2B380967656732" class="qc-vb" aria-label="Viber"><i class="fa-brands fa-viber"></i></a>
+    <a href="https://wa.me/380967656732" target="_blank" rel="noopener" class="qc-wa" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+</div>
+
 <!-- CONTENT -->
 <div class="content">
     <!-- Гайд "Як це працює" -->
@@ -727,6 +768,7 @@
                 <div class="m-rtag" id="m-route">
                     <i class="fa-solid fa-bus"></i><span>-</span>
                 </div>
+                <div class="m-trip" id="m-trip"></div>
                 <div class="m-booknote" id="m-booknote" style="display:none"><i class="fa-solid fa-bolt"></i> Місця бронюються одразу. Оплата - водієві при посадці.</div>
             </div>
             <div class="modal-body">
@@ -957,12 +999,12 @@
             const box = document.getElementById('suggest-box');
             if (!box) return;
             if (s.type === 'date') {
-                box.innerHTML = `<div class="sg-title"><i class="fa-regular fa-lightbulb"></i> Найближчий рейс на цьому напрямку:</div>
-                    <button class="sg-btn" id="sg-date"><i class="fa-regular fa-calendar-check"></i> ${s.date} - ${s.count} ${routeWord(s.count)}</button>`;
+                box.innerHTML = `<div class="sg-title"><i class="fa-regular fa-lightbulb"></i> На обрану дату рейсів немає, але є на ${s.date}:</div>
+                    <button class="sg-btn sg-primary" id="sg-date">Показати рейси на ${s.date} <span class="sg-dist">${s.count} ${routeWord(s.count)}</span> <i class="fa-solid fa-arrow-right"></i></button>`;
                 document.getElementById('sg-date').addEventListener('click', () => setDateAndSearch(s.date));
             } else if (s.type === 'cities') {
                 window._alts = s.alternatives;
-                box.innerHTML = `<div class="sg-title"><i class="fa-regular fa-lightbulb"></i> Прямих рейсів немає. Можливо, підійдуть найближчі міста:</div>
+                box.innerHTML = `<div class="sg-title"><i class="fa-regular fa-lightbulb"></i> Прямих рейсів немає. Натисніть місто поряд, щоб переглянути рейси:</div>
                     <div class="sg-cities">${s.alternatives.map((a, i) =>
                         `<button class="sg-btn sg-city" data-ai="${i}"><i class="fa-solid fa-location-dot"></i> ${a.name} <span class="sg-dist">~${a.distance_km} км · ${a.count} ${routeWord(a.count)}</span></button>`
                     ).join('')}</div>`;
@@ -1081,6 +1123,7 @@
                 <button class="sort-btn" data-sort="duration">Найшвидші</button>
                 <button class="sort-btn" data-sort="departure">За часом виїзду</button>
                 <span class="sort-sep"></span>
+                <span class="sort-lbl sort-lbl-f"><i class="fa-solid fa-filter"></i> Фільтри:</span>
                 <button class="sort-btn filter-btn" data-filter="noprepay"><i class="fa-regular fa-credit-card"></i> Без передоплати</button>
                 <button class="sort-btn filter-btn" data-filter="direct"><i class="fa-solid fa-route"></i> Без пересадок</button>
                 <button class="sort-btn filter-btn" data-filter="pets"><i class="fa-solid fa-paw"></i> З твариною</button>
@@ -1235,7 +1278,9 @@
         if (!Array.isArray(cached)) el.textContent = 'Завантаження…'; // показуємо лише якщо реально чекаємо мережу
         const d = await fetchDiscounts(rt.data_bundle);
         const real = (Array.isArray(d) ? d : []).filter(x => x.percent > 0);
-        el.innerHTML = real.length ? real.map(x => escTxt(x.description)).join('<br>') : 'Спеціальних знижок немає';
+        el.innerHTML = real.length
+            ? `<div class="disc-chips">${real.map(x => `<span class="disc-chip"><i class="fa-solid fa-tag"></i> ${escTxt(x.description)}</span>`).join('')}</div>`
+            : 'Спеціальних знижок немає';
     }
 
     // ---------- Пасажири + знижки ----------
@@ -1384,7 +1429,18 @@
         _bookMode = !!rt.bookable;
         _modalDiscounts = []; _paxDiscSel = []; _discOpen = false;
         const dt = rt.departure_time || rt.time_from || '';
-        document.querySelector('#m-route span').textContent = `${dep} → ${arr}${dt ? ', ' + dt : ''}`;
+        document.querySelector('#m-route span').textContent = `${dep} → ${arr}`;
+        // Зведення рейсу - щоб клієнт бачив, що саме бронює
+        const at = rt.arrival_time || rt.time_to || '';
+        const dur = fmtDuration(rt.travel_time);
+        const fromSt = rt.departure_station ? stripCityTxt(rt.departure_station, dep) : '';
+        const toSt = rt.arrival_station ? stripCityTxt(rt.arrival_station, arr) : '';
+        document.getElementById('m-trip').innerHTML =
+            `<div class="mt-row"><i class="fa-regular fa-calendar"></i> <b>${escTxt(fmtNiceDate(rt.date || _date))}</b></div>` +
+            `<div class="mt-row"><i class="fa-regular fa-clock"></i> ${escTxt(dt || '-')}${at ? ' → ' + escTxt(at) : ''}${dur ? ` <span class="mt-dur">${escTxt(dur)}</span>` : ''}</div>` +
+            `<div class="mt-row"><i class="fa-solid fa-tag"></i> <b>${escTxt(fmtPrice(rt) || '-')}</b>&nbsp;/&nbsp;місце</div>` +
+            `<div class="mt-row"><i class="fa-solid fa-bus"></i> ${escTxt(rt.carrier || rt.company || 'Автобус')}</div>` +
+            ((fromSt || toSt) ? `<div class="mt-stations">${fromSt ? `<span><i class="fa-solid fa-location-dot"></i> ${escTxt(fromSt)}</span>` : ''}${toSt ? `<span><i class="fa-solid fa-flag-checkered"></i> ${escTxt(toSt)}</span>` : ''}</div>` : '');
         document.getElementById('m-form').style.display = 'block';
         document.getElementById('m-ok').style.display = 'none';
         document.getElementById('c-comment').value = '';
