@@ -181,7 +181,7 @@
         .btn-search:hover { background: var(--orange-2); box-shadow: 0 6px 20px rgba(240,100,34,0.3); transform: translateY(-1px); }
         .btn-search:active { transform: translateY(0); }
         .btn-search:disabled { background: var(--text-3); cursor: not-allowed; transform: none; box-shadow: none; }
-        .status-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 13px; color: var(--text-3); min-height: 18px; }
+        .status-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 13px; color: var(--text-3); min-height: 18px; transition: color 0.2s; }
         .s-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
         .status-row.loading .s-dot { background: var(--orange); animation: dpulse 1s ease-in-out infinite; }
         .status-row.success .s-dot { background: var(--green); }
@@ -216,7 +216,7 @@
 
         /* ── TICKET ── */
         .ticket { background: var(--white); border: 1px solid var(--border); border-radius: var(--r-lg); margin-bottom: 12px; overflow: hidden; transition: var(--tr); animation: slideUp 0.35s cubic-bezier(0.4,0,0.2,1) both; }
-        .ticket:hover { border-color: rgba(240,100,34,0.3); box-shadow: var(--sh-md); transform: translateY(-2px); }
+        .ticket:hover { border-color: rgba(240,100,34,0.3); box-shadow: 0 12px 36px rgba(240,100,34,0.12); transform: translateY(-3px); }
         @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
         /* Колонки вирівняні по верху: ціна на рівні часу, "за місце" на рівні дати */
         /* Бічні колонки — однакові частки (а не auto по тексту), щоб пунктир і стрілка
@@ -454,7 +454,7 @@
         .tk-link:hover { background: var(--orange); color: #fff; }
         #m-ok-tickets { margin-bottom: 18px; }
         .modal-ok { padding: 48px 26px; text-align: center; display: none; }
-        .ok-circle { width: 68px; height: 68px; border-radius: 50%; background: var(--green-bg); display: flex; align-items: center; justify-content: center; color: var(--green); font-size: 28px; margin: 0 auto 20px; }
+        .ok-circle { width: 68px; height: 68px; border-radius: 50%; background: var(--green-bg); display: flex; align-items: center; justify-content: center; color: var(--green); font-size: 28px; margin: 0 auto 20px; animation: okPop 0.42s cubic-bezier(0.34,1.56,0.64,1) both; }
         .modal-ok h3 { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
         .modal-ok p { font-size: 14px; color: var(--text-2); line-height: 1.6; margin-bottom: 26px; }
 
@@ -478,6 +478,18 @@
             .contact-inner { grid-template-columns: 1fr; gap: 28px; }
             .contact-left h2 { font-size: 32px; }
         }
+
+        /* ── VISUAL POLISH ── */
+        /* Кнопка пошуку залишається оранжевою під час завантаження (не сіріє) */
+        .btn-search.searching, .btn-search.searching:disabled { background: var(--orange); opacity: 0.88; cursor: not-allowed; transform: none; box-shadow: none; }
+        /* Press-ефект на кнопках бронювання та відправки форми */
+        .btn-ticket:active { transform: translateY(1px); box-shadow: none; }
+        .btn-submit:active { transform: translateY(1px); box-shadow: none; }
+        /* Pop-анімація галочки успіху в модалці */
+        @keyframes okPop { 0%{transform:scale(0)} 70%{transform:scale(1.18)} 100%{transform:scale(1)} }
+        /* Спін іконки кнопки обміну міст при кліку */
+        @keyframes swapIconSpin { to{transform:rotate(360deg)} }
+        .swap-btn.spin i { animation: swapIconSpin 0.32s cubic-bezier(0.4,0,0.2,1); }
     </style>
 </head>
 <body>
@@ -858,6 +870,11 @@
         const d = document.getElementById('departure'), a = document.getElementById('arrival');
         [d.value, a.value] = [a.value, d.value];
         [depId, arrId] = [arrId, depId];
+        const btn = document.getElementById('swap-btn');
+        btn.classList.remove('spin');
+        void btn.offsetWidth;
+        btn.classList.add('spin');
+        btn.addEventListener('animationend', () => btn.classList.remove('spin'), { once: true });
     });
 
     async function search() {
@@ -866,7 +883,10 @@
         const [y, m, d] = document.getElementById('date-input').value.split('-');
         const date = `${d}.${m}.${y}`;
         setStatus('Шукаємо рейси...', 'loading');
-        document.getElementById('search-btn').disabled = true;
+        const searchBtn = document.getElementById('search-btn');
+        searchBtn.disabled = true;
+        searchBtn.classList.add('searching');
+        searchBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Шукаємо...';
         document.getElementById('results').innerHTML = '';
         try {
             const r = await fetch(`${PROXY_BASE}/search`, {
@@ -879,7 +899,11 @@
             }
             renderResults(await r.json(), date);
         } catch (e) { setStatus(`Помилка: ${e.message}`, 'error'); }
-        finally { document.getElementById('search-btn').disabled = false; }
+        finally {
+            searchBtn.disabled = false;
+            searchBtn.classList.remove('searching');
+            searchBtn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Знайти рейс';
+        }
     }
 
     const UA_MONTHS = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
@@ -1117,7 +1141,7 @@
             const st    = escTxt(rt.free_seats !== undefined ? rt.free_seats : '?');
             const car   = escTxt(rt.carrier || rt.company || 'Автобус');
             const dur   = fmtDuration(rt.travel_time);
-            return `<div class="ticket" style="animation-delay:${i*0.06}s">
+            return `<div class="ticket" style="animation-delay:${Math.min(i*0.06,0.3)}s">
                 <div class="t-main">
                     <div class="t-ep">
                         <div class="t-time">${dt}</div>
