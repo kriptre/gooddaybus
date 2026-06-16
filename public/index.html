@@ -204,6 +204,7 @@
         .res-title { font-size: 14px; font-weight: 600; color: var(--text-2); }
         .res-badge { font-size: 12px; font-weight: 800; color: var(--orange); background: var(--orange-bg); border: 1px solid var(--orange-brd); padding: 4px 14px; border-radius: 50px; }
         .sort-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .filter-bar { margin-top: -6px; }
         .sort-lbl { font-size: 13px; font-weight: 700; color: var(--text-2); display: flex; align-items: center; gap: 6px; margin-right: 2px; }
         .sort-lbl i { color: var(--text-3); }
         .sort-btn { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-2); background: var(--white); border: 1px solid var(--border); border-radius: 50px; padding: 7px 16px; cursor: pointer; transition: var(--tr); }
@@ -462,8 +463,6 @@
         .disc-block { margin-top: 16px; }
         .disc-head { display: flex; align-items: center; justify-content: space-between; }
         .disc-title { font-size: 14px; font-weight: 800; color: var(--text); }
-        .disc-toggle { background: none; border: none; color: var(--orange); font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 4px 0; }
-        .disc-toggle:hover { color: var(--orange-2); }
         .disc-body { margin-top: 12px; }
         .disc-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
         .disc-name { flex: 0 0 95px; font-size: 13px; font-weight: 700; color: var(--text-2); }
@@ -1122,7 +1121,8 @@
                 <button class="sort-btn" data-sort="price">Найдешевші</button>
                 <button class="sort-btn" data-sort="duration">Найшвидші</button>
                 <button class="sort-btn" data-sort="departure">За часом виїзду</button>
-                <span class="sort-sep"></span>
+            </div>
+            <div class="sort-bar filter-bar">
                 <span class="sort-lbl sort-lbl-f"><i class="fa-solid fa-filter"></i> Фільтри:</span>
                 <button class="sort-btn filter-btn" data-filter="noprepay"><i class="fa-regular fa-credit-card"></i> Без передоплати</button>
                 <button class="sort-btn filter-btn" data-filter="direct"><i class="fa-solid fa-route"></i> Без пересадок</button>
@@ -1310,21 +1310,19 @@
     }
     const seatWord = n => n === 1 ? 'місце' : (n < 5 ? 'місця' : 'місць');
 
-    // Блок знижок під коментарем - згорнутий, розкривається кнопкою
+    // Блок знижок усередині "Додатково" - селекти показуємо одразу, без вкладеного розкриття
     function renderDiscBlock() {
         const block = document.getElementById('disc-block');
         const rows = [...document.querySelectorAll('#pax-list .pax-row')];
         const real = _modalDiscounts.filter(d => d.percent > 0); // ховаємо "Повний" та 0% (напр. промокод)
-        if (!real.length || !rows.length) { block.style.display = 'none'; block.innerHTML = ''; document.getElementById('m-disc-note').style.display = 'none'; updateTotal(); return; }
+        if (!real.length || !rows.length) { block.style.display = 'none'; block.innerHTML = ''; document.getElementById('m-disc-note').style.display = 'none'; _discOpen = false; updateTotal(); return; }
         block.style.display = '';
+        _discOpen = true; // знижки доступні - selectи активні (за замовчуванням "Повний квиток")
         // опції: "Повний квиток" (за замовчуванням) + реальні знижки
         const opts = [{ id: '', percent: 0, label: 'Повний квиток' }].concat(real.map(d => ({ id: d.id, percent: d.percent, label: d.description })));
         block.innerHTML = `
-            <div class="disc-head">
-                <span class="disc-title">Знижка</span>
-                <button type="button" class="disc-toggle" id="disc-toggle">${_discOpen ? '<i class="fa-solid fa-chevron-up"></i> Згорнути' : '<i class="fa-solid fa-plus"></i> Додати знижку'}</button>
-            </div>
-            <div class="disc-body" style="display:${_discOpen ? 'block' : 'none'}">
+            <div class="disc-head"><span class="disc-title"><i class="fa-solid fa-tag" style="color:var(--orange);margin-right:6px"></i>Знижка для пасажирів</span></div>
+            <div class="disc-body">
                 ${rows.map((r, i) => {
                     const cur = _paxDiscSel[i] != null ? String(_paxDiscSel[i]) : '';
                     return `<div class="disc-row">
@@ -1334,11 +1332,6 @@
                     </div>`;
                 }).join('')}
             </div>`;
-        document.getElementById('disc-toggle').addEventListener('click', () => {
-            _discOpen = !_discOpen;
-            if (!_discOpen) _paxDiscSel = []; // згорнули → повний квиток усім
-            renderDiscBlock();
-        });
         block.querySelectorAll('.disc-sel').forEach(s => s.addEventListener('change', () => { _paxDiscSel[+s.dataset.i] = s.value; refreshDisc(); }));
         refreshDisc();
     }
