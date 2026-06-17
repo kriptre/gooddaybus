@@ -937,8 +937,12 @@
         searchBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Шукаємо...';
         const resultsEl = document.getElementById('results');
         resultsEl.innerHTML = '';
-        // Skeleton показуємо лише якщо відповідь не прийшла за 300мс (кеш/швидкий пошук - без мерехтіння)
-        const skelTimer = setTimeout(() => { resultsEl.innerHTML = skeletonHtml(); }, 300);
+        // Skeleton - лише коли пошук затягується (>450мс). Швидкий/кешований - без мерехтіння.
+        // Одразу ховаємо "Як це працює", щоб скелет був на видноті (під формою), а не нижче секції.
+        const skelTimer = setTimeout(() => {
+            document.getElementById('how-it-works').style.display = 'none';
+            resultsEl.innerHTML = skeletonHtml();
+        }, 450);
         try {
             const r = await fetch(`${PROXY_BASE}/search`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
