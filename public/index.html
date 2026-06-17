@@ -300,6 +300,12 @@
         .t-tag-hl i { color: var(--orange); }
 
         /* No results */
+        /* Skeleton-завантаження карток рейсів (показуємо лише на повільному пошуку) */
+        @keyframes skel-shimmer { 0% { background-position: -420px 0; } 100% { background-position: 420px 0; } }
+        .skel-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 22px 24px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: center; }
+        .skel-bar { background: linear-gradient(90deg, #EEF2F6 25%, #E0E8F0 37%, #EEF2F6 63%); background-size: 420px 100%; animation: skel-shimmer 1.2s infinite linear; border-radius: 6px; }
+        .skel-right { display: flex; flex-direction: column; align-items: flex-end; }
+        @media (max-width: 760px) { .skel-card { grid-template-columns: 1fr; } .skel-right { align-items: flex-start; } }
         .no-res { text-align: center; padding: 70px 20px; animation: slideUp 0.35s ease both; }
         .no-res-ico { width: 72px; height: 72px; background: var(--white); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 28px; color: var(--text-3); }
         .no-res h3 { font-size: 18px; font-weight: 700; color: var(--text-2); margin-bottom: 8px; }
@@ -929,23 +935,43 @@
         searchBtn.disabled = true;
         searchBtn.classList.add('searching');
         searchBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Шукаємо...';
-        document.getElementById('results').innerHTML = '';
+        const resultsEl = document.getElementById('results');
+        resultsEl.innerHTML = '';
+        // Skeleton показуємо лише якщо відповідь не прийшла за 300мс (кеш/швидкий пошук - без мерехтіння)
+        const skelTimer = setTimeout(() => { resultsEl.innerHTML = skeletonHtml(); }, 300);
         try {
             const r = await fetch(`${PROXY_BASE}/search`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ from_id: depId, to_id: arrId, date, notrack: noTrack() })
             });
+            clearTimeout(skelTimer);
             if (!r.ok) {
                 const err = await r.json().catch(() => ({}));
                 throw new Error(err.error || `HTTP ${r.status}`);
             }
             renderResults(await r.json(), date);
-        } catch (e) { setStatus(`Помилка: ${e.message}`, 'error'); }
+        } catch (e) { clearTimeout(skelTimer); resultsEl.innerHTML = ''; setStatus(`Помилка: ${e.message}`, 'error'); }
         finally {
             searchBtn.disabled = false;
             searchBtn.classList.remove('searching');
             searchBtn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Знайти рейс';
         }
+    }
+
+    // Картки-плейсхолдери на час повільного пошуку
+    function skeletonHtml() {
+        const card = `<div class="skel-card">
+            <div class="skel-left">
+                <div class="skel-bar" style="width:88px;height:30px"></div>
+                <div class="skel-bar" style="width:120px;height:13px;margin-top:10px"></div>
+                <div class="skel-bar" style="width:170px;height:11px;margin-top:8px"></div>
+            </div>
+            <div class="skel-right">
+                <div class="skel-bar" style="width:96px;height:30px"></div>
+                <div class="skel-bar" style="width:130px;height:40px;margin-top:14px;border-radius:8px"></div>
+            </div>
+        </div>`;
+        return card.repeat(4);
     }
 
     const UA_MONTHS = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
