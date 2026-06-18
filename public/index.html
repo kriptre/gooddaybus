@@ -420,9 +420,11 @@
         footer span { color: rgba(255,255,255,0.65); }
 
         /* ── MODAL ── */
-        .modal-bg { position: fixed; inset: 0; background: rgba(26,35,50,0.55); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.28s ease; }
+        /* Оверлей сам прокручується (єдиний контейнер скролу) - центрує коротку модалку
+           і дозволяє догорнути до кнопки, коли вмісту багато. Фон блокується через JS. */
+        .modal-bg { position: fixed; inset: 0; background: rgba(26,35,50,0.55); backdrop-filter: blur(6px); display: flex; align-items: flex-start; justify-content: center; z-index: 100; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.28s ease; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .modal-bg.open { opacity: 1; pointer-events: all; }
-        .modal { background: var(--white); border-radius: var(--r-xl); max-width: 450px; width: 100%; box-shadow: var(--sh-lg); transform: translateY(20px) scale(0.97); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); overflow: hidden; }
+        .modal { background: var(--white); border-radius: var(--r-xl); max-width: 450px; width: 100%; margin: auto; box-shadow: var(--sh-lg); transform: translateY(20px) scale(0.97); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); overflow: hidden; }
         .modal-bg.open .modal { transform: translateY(0) scale(1); }
         .modal-head { background: linear-gradient(135deg, var(--orange-bg), var(--white)); padding: 26px 26px 22px; border-bottom: 1px solid var(--border); }
         .modal-head h2 { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
@@ -435,7 +437,7 @@
         .m-trip .mt-dur { color: var(--text-3); }
         .m-trip .mt-stations { grid-column: 1/-1; display: flex; flex-direction: column; gap: 4px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 12px; }
         .m-trip .mt-stations span { display: flex; align-items: flex-start; gap: 7px; line-height: 1.4; }
-        .modal-body { padding: 22px 26px 4px; max-height: 62vh; overflow-y: auto; }
+        .modal-body { padding: 22px 26px 4px; }
         /* Пасажири */
         .pax-row { padding: 16px 0; border-top: 1px dashed var(--border); }
         .pax-row:first-child { border-top: none; padding-top: 0; }
@@ -1448,6 +1450,28 @@
             ? '<i class="fa-solid fa-bolt"></i> Забронювати'
             : '<i class="fa-solid fa-paper-plane"></i> Надіслати';
     }
+    // Блокування прокрутки фону, поки відкрита модалка (надійно для iOS - через position:fixed)
+    let _scrollY = 0;
+    function lockScroll() {
+        _scrollY = window.scrollY;
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${_scrollY}px`;
+        document.body.style.left = '0';
+        document.body.style.right = '0';
+        document.body.style.width = '100%';
+    }
+    function unlockScroll() {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        window.scrollTo(0, _scrollY);
+    }
+    function closeBooking() {
+        document.getElementById('modal-bg').classList.remove('open');
+        unlockScroll();
+    }
     function openModal(rt, dep, arr, date) {
         selRoute = rt;
         _bookMode = !!rt.bookable;
@@ -1481,6 +1505,7 @@
         addPax(); // один порожній пасажир за замовчуванням
         applyBookUI();
         document.getElementById('modal-bg').classList.add('open');
+        lockScroll(); // блокуємо фон, щоб не "просвічував" скрол головної
         loadModalDiscounts(rt); // підвантажуємо знижки асинхронно
     }
 
@@ -1497,8 +1522,8 @@
         applyBookUI();
     });
 
-    document.getElementById('m-cancel').addEventListener('click', () => document.getElementById('modal-bg').classList.remove('open'));
-    document.getElementById('modal-bg').addEventListener('click', e => { if (e.target === document.getElementById('modal-bg')) document.getElementById('modal-bg').classList.remove('open'); });
+    document.getElementById('m-cancel').addEventListener('click', closeBooking);
+    document.getElementById('modal-bg').addEventListener('click', e => { if (e.target === document.getElementById('modal-bg')) closeBooking(); });
     document.getElementById('m-submit').addEventListener('click', async () => {
         const rows = [...document.querySelectorAll('#pax-list .pax-row')];
         const passengers = [];
@@ -1583,7 +1608,7 @@
                 : '<i class="fa-solid fa-paper-plane"></i> Надіслати';
         }
     });
-    document.getElementById('m-close').addEventListener('click', () => document.getElementById('modal-bg').classList.remove('open'));
+    document.getElementById('m-close').addEventListener('click', closeBooking);
     const modalBg = document.getElementById('modal-bg');
     document.addEventListener('keydown', e => {
         // Enter запускає пошук лише коли модалка закрита (інакше заважає заповнювати форму)
@@ -1592,7 +1617,7 @@
     // Доступність модалки: Escape закриває, Tab циклить фокус усередині (focus-trap)
     document.addEventListener('keydown', e => {
         if (!modalBg.classList.contains('open')) return;
-        if (e.key === 'Escape') { modalBg.classList.remove('open'); return; }
+        if (e.key === 'Escape') { closeBooking(); return; }
         // Мобільний баг: Enter ховає клавіатуру, але поле лишається у фокусі
         // і блокує прокрутку модалки - тому знімаємо фокус самі.
         // У textarea коментаря preventDefault також прибирає зайвий новий рядок.
