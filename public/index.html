@@ -242,6 +242,11 @@
         /* Довгі назви перевізників не переносяться, а обрізаються трикрапкою
            (повна назва - у спливаючій підказці та в деталях рейсу) */
         .t-car-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Пересадки в деталях - окремими рядками з крапкою (без плашок) */
+        .td-transfers { display: flex; flex-direction: column; gap: 7px; }
+        .td-transfers .tr-item { display: flex; align-items: flex-start; gap: 8px; line-height: 1.4; }
+        .td-transfers .tr-item:not(:last-child) { padding-bottom: 7px; border-bottom: 1px dashed var(--border); }
+        .td-transfers .tr-item i { color: var(--orange); font-size: 11px; margin-top: 3px; flex-shrink: 0; }
         /* Пересадки видно одразу на картці - акуратний напис усередині пунктирної лінії */
         .t-line-chip { font-size: 9px; font-weight: 800; letter-spacing: 0.6px; text-transform: uppercase; color: var(--orange); white-space: nowrap; padding: 0 4px; }
         .t-line-chip.tlc-ok { color: var(--green); }
@@ -964,6 +969,15 @@
         }
     }
 
+    // Пересадки: contrabus дає їх одним рядком ("Пересадка №1...Пересадка №2...").
+    // Розбиваємо по "Пересадка №N" у окремі рядки - без круглих плашок, просто з крапкою.
+    function transfersHtml(ci) {
+        if (!ci) return 'Без пересадок, прямий рейс';
+        const parts = String(ci).split(/(?=Пересадка\s*№?\s*\d)/).map(s => s.trim()).filter(Boolean);
+        if (parts.length <= 1) return escTxt(ci);
+        return `<div class="td-transfers">${parts.map(p => `<div class="tr-item"><i class="fa-solid fa-location-dot"></i> ${escTxt(p)}</div>`).join('')}</div>`;
+    }
+
     // Картки-плейсхолдери на час повільного пошуку
     function skeletonHtml() {
         const card = `<div class="skel-card">
@@ -1253,7 +1267,7 @@
                     ${amenitiesHtml(rt.carrier_amenities)}
                     <div class="td-row"><div class="td-label">Оплата</div><div class="td-text">${paymentHtml(rt)}</div></div>
                     <div class="td-row"><div class="td-label">Знижки</div><div class="td-text td-disc">-</div></div>
-                    <div class="td-row"><div class="td-label">Пересадки</div><div class="td-text">${rt.change_info ? escTxt(rt.change_info) : 'Без пересадок, прямий рейс'}</div></div>
+                    <div class="td-row"><div class="td-label">Пересадки</div><div class="td-text">${transfersHtml(rt.change_info)}</div></div>
                     <div class="td-row"><div class="td-label">Перевізник</div><div class="td-text td-carrier">${car}${rt.carrier_rating ? ` <span class="carr-badge cb-star"><i class="fa-solid fa-star"></i> ${escTxt(rt.carrier_rating)}</span>` : ''}${rt.carrier_reliability ? ` <span class="carr-badge cb-rel"><i class="fa-solid fa-shield-halved"></i> надійність ${escTxt(rt.carrier_reliability)}%</span>` : ''}</div></div>
                     ${rt.baggage ? `<div class="td-row"><div class="td-label">Багаж</div><div class="td-text">${escTxt(rt.baggage)}</div></div>` : ''}
                 </div>

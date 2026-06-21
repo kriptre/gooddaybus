@@ -656,9 +656,11 @@ async function verifyBookable(body, paxCount) {
 }
 
 // Створення брони в contrabus → { ok, tickets:[{id,pdf}] } або { ok:false, reason }
-async function createBooking(data_bundle, passengers) {
+// skipChecks=true - для легітимних "дублів" (зворотний рейс, мама+дитина на 1 номер),
+// які ми вже самі визнали безпечними; інакше contrabus відбив би їх повторною перевіркою.
+async function createBooking(data_bundle, passengers, skipChecks = false) {
     if (BOOKING_DRY_RUN) {
-        console.log('[Booking] DRY RUN — бронь НЕ створюється, фейкові квитки');
+        console.log(`[Booking] DRY RUN — бронь НЕ створюється, фейкові квитки${skipChecks ? ' (skip_checks)' : ''}`);
         return { ok: true, tickets: passengers.map((p, i) => ({ id: `DRYRUN-${i + 1}`, pdf: '' })) };
     }
     const token = await getToken();
@@ -667,7 +669,7 @@ async function createBooking(data_bundle, passengers) {
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
             data_bundle,
-            skip_checks: false, // contrabus сам перевіряє дублі/чорний список
+            skip_checks: skipChecks, // false - contrabus перевіряє дублі/чорний список; true - для вже схвалених дублів
             // Повний набір полів зі схеми create_booking - як у реальних бронях диспетчера
             // (відсутність будь-якого ключа дає 400 "missing some required fields")
             passengers_data: passengers.map(p => ({
@@ -705,6 +707,36 @@ async function createBooking(data_bundle, passengers) {
         tickets.push({ id, pdf });
     }
     return { ok: true, tickets };
+}
+
+// --- Розумна обробка "дублів" ---
+// contrabus попереджає "already have a booking +-7 days" і для законних випадків
+// (зворотний рейс, мама+дитина на 1 номер). Розрізняємо це від чорного списку.
+const DUP_RE = /already have a booking|вже.*бронюванн/i;
+const digitsOf = s => (String(s || '').match(/\d/g) || []).join('');
+const cityNorm = s => String(s || '').trim().toLowerCase();
+
+// Чи має хтось із цих телефонів УЖЕ бронь на ТОЙ САМИЙ напрямок (from→to) найближчим часом.
+// Так → це справжній повтор того ж маршруту (не бронюємо авто, менеджеру).
+// Ні → дубль через інший рейс/зворотний - бронювати можна. Помилка запиту → вважаємо, що має (безпечно).
+async function hasSameRouteBooking(phones, from, to) {
+    try {
+        const token = await getToken();
+        const now = new Date();
+        const fmt = dt => `${String(dt.getDate()).padStart(2, '0')}.${String(dt.getMonth() + 1).padStart(2, '0')}.${dt.getFullYear()}`;
+        const back = new Date(now); back.setDate(back.getDate() - 12); // вікно дубля contrabus ~±7 днів за датою броні
+        const fwd = new Date(now); fwd.setDate(fwd.getDate() + 1);
+        const r = await fetch(`${API_BASE_URL}/bookings/get_booking_report`, {
+            method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ start_date: fmt(back), final_date: fmt(fwd), report_type: 'general', date_type: 'booking' })
+        });
+        if (!r.ok) return true; // не змогли перевірити - діємо консервативно (менеджеру)
+        const j = await r.json();
+        const all = Array.isArray(j.bookings) ? j.bookings : [];
+        const pset = new Set(phones.map(digitsOf));
+        const f = cityNorm(from), t = cityNorm(to);
+        return all.some(b => !CANCELLED_BOOKING.has(String(b.status)) && pset.has(digitsOf(b.phone)) && cityNorm(b.from) === f && cityNorm(b.to) === t);
+    } catch (e) { return true; } // консервативно
 }
 
 // POST /api/order — клієнт залишає заявку зі списком пасажирів (публічний)
@@ -788,21 +820,33 @@ app.post('/api/order', async (req, res) => {
         //    а клієнт отримує стандартне "менеджер зв'яжеться" (причину не розкриваємо).
         let booked = false, tickets = [];
         if (wantBook) {
+            // Кілька пасажирів з одним номером (мама+дитина) - законно; contrabus може
+            // вважати дублем, тож бронюємо з skip_checks, щоб і він не відбив.
+            const repeatedPhone = new Set(list.map(p => digitsOf(p.phone))).size < list.length;
+            const doBook = async (skip) => {
+                const b = await createBooking(verdict.route.data_bundle, list, skip).catch(e => ({ ok: false, reason: cap(e.message, 200) }));
+                if (b.ok) { booked = true; tickets = b.tickets; check_warning = ''; }
+                else { check_warning = `Автобронь не вдалася: ${b.reason}. Обробіть вручну.`; console.log(`[Booking] Збій автоброні: ${b.reason}`); }
+            };
             if (!verdict.ok) {
                 check_warning = (check_warning ? check_warning + ' · ' : '') + `Автобронь недоступна: ${verdict.reason}. Обробіть вручну.`;
                 console.log(`[Booking] Відмова у автоброні: ${verdict.reason}`);
-            } else if (check_warning) {
+            } else if (check_warning && !DUP_RE.test(check_warning)) {
+                // Чорний список / незнайоме попередження - лише менеджер
                 check_warning += ' · Автобронь пропущено через це попередження';
-            } else {
-                {
-                    // Бронюємо СВІЖИМ бандлом із щойно перевіреної видачі
-                    const b = await createBooking(verdict.route.data_bundle, list).catch(e => ({ ok: false, reason: cap(e.message, 200) }));
-                    if (b.ok) { booked = true; tickets = b.tickets; }
-                    else {
-                        check_warning = `Автобронь не вдалася: ${b.reason}. Обробіть вручну.`;
-                        console.log(`[Booking] Збій автоброні: ${b.reason}`);
-                    }
+                console.log('[Booking] Попередження не схоже на дубль - менеджеру');
+            } else if (check_warning && DUP_RE.test(check_warning)) {
+                // Дубль: дозволяємо лише якщо НЕ той самий маршрут уже заброньовано
+                if (await hasSameRouteBooking(list.map(p => p.phone), req.body.route_from, req.body.route_to)) {
+                    check_warning = 'Дубль того самого напрямку - можливо, повторне бронювання. Обробіть вручну.';
+                    console.log('[Booking] Дубль того самого маршруту - менеджеру');
+                } else {
+                    console.log('[Booking] Дубль іншого маршруту/зворотний - бронюємо (skip_checks)');
+                    await doBook(true);
                 }
+            } else {
+                // Без попереджень: якщо в заявці однаковий номер у кількох - skip_checks
+                await doBook(repeatedPhone);
             }
         }
 
