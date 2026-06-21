@@ -316,7 +316,8 @@
         .no-res h3 { font-size: 18px; font-weight: 700; color: var(--text-2); margin-bottom: 8px; }
         .no-res p { font-size: 14px; color: var(--text-3); }
         .suggest-box { margin-top: 22px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-        .sg-loading { font-size: 13px; color: var(--text-3); }
+        .sg-loading { font-size: 13px; color: var(--text-3); display: flex; align-items: center; gap: 7px; }
+        .sg-skel { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
         .sg-title { font-size: 14px; font-weight: 700; color: var(--text-2); display: flex; align-items: center; gap: 7px; }
         .sg-title i { color: var(--orange); }
         .sg-cities { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
@@ -1148,7 +1149,11 @@
                 <h3>Рейсів не знайдено</h3>
                 <p>На ${date} за напрямком ${dep} → ${arr} рейсів немає.</p>
                 <div class="suggest-box" id="suggest-box">
-                    <div class="sg-loading"><i class="fa-solid fa-spinner fa-spin"></i> Шукаємо найближчі варіанти...</div>
+                    <div class="sg-loading"><i class="fa-solid fa-spinner fa-spin"></i> Шукаємо найближчі дати та міста...</div>
+                    <div class="sg-skel">
+                        <div class="skel-bar" style="width:230px;height:44px;border-radius:50px"></div>
+                        <div class="skel-bar" style="width:180px;height:44px;border-radius:50px"></div>
+                    </div>
                 </div>
             </div>`;
             setStatus('Рейсів не знайдено', '');
