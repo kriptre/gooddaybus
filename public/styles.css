@@ -435,3 +435,40 @@
         /* Спін іконки кнопки обміну міст при кліку */
         @keyframes swapIconSpin { to{transform:rotate(360deg)} }
         .swap-btn.spin i { animation: swapIconSpin 0.32s cubic-bezier(0.4,0,0.2,1); }
+
+/* ── Лента дат на сторінці маршруту ── */
+.date-strip { max-width: 920px; margin: 14px auto 0; padding: 0 20px; display: flex; align-items: stretch; gap: 8px; }
+.ds-arr { flex-shrink: 0; width: 38px; border: 1px solid var(--border); background: var(--white); border-radius: var(--r); color: var(--text-2); cursor: pointer; font-size: 14px; transition: var(--tr); }
+.ds-arr:hover:not(:disabled) { border-color: var(--orange); color: var(--orange); }
+.ds-arr:disabled { opacity: 0.4; cursor: default; }
+.ds-days { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.ds-day { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 2px; background: var(--white); border: 1px solid var(--border); border-radius: var(--r); cursor: pointer; font-family: 'Nunito', sans-serif; transition: var(--tr); }
+.ds-day:hover { border-color: var(--orange-brd); }
+.ds-day .ds-dow { font-size: 10px; color: var(--text-3); font-weight: 700; text-transform: uppercase; }
+.ds-day .ds-num { font-size: 17px; font-weight: 800; color: var(--text); line-height: 1.1; }
+.ds-day .ds-mon { font-size: 10px; color: var(--text-3); font-weight: 600; }
+.ds-day.sel { background: var(--orange); border-color: var(--orange); }
+.ds-day.sel .ds-dow, .ds-day.sel .ds-num, .ds-day.sel .ds-mon { color: #fff; }
+@media (max-width: 600px) {
+    .date-strip { gap: 5px; padding: 0 12px; }
+    .ds-days { gap: 5px; }
+    .ds-day { padding: 7px 1px; }
+    .ds-day .ds-num { font-size: 15px; }
+}
+/* SEO-текст під віджетом на сторінці маршруту */
+.route-seo { max-width: 820px; margin: 40px auto 0; padding: 0 20px; }
+.route-seo h2 { font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 400; color: var(--text); margin: 28px 0 12px; }
+.route-seo h2:first-child { margin-top: 0; }
+.route-seo p { font-size: 15px; color: var(--text-2); line-height: 1.75; margin-bottom: 12px; }
+.route-reverse { max-width: 920px; margin: 18px auto 0; padding: 0 20px; }
+.route-reverse a { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; color: var(--orange); text-decoration: none; background: var(--orange-bg); border: 1px solid var(--orange-brd); border-radius: 50px; padding: 9px 18px; }
+.route-reverse a:hover { background: var(--orange); color: #fff; }
+.route-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.route-links a { font-size: 13px; font-weight: 600; color: var(--text-2); background: var(--bg); border: 1px solid var(--border); border-radius: 50px; padding: 7px 14px; text-decoration: none; }
+.route-links a:hover { color: var(--orange); border-color: var(--orange-brd); }
+
+/* Hero на сторінці маршруту */
+.route-hero { text-align: center; padding: 40px 20px 4px; }
+.route-hero h1 { font-family: 'Cormorant Garamond', serif; font-size: clamp(30px, 5vw, 46px); font-weight: 500; color: var(--text); line-height: 1.12; }
+.route-hero h1 .accent { color: var(--orange); }
+.route-hero p { font-size: 15px; color: var(--text-2); margin-top: 8px; }

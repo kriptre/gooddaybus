@@ -32,9 +32,68 @@
             cities = await r.json();
             setStatus(`${cities.length} міст у наявності - оберіть напрямок`, 'success');
             document.getElementById('search-btn').disabled = false;
-            applyQueryParams(); // якщо прийшли за посиланням /?from=&to=&date= - підставити й шукати
+            if (window.__ROUTE__) initRoutePage();   // сторінка маршруту: підставити напрямок, стрічка дат, авто-пошук
+            else applyQueryParams();                 // головна: deep-link /?from=&to=&date=
         } catch (e) { setStatus(`Помилка: ${e.message}`, 'error'); }
     }
+
+    // === Сторінка маршруту (route page) ===
+    const STRIP_LEN = 7, STRIP_MAX = 90;
+    const DOW = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+    const MON_SHORT = ['січ', 'лют', 'бер', 'кві', 'тра', 'чер', 'лип', 'сер', 'вер', 'жов', 'лис', 'гру'];
+    const ymdLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    let _stripStart = 0; // зсув у днях від сьогодні для лівої видимої дати
+
+    function buildDateStrip(selectedYMD) {
+        const box = document.getElementById('date-strip');
+        if (!box) return;
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        let days = '';
+        for (let i = 0; i < STRIP_LEN; i++) {
+            const d = new Date(today); d.setDate(d.getDate() + _stripStart + i);
+            const ymd = ymdLocal(d);
+            days += `<button type="button" class="ds-day${ymd === selectedYMD ? ' sel' : ''}" data-ymd="${ymd}"><span class="ds-dow">${DOW[d.getDay()]}</span><span class="ds-num">${d.getDate()}</span><span class="ds-mon">${MON_SHORT[d.getMonth()]}</span></button>`;
+        }
+        const canPrev = _stripStart > 0, canNext = _stripStart + STRIP_LEN <= STRIP_MAX;
+        box.innerHTML = `<button type="button" class="ds-arr" id="ds-prev"${canPrev ? '' : ' disabled'} aria-label="Раніше"><i class="fa-solid fa-chevron-left"></i></button>`
+            + `<div class="ds-days">${days}</div>`
+            + `<button type="button" class="ds-arr" id="ds-next"${canNext ? '' : ' disabled'} aria-label="Пізніше"><i class="fa-solid fa-chevron-right"></i></button>`;
+        box.querySelector('#ds-prev').addEventListener('click', () => { _stripStart = Math.max(0, _stripStart - STRIP_LEN); buildDateStrip(document.getElementById('date-input').value); });
+        box.querySelector('#ds-next').addEventListener('click', () => { _stripStart = Math.min(STRIP_MAX - STRIP_LEN + 1, _stripStart + STRIP_LEN); buildDateStrip(document.getElementById('date-input').value); });
+        box.querySelectorAll('.ds-day').forEach(b => b.addEventListener('click', () => {
+            document.getElementById('date-input').value = b.dataset.ymd;
+            updateDateDisplay();
+            buildDateStrip(b.dataset.ymd);
+            search(); // той самий маршрут, нова дата → шукаємо тут же
+        }));
+    }
+
+    function initRoutePage() {
+        const R = window.__ROUTE__;
+        document.getElementById('departure').value = R.fromName; depId = R.fromId;
+        document.getElementById('arrival').value = R.toName; arrId = R.toId;
+        buildDateStrip(document.getElementById('date-input').value); // дата = сьогодні (вже виставлена)
+        search();
+    }
+
+    // Глибоке посилання на пошук: /?from=<id>&to=<id>&date=YYYY-MM-DD → заповнити форму й запустити
+    // (використовують сторінки маршрутів при зміні напрямку та шарабельні посилання на пошук).
+    function applyQueryParams() {
+        const p = new URLSearchParams(location.search);
+        const fromId = p.get('from'), toId = p.get('to'), date = p.get('date');
+        if (!fromId || !toId) return;
+        const cf = cities.find(c => String(c.id) === String(fromId));
+        const ct = cities.find(c => String(c.id) === String(toId));
+        if (!cf || !ct) return;
+        document.getElementById('departure').value = cf.name; depId = cf.id;
+        document.getElementById('arrival').value = ct.name; arrId = ct.id;
+        if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            document.getElementById('date-input').value = date;
+            updateDateDisplay();
+        }
+        search();
+    }
+
 
     // Глибоке посилання на пошук: /?from=<id>&to=<id>&date=YYYY-MM-DD → заповнити форму й запустити
     // (використовують сторінки маршрутів при зміні напрямку та шарабельні посилання на пошук).
@@ -120,6 +179,12 @@
     async function search() {
         if (!depId || !arrId) { setStatus('Оберіть міста зі списку підказок', 'error'); setTimeout(() => setStatus('',''), 3000); return; }
         if (depId === arrId) { setStatus('Вкажіть різні міста', 'error'); return; }
+        // На сторінці маршруту: якщо обрали ІНШИЙ напрямок - ведемо на головну з авто-пошуком
+        // (URL сторінки завжди = її маршрут). Той самий маршрут (стрічка дат) шукаємо тут же.
+        if (window.__ROUTE__ && (String(depId) !== String(window.__ROUTE__.fromId) || String(arrId) !== String(window.__ROUTE__.toId))) {
+            location.href = `/?from=${depId}&to=${arrId}&date=${document.getElementById('date-input').value}`;
+            return;
+        }
         const [y, m, d] = document.getElementById('date-input').value.split('-');
         const date = `${d}.${m}.${y}`;
         setStatus('Шукаємо рейси...', 'loading');
@@ -132,7 +197,7 @@
         // Skeleton - лише коли пошук затягується (>450мс). Швидкий/кешований - без мерехтіння.
         // Одразу ховаємо "Як це працює", щоб скелет був на видноті (під формою), а не нижче секції.
         const skelTimer = setTimeout(() => {
-            document.getElementById('how-it-works').style.display = 'none';
+            const how = document.getElementById('how-it-works'); if (how) how.style.display = 'none';
             resultsEl.innerHTML = skeletonHtml();
         }, 450);
         try {
@@ -325,7 +390,7 @@
         const el = document.getElementById('results');
         const dep = document.getElementById('departure').value;
         const arr = document.getElementById('arrival').value;
-        document.getElementById('how-it-works').style.display = 'none';
+        const how = document.getElementById('how-it-works'); if (how) how.style.display = 'none';
 
         if (!Array.isArray(routes) || !routes.length) {
             el.innerHTML = `<div class="no-res">

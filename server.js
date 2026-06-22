@@ -78,6 +78,7 @@ app.use((req, res, next) => {
 // no-cache для HTML: браузер щоразу звіряє версію з сервером (ETag → дешеве 304),
 // тому після деплою користувачі одразу бачать нову версію, а не стару з кешу.
 app.use(express.static(require('path').join(__dirname, 'public'), {
+    extensions: ['html'], // чисті URL без .html: /kyiv-varshava → kyiv-varshava.html
     setHeaders(res, filePath) {
         if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
     }

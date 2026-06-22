@@ -5,5 +5,14 @@
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
-  <!-- додавайте сюди кожну нову сторінку маршруту -->
+  <url>
+    <loc>https://gooddaybus.com/kyiv-varshava</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://gooddaybus.com/varshava-kyiv</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>
