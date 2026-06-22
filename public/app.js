@@ -44,7 +44,7 @@
     const ymdLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     let _stripStart = 0; // зсув у днях від сьогодні для лівої видимої дати
 
-    function buildDateStrip(selectedYMD) {
+    function buildDateStrip(selectedYMD, dir) {
         const box = document.getElementById('date-strip');
         if (!box) return;
         const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -58,8 +58,9 @@
         box.innerHTML = `<button type="button" class="ds-arr" id="ds-prev"${canPrev ? '' : ' disabled'} aria-label="Раніше"><i class="fa-solid fa-chevron-left"></i></button>`
             + `<div class="ds-days">${days}</div>`
             + `<button type="button" class="ds-arr" id="ds-next"${canNext ? '' : ' disabled'} aria-label="Пізніше"><i class="fa-solid fa-chevron-right"></i></button>`;
-        box.querySelector('#ds-prev').addEventListener('click', () => { _stripStart = Math.max(0, _stripStart - STRIP_LEN); buildDateStrip(document.getElementById('date-input').value); });
-        box.querySelector('#ds-next').addEventListener('click', () => { _stripStart = Math.min(STRIP_MAX - STRIP_LEN + 1, _stripStart + STRIP_LEN); buildDateStrip(document.getElementById('date-input').value); });
+        if (dir) box.querySelector('.ds-days').classList.add('slide-' + dir); // анімація гортання
+        box.querySelector('#ds-prev').addEventListener('click', () => { _stripStart = Math.max(0, _stripStart - STRIP_LEN); buildDateStrip(document.getElementById('date-input').value, 'prev'); });
+        box.querySelector('#ds-next').addEventListener('click', () => { _stripStart = Math.min(STRIP_MAX - STRIP_LEN + 1, _stripStart + STRIP_LEN); buildDateStrip(document.getElementById('date-input').value, 'next'); });
         box.querySelectorAll('.ds-day').forEach(b => b.addEventListener('click', () => {
             document.getElementById('date-input').value = b.dataset.ymd;
             updateDateDisplay();

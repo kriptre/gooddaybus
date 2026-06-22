@@ -472,3 +472,14 @@
 .route-hero h1 { font-family: 'Cormorant Garamond', serif; font-size: clamp(30px, 5vw, 46px); font-weight: 500; color: var(--text); line-height: 1.12; }
 .route-hero h1 .accent { color: var(--orange); }
 .route-hero p { font-size: 15px; color: var(--text-2); margin-top: 8px; }
+
+/* Інтро-секція на сторінці маршруту: центрований кольоровий заголовок */
+.route-intro { max-width: 760px; margin: 44px auto 0; padding: 0 20px; text-align: center; }
+.route-intro h2 { font-family: 'Cormorant Garamond', serif; font-size: clamp(26px, 4.5vw, 34px); font-weight: 500; color: var(--orange); line-height: 1.15; margin-bottom: 12px; }
+.route-intro p { font-size: 15px; color: var(--text-2); line-height: 1.75; }
+
+/* Анімація гортання стрічки дат */
+@keyframes ds-slide-next { from { opacity: .35; transform: translateX(22px); } to { opacity: 1; transform: none; } }
+@keyframes ds-slide-prev { from { opacity: .35; transform: translateX(-22px); } to { opacity: 1; transform: none; } }
+.ds-days.slide-next { animation: ds-slide-next .24s ease; }
+.ds-days.slide-prev { animation: ds-slide-prev .24s ease; }

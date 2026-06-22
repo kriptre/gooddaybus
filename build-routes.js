@@ -25,6 +25,7 @@ const searchWrap = between(html, '<div class="search-wrap">', '<!-- Швидки
 const quickContact = between(html, '<div class="quick-contact">', '<!-- CONTENT -->');
 const footer = between(html, '<footer>', '</footer>') + '</footer>';
 const modal = between(html, '<!-- MODAL -->', '<script src="/app.js"></script>');
+const contactSection = between(html, '<section class="contact-section">', '</main>'); // блок менеджера з головної
 
 function pageHtml(r) {
     const url = `${SITE}/${r.slug}`;
@@ -32,9 +33,7 @@ function pageHtml(r) {
         '@context': 'https://schema.org', '@type': 'FAQPage',
         mainEntity: r.faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } }))
     };
-    const seoSections = r.seo.map(s => `        <h2>${escHtml(s.h2)}</h2>\n        <p>${escHtml(s.p)}</p>`).join('\n');
     const faqHtml = r.faq.map(f => `        <details class="faq-item"><summary>${escHtml(f.q)}</summary><div class="faq-a">${escHtml(f.a)}</div></details>`).join('\n');
-    const links = (r.links || []).map(l => `<a href="/${l.slug}">${escHtml(l.label)}</a>`).join('') + `<a href="/">Усі напрямки</a>`;
     const cfg = JSON.stringify({ fromId: r.fromId, toId: r.toId, fromName: r.fromName, toName: r.toName, slug: r.slug });
 
     return `<!DOCTYPE html>
@@ -77,20 +76,26 @@ ${header}
 
 ${searchWrap}
 <div id="date-strip" class="date-strip"></div>
-<div class="route-reverse"><a href="/${r.reverseSlug}"><i class="fa-solid fa-arrow-right-arrow-left"></i> Потрібен зворотний? ${escHtml(r.toName)} → ${escHtml(r.fromName)}</a></div>
 
 ${quickContact}
 <div class="content">
     <div id="results"></div>
 </div>
 
-<section class="route-seo">
-${seoSections}
-        <h2>Часті запитання</h2>
-${faqHtml}
-        <div class="route-links">${links}</div>
+<section class="route-intro">
+    <h2>${escHtml(r.intro.heading)}</h2>
+    <p>${escHtml(r.intro.text)}</p>
 </section>
 
+<section class="seo-section faq-wrap" style="padding-bottom:0">
+    <div class="seo-eyebrow">Поширені запитання</div>
+    <h2>Часті <em>запитання</em></h2>
+</section>
+<section class="faq-section">
+${faqHtml}
+</section>
+
+${contactSection}
 </main>
 
 ${footer}
