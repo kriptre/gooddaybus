@@ -278,7 +278,8 @@
         .seo-routes { margin-top: 30px; }
         .seo-routes h3 { text-align: center; font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 16px; }
         .seo-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-        .seo-tag { font-size: 13px; font-weight: 600; color: var(--text-2); background: var(--bg); border: 1px solid var(--border); border-radius: 50px; padding: 7px 15px; }
+        .seo-tag { font-size: 13px; font-weight: 600; color: var(--text-2); background: var(--bg); border: 1px solid var(--border); border-radius: 50px; padding: 7px 15px; text-decoration: none; transition: border-color .15s, color .15s, background .15s; }
+        a.seo-tag:hover { color: var(--orange); border-color: var(--orange); background: var(--white); }
         @media (max-width: 760px) { .seo-section { padding-top: 44px; } .seo-section h2 { font-size: 30px; } }
         /* FAQ: нативні <details> - без JS, доступно, контент у DOM (потрібно для FAQ-розмітки) */
         .faq-section { max-width: 720px; margin: 0 auto; padding: 16px 24px 8px; }
