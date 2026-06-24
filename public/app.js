@@ -177,8 +177,31 @@
         btn.addEventListener('animationend', () => btn.classList.remove('spin'), { once: true });
     });
 
+    // Зіставлення введеного вручну тексту з містом зі списку (точна назва -> унікальний префікс -> унікальний збіг).
+    function matchCityByText(text) {
+        const q = (text || '').trim().toLowerCase();
+        if (q.length < 2 || !cities.length) return null;
+        const exact = cities.find(c => c.name.trim().toLowerCase() === q);
+        if (exact) return exact.id;
+        const pre = cities.filter(c => c.name.trim().toLowerCase().startsWith(q));
+        if (pre.length === 1) return pre[0].id;
+        const inc = cities.filter(c => c.name.trim().toLowerCase().includes(q));
+        if (inc.length === 1) return inc[0].id;
+        return null;
+    }
+    // Якщо користувач ввів місто вручну (не клікнув підказку) або змінив текст після вибору -
+    // підставляємо id за текстом. Так пошук працює навіть без кліку по підказці.
+    function syncTypedIds() {
+        const dEl = document.getElementById('departure'), aEl = document.getElementById('arrival');
+        const byId = id => cities.find(c => String(c.id) === String(id));
+        const ok = (id, el) => { const c = byId(id); return c && c.name.trim().toLowerCase() === el.value.trim().toLowerCase(); };
+        if (!ok(depId, dEl)) { const id = matchCityByText(dEl.value); depId = id; if (id != null) dEl.value = byId(id).name; }
+        if (!ok(arrId, aEl)) { const id = matchCityByText(aEl.value); arrId = id; if (id != null) aEl.value = byId(id).name; }
+    }
+
     async function search() {
-        if (!depId || !arrId) { setStatus('Оберіть міста зі списку підказок', 'error'); setTimeout(() => setStatus('',''), 3000); return; }
+        syncTypedIds();
+        if (!depId || !arrId) { setStatus('Перевірте назви міст або оберіть зі списку підказок', 'error'); setTimeout(() => setStatus('',''), 3500); return; }
         if (depId === arrId) { setStatus('Вкажіть різні міста', 'error'); return; }
         // На сторінці маршруту: якщо обрали ІНШИЙ напрямок - ведемо на головну з авто-пошуком
         // (URL сторінки завжди = її маршрут). Той самий маршрут (стрічка дат) шукаємо тут же.
