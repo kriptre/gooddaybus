@@ -35,6 +35,10 @@ function pageHtml(r) {
     };
     const faqHtml = r.faq.map(f => `        <details class="faq-item"><summary>${escHtml(f.q)}</summary><div class="faq-a">${escHtml(f.a)}</div></details>`).join('\n');
     const cfg = JSON.stringify({ fromId: r.fromId, toId: r.toId, fromName: r.fromName, toName: r.toName, slug: r.slug });
+    const rev = routes.find(x => String(x.fromId) === String(r.toId) && String(x.toId) === String(r.fromId));
+    const reverseLink = rev
+        ? `\n    <a class="route-reverse-link" href="/${rev.slug}"><i class="fa-solid fa-arrow-right-arrow-left"></i> Потрібен зворотний маршрут? ${escHtml(rev.fromName)} - ${escHtml(rev.toName)}</a>`
+        : '';
 
     return `<!DOCTYPE html>
 <html lang="uk">
@@ -71,7 +75,7 @@ ${header}
 
 <section class="hero route-hero">
     <h1>Автобус <span class="accent">${escHtml(r.fromName)} - ${escHtml(r.toName)}</span></h1>
-    <p>${escHtml(r.subtitle)}</p>
+    <p>${escHtml(r.subtitle)}</p>${reverseLink}
 </section>
 
 ${searchWrap}
