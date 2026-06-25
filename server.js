@@ -80,7 +80,17 @@ app.use((req, res, next) => {
 app.use(express.static(require('path').join(__dirname, 'public'), {
     extensions: ['html'], // чисті URL без .html: /kyiv-varshava → kyiv-varshava.html
     setHeaders(res, filePath) {
-        if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+        const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
+        if (ext === '.html') {
+            res.setHeader('Cache-Control', 'no-cache'); // звіряємо версію щоразу (дешеве 304)
+        } else if (ext === '.js' || ext === '.css') {
+            // версіонуються через ?v=хеш у HTML, тож кешуємо надовго - менше запитів при переходах
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        } else if (ext === '.xml' || ext === '.txt' || ext === '.webmanifest') {
+            res.setHeader('Cache-Control', 'public, max-age=3600'); // sitemap/robots/manifest оновлюються
+        } else {
+            res.setHeader('Cache-Control', 'public, max-age=86400'); // картинки/іконки (не версіонуються)
+        }
     }
 }));
 

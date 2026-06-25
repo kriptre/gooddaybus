@@ -9,6 +9,12 @@ const SITE = 'https://gooddaybus.com';
 const html = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8');
 const routes = JSON.parse(fs.readFileSync(path.join(__dirname, 'routes.json'), 'utf8'));
 
+// Версія ассетів = короткий хеш вмісту app.js + styles.css. Підставляємо у ?v= для скидання кешу браузера на деплої.
+const ASSET_V = require('crypto').createHash('md5')
+    .update(fs.readFileSync(path.join(PUB, 'app.js')))
+    .update(fs.readFileSync(path.join(PUB, 'styles.css')))
+    .digest('hex').slice(0, 10);
+
 const between = (s, a, b) => {
     const i = s.indexOf(a); const j = s.indexOf(b, i + a.length);
     if (i < 0 || j < 0) throw new Error(`фрагмент не знайдено: ${a} .. ${b}`);
@@ -19,12 +25,12 @@ const escAttr = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&l
 
 // --- спільні фрагменти з index.html ---
 const gtag = between(html, '<!-- Google tag (gtag.js) - Google Analytics -->', '<meta name="google-site-verification"');
-const iconsFonts = between(html, '<!-- Іконки бренду', '<link rel="stylesheet" href="/styles.css">');
+const iconsFonts = between(html, '<!-- Іконки бренду', '<link rel="stylesheet" href="/styles.css');
 const header = between(html, '<header>', '</header>') + '</header>';
 const searchWrap = between(html, '<div class="search-wrap">', '<!-- Швидкий контакт');
 const quickContact = between(html, '<div class="quick-contact">', '<!-- CONTENT -->');
 const footer = between(html, '<footer>', '</footer>') + '</footer>';
-const modal = between(html, '<!-- MODAL -->', '<script src="/app.js"></script>');
+const modal = between(html, '<!-- MODAL -->', '<script src="/app.js');
 const contactSection = between(html, '<section class="contact-section">', '</main>'); // блок менеджера з головної
 
 function pageHtml(r) {
@@ -66,7 +72,7 @@ function pageHtml(r) {
 ${JSON.stringify(faqSchema, null, 2)}
     </script>
     ${iconsFonts.trim()}
-    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/styles.css?v=${ASSET_V}">
 </head>
 <body>
 
@@ -106,7 +112,7 @@ ${footer}
 
 ${modal}
 <script>window.__ROUTE__ = ${cfg};</script>
-<script src="/app.js"></script>
+<script src="/app.js?v=${ASSET_V}"></script>
 </body>
 </html>
 `;
@@ -131,5 +137,13 @@ ${urls.map(u => `  <url>
 `;
 fs.writeFileSync(path.join(PUB, 'sitemap.xml'), sitemap);
 
+// --- версіонуємо посилання на ассети в index.html (head-стилі + скрипт у кінці) ---
+const idxPath = path.join(PUB, 'index.html');
+const idxStamped = fs.readFileSync(idxPath, 'utf8')
+    .replace(/\/styles\.css(\?v=[a-z0-9]+)?/g, `/styles.css?v=${ASSET_V}`)
+    .replace(/\/app\.js(\?v=[a-z0-9]+)?/g, `/app.js?v=${ASSET_V}`);
+fs.writeFileSync(idxPath, idxStamped);
+
 console.log(`Згенеровано сторінок: ${made.length} (${made.join(', ')})`);
 console.log(`Sitemap оновлено: ${urls.length} URL`);
+console.log(`Версія ассетів (?v=): ${ASSET_V}`);
