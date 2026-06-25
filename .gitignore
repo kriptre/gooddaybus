@@ -10,3 +10,7 @@ orders.db-journal
 orders.db-wal
 backups/
 .claude/
+
+# Приватні матеріали (не для публікації): таблиці реклами, ключові слова тощо
+_private/
+*.xlsx
