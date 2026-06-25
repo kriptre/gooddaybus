@@ -158,7 +158,7 @@
         .t-divider { width: 1px; height: 56px; background: var(--border); margin: 0 20px; align-self: center; }
         .t-action { display: flex; flex-direction: column; align-items: flex-end; min-width: 130px; }
         .t-pricebox { text-align: right; }
-        .t-price { font-size: 38px; font-weight: 800; color: var(--text); letter-spacing: -1.6px; line-height: 1; }
+        .t-price { font-size: 38px; font-weight: 800; color: var(--text); letter-spacing: -1.6px; line-height: 1; white-space: nowrap; }
         .t-price-sub { font-size: 12px; color: var(--text-3); margin-top: 3px; }
         .t-seats { font-size: 12px; color: var(--text-2); display: flex; align-items: center; justify-content: flex-end; gap: 5px; font-weight: 600; margin-top: 6px; }
         .t-seats .ic { color: var(--text-3); font-size: 11px; position: relative; top: 0.5px; }
@@ -434,7 +434,7 @@
             .t-main { grid-template-columns: 1fr 1fr; }
             .t-route { grid-column: 1/-1; order: 3; padding: 12px 0 0; }
             .t-divider { display: none; }
-            .t-action { grid-column: 1/-1; order: 4; flex-direction: row; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid var(--border); min-width: 0; }
+            .t-action { grid-column: 1/-1; order: 4; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); min-width: 0; }
             .t-pricebox { text-align: left; }
             .t-seats { justify-content: flex-start; }
             .t-action .btn-ticket { width: auto; margin-top: 0; }
