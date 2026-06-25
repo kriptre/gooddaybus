@@ -55,9 +55,9 @@
             days += `<button type="button" class="ds-day${ymd === selectedYMD ? ' sel' : ''}" data-ymd="${ymd}"><span class="ds-dow">${DOW[d.getDay()]}</span><span class="ds-num">${d.getDate()}</span><span class="ds-mon">${MON_SHORT[d.getMonth()]}</span></button>`;
         }
         const canPrev = _stripStart > 0, canNext = _stripStart + STRIP_LEN <= STRIP_MAX;
-        box.innerHTML = `<button type="button" class="ds-arr" id="ds-prev"${canPrev ? '' : ' disabled'} aria-label="Раніше"><i class="fa-solid fa-chevron-left"></i></button>`
+        box.innerHTML = `<button type="button" class="ds-arr" id="ds-prev"${canPrev ? '' : ' disabled'} aria-label="Раніше"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-left"></use></svg></button>`
             + `<div class="ds-days">${days}</div>`
-            + `<button type="button" class="ds-arr" id="ds-next"${canNext ? '' : ' disabled'} aria-label="Пізніше"><i class="fa-solid fa-chevron-right"></i></button>`;
+            + `<button type="button" class="ds-arr" id="ds-next"${canNext ? '' : ' disabled'} aria-label="Пізніше"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-right"></use></svg></button>`;
         if (dir) box.querySelector('.ds-days').classList.add('slide-' + dir); // анімація гортання
         box.querySelector('#ds-prev').addEventListener('click', () => { _stripStart = Math.max(0, _stripStart - STRIP_LEN); buildDateStrip(document.getElementById('date-input').value, 'prev'); });
         box.querySelector('#ds-next').addEventListener('click', () => { _stripStart = Math.min(STRIP_MAX - STRIP_LEN + 1, _stripStart + STRIP_LEN); buildDateStrip(document.getElementById('date-input').value, 'next'); });
@@ -76,25 +76,6 @@
         buildDateStrip(document.getElementById('date-input').value); // дата = сьогодні (вже виставлена)
         search();
     }
-
-    // Глибоке посилання на пошук: /?from=<id>&to=<id>&date=YYYY-MM-DD → заповнити форму й запустити
-    // (використовують сторінки маршрутів при зміні напрямку та шарабельні посилання на пошук).
-    function applyQueryParams() {
-        const p = new URLSearchParams(location.search);
-        const fromId = p.get('from'), toId = p.get('to'), date = p.get('date');
-        if (!fromId || !toId) return;
-        const cf = cities.find(c => String(c.id) === String(fromId));
-        const ct = cities.find(c => String(c.id) === String(toId));
-        if (!cf || !ct) return;
-        document.getElementById('departure').value = cf.name; depId = cf.id;
-        document.getElementById('arrival').value = ct.name; arrId = ct.id;
-        if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-            document.getElementById('date-input').value = date;
-            updateDateDisplay();
-        }
-        search();
-    }
-
 
     // Глибоке посилання на пошук: /?from=<id>&to=<id>&date=YYYY-MM-DD → заповнити форму й запустити
     // (використовують сторінки маршрутів при зміні напрямку та шарабельні посилання на пошук).
@@ -136,7 +117,7 @@
             res.forEach(city => {
                 const el = document.createElement('div');
                 el.className = 'ac-item';
-                el.innerHTML = `<i class="fa-solid fa-location-dot"></i><span>` + escTxt(city.name).replace(new RegExp(`(${escRe(q)})`, 'gi'), '<strong>$1</strong>') + `</span>`;
+                el.innerHTML = `<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg><span>` + escTxt(city.name).replace(new RegExp(`(${escRe(q)})`, 'gi'), '<strong>$1</strong>') + `</span>`;
                 el.addEventListener('click', () => {
                     inp.value = city.name; lst.style.display = 'none'; hl = -1;
                     isDep ? (depId = city.id) : (arrId = city.id);
@@ -215,7 +196,7 @@
         const searchBtn = document.getElementById('search-btn');
         searchBtn.disabled = true;
         searchBtn.classList.add('searching');
-        searchBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Шукаємо...';
+        searchBtn.innerHTML = '<svg class="ic ic-spin" aria-hidden="true"><use href="/_sprite.svg#i-spinner"></use></svg> Шукаємо...';
         const resultsEl = document.getElementById('results');
         resultsEl.innerHTML = '';
         // Skeleton - лише коли пошук затягується (>450мс). Швидкий/кешований - без мерехтіння.
@@ -239,7 +220,7 @@
         finally {
             searchBtn.disabled = false;
             searchBtn.classList.remove('searching');
-            searchBtn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Знайти рейс';
+            searchBtn.innerHTML = '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-magnifying-glass"></use></svg> Знайти рейс';
         }
     }
 
@@ -249,7 +230,7 @@
         if (!ci) return 'Без пересадок, прямий рейс';
         const parts = String(ci).split(/(?=Пересадка\s*№?\s*\d)/).map(s => s.trim()).filter(Boolean);
         if (parts.length <= 1) return escTxt(ci);
-        return `<div class="td-transfers">${parts.map(p => `<div class="tr-item"><i class="fa-solid fa-location-dot"></i> ${escTxt(p)}</div>`).join('')}</div>`;
+        return `<div class="td-transfers">${parts.map(p => `<div class="tr-item"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${escTxt(p)}</div>`).join('')}</div>`;
     }
 
     // Картки-плейсхолдери на час повільного пошуку
@@ -319,14 +300,14 @@
             const box = document.getElementById('suggest-box');
             if (!box) return;
             if (s.type === 'date') {
-                box.innerHTML = `<div class="sg-title"><i class="fa-regular fa-lightbulb"></i> На обрану дату рейсів немає, але є на ${s.date}:</div>
-                    <button class="sg-btn sg-primary" id="sg-date">Показати рейси на ${s.date} <span class="sg-dist">${s.count} ${routeWord(s.count)}</span> <i class="fa-solid fa-arrow-right"></i></button>`;
+                box.innerHTML = `<div class="sg-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-lightbulb"></use></svg> На обрану дату рейсів немає, але є на ${s.date}:</div>
+                    <button class="sg-btn sg-primary" id="sg-date">Показати рейси на ${s.date} <span class="sg-dist">${s.count} ${routeWord(s.count)}</span> <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-right"></use></svg></button>`;
                 document.getElementById('sg-date').addEventListener('click', () => setDateAndSearch(s.date));
             } else if (s.type === 'cities') {
                 window._alts = s.alternatives;
-                box.innerHTML = `<div class="sg-title"><i class="fa-regular fa-lightbulb"></i> Прямих рейсів немає. Натисніть місто поряд, щоб переглянути рейси:</div>
+                box.innerHTML = `<div class="sg-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-lightbulb"></use></svg> Прямих рейсів немає. Натисніть місто поряд, щоб переглянути рейси:</div>
                     <div class="sg-cities">${s.alternatives.map((a, i) =>
-                        `<button class="sg-btn sg-city" data-ai="${i}"><i class="fa-solid fa-location-dot"></i> ${a.name} <span class="sg-dist">~${a.distance_km} км · ${a.count} ${routeWord(a.count)}</span></button>`
+                        `<button class="sg-btn sg-city" data-ai="${i}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${a.name} <span class="sg-dist">~${a.distance_km} км · ${a.count} ${routeWord(a.count)}</span></button>`
                     ).join('')}</div>`;
                 box.querySelectorAll('.sg-city').forEach(b => b.addEventListener('click', () => {
                     const a = window._alts[b.dataset.ai];
@@ -365,25 +346,25 @@
 
     // Зручності рейсу: код API → іконка + назва
     const AMENITIES = {
-        wifi: { i: 'fa-wifi', t: 'Wi-Fi' },
-        power: { i: 'fa-plug', t: 'Розетки' },
-        air: { i: 'fa-snowflake', t: 'Кондиціонер' },
-        wc: { i: 'fa-restroom', t: 'Туалет' },
-        pets: { i: 'fa-paw', t: 'Можна з тваринами' },
-        gps: { i: 'fa-location-crosshairs', t: 'GPS-трекінг' },
-        seatselect: { i: 'fa-chair', t: 'Вибір місця' },
-        addstop: { i: 'fa-map-pin', t: 'Додаткові зупинки' },
-        '16_noaccompany': { i: 'fa-child-reaching', t: 'Діти 16+ без супроводу' },
-        noprepayment: { i: 'fa-hand-holding-dollar', t: 'Без передоплати' },
-        norefund: { i: 'fa-ban', t: 'Без повернення квитка' }
+        wifi: { i: 'wifi', t: 'Wi-Fi' },
+        power: { i: 'plug', t: 'Розетки' },
+        air: { i: 'snowflake', t: 'Кондиціонер' },
+        wc: { i: 'restroom', t: 'Туалет' },
+        pets: { i: 'paw', t: 'Можна з тваринами' },
+        gps: { i: 'location-crosshairs', t: 'GPS-трекінг' },
+        seatselect: { i: 'chair', t: 'Вибір місця' },
+        addstop: { i: 'map-pin', t: 'Додаткові зупинки' },
+        '16_noaccompany': { i: 'child-reaching', t: 'Діти 16+ без супроводу' },
+        noprepayment: { i: 'hand-holding-dollar', t: 'Без передоплати' },
+        norefund: { i: 'ban', t: 'Без повернення квитка' }
     };
     function amenitiesHtml(codes) {
         if (!Array.isArray(codes) || !codes.length) return '';
         // 'noprepayment' - послуга перевізника загалом і може суперечити умовам
         // конкретного рейсу (label_type) - тип оплати показуємо лише у рядку "Оплата"
         const chips = codes.filter(c => c !== 'noprepayment').map(code => {
-            const a = AMENITIES[code] || { i: 'fa-circle-info', t: code };
-            return `<span class="amen"><i class="fa-solid ${a.i}"></i> ${escTxt(a.t)}</span>`;
+            const a = AMENITIES[code] || { i: 'circle-info', t: code };
+            return `<span class="amen"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-${a.i}"></use></svg> ${escTxt(a.t)}</span>`;
         }).join('');
         return `<div class="td-row"><div class="td-label">Зручності</div><div class="td-amens">${chips}</div></div>`;
     }
@@ -401,12 +382,12 @@
     function paymentHtml(rt) {
         const cat = payCategory(rt);
         const label = cat === 'none'
-            ? '<span class="pay-badge pb-none"><i class="fa-regular fa-credit-card"></i> Без передоплати</span>'
+            ? '<span class="pay-badge pb-none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-credit-card"></use></svg> Без передоплати</span>'
             : cat === 'group'
-                ? '<span class="pay-badge pb-none"><i class="fa-regular fa-credit-card"></i> Без передоплати</span><span class="pay-badge pb-part"><i class="fa-solid fa-users"></i> Для груп - передоплата</span>'
+                ? '<span class="pay-badge pb-none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-credit-card"></use></svg> Без передоплати</span><span class="pay-badge pb-part"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-users"></use></svg> Для груп - передоплата</span>'
             : (cat === 'partial'
-                ? '<span class="pay-badge pb-part"><i class="fa-solid fa-coins"></i> Часткова передоплата</span>'
-                : '<span class="pay-badge pb-full"><i class="fa-solid fa-money-bill-wave"></i> Повна передоплата</span>');
+                ? '<span class="pay-badge pb-part"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-coins"></use></svg> Часткова передоплата</span>'
+                : '<span class="pay-badge pb-full"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-money-bill-wave"></use></svg> Повна передоплата</span>');
         return `<div class="pay-badges">${label}</div>` + (rt.price_label ? `<div class="pay-note">${escTxt(rt.price_label)}</div>` : '');
     }
 
@@ -418,11 +399,11 @@
 
         if (!Array.isArray(routes) || !routes.length) {
             el.innerHTML = `<div class="no-res">
-                <div class="no-res-ico"><i class="fa-solid fa-bus-simple"></i></div>
+                <div class="no-res-ico"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bus-simple"></use></svg></div>
                 <h3>Рейсів не знайдено</h3>
                 <p>На ${date} за напрямком ${dep} → ${arr} рейсів немає.</p>
                 <div class="suggest-box" id="suggest-box">
-                    <div class="sg-loading"><i class="fa-solid fa-spinner fa-spin"></i> Шукаємо найближчі дати та міста...</div>
+                    <div class="sg-loading"><svg class="ic ic-spin" aria-hidden="true"><use href="/_sprite.svg#i-spinner"></use></svg> Шукаємо найближчі дати та міста...</div>
                     <div class="sg-skel">
                         <div class="skel-bar" style="width:230px;height:44px;border-radius:50px"></div>
                         <div class="skel-bar" style="width:180px;height:44px;border-radius:50px"></div>
@@ -442,16 +423,16 @@
                 <div class="res-badge">${routes.length} рейсів</div>
             </div>
             <div class="sort-bar">
-                <span class="sort-lbl"><i class="fa-solid fa-arrow-down-short-wide"></i> Сортувати:</span>
+                <span class="sort-lbl"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-down-short-wide"></use></svg> Сортувати:</span>
                 <button class="sort-btn" data-sort="price">Найдешевші</button>
                 <button class="sort-btn" data-sort="duration">Найшвидші</button>
                 <button class="sort-btn" data-sort="departure">За часом виїзду</button>
             </div>
             <div class="sort-bar filter-bar">
-                <span class="sort-lbl sort-lbl-f"><i class="fa-solid fa-filter"></i> Фільтри:</span>
-                <button class="sort-btn filter-btn" data-filter="noprepay"><i class="fa-regular fa-credit-card"></i> Без передоплати</button>
-                <button class="sort-btn filter-btn" data-filter="direct"><i class="fa-solid fa-route"></i> Без пересадок</button>
-                <button class="sort-btn filter-btn" data-filter="pets"><i class="fa-solid fa-paw"></i> З твариною</button>
+                <span class="sort-lbl sort-lbl-f"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-filter"></use></svg> Фільтри:</span>
+                <button class="sort-btn filter-btn" data-filter="noprepay"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-credit-card"></use></svg> Без передоплати</button>
+                <button class="sort-btn filter-btn" data-filter="direct"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-route"></use></svg> Без пересадок</button>
+                <button class="sort-btn filter-btn" data-filter="pets"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-paw"></use></svg> З твариною</button>
             </div>
             <div id="tickets"></div>`;
 
@@ -487,7 +468,7 @@
         if (badge) badge.textContent = `${pool.length} ${routeWord(pool.length)}`;
 
         if (_filters.size && !pool.length) {
-            tickets.innerHTML = `<div class="no-res"><div class="no-res-ico"><i class="fa-solid fa-filter"></i></div><h3>Таких рейсів немає</h3><p>На цьому напрямку немає рейсів під обрані фільтри.<br>Вимкніть фільтр, щоб побачити всі варіанти.</p></div>`;
+            tickets.innerHTML = `<div class="no-res"><div class="no-res-ico"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-filter"></use></svg></div><h3>Таких рейсів немає</h3><p>На цьому напрямку немає рейсів під обрані фільтри.<br>Вимкніть фільтр, щоб побачити всі варіанти.</p></div>`;
             return;
         }
 
@@ -518,9 +499,9 @@
                         ${rt.departure_station ? `<div class="t-station" title="${escTxt(rt.departure_station)}">${escTxt(stripCityTxt(rt.departure_station, fromCity))}</div>` : ''}
                     </div>
                     <div class="t-route">
-                        ${dur ? `<div class="t-dur"><i class="fa-regular fa-clock"></i> ${dur} в дорозі</div>` : ''}
-                        <div class="t-line"><div class="t-dot"></div><div class="t-dash"></div><span class="t-line-chip ${isDirect(rt) ? 'tlc-ok' : ''}">${isDirect(rt) ? 'без пересадок' : 'з пересадкою'}</span><div class="t-dash"></div><div class="t-arrow"><i class="fa-solid fa-chevron-right"></i></div></div>
-                        <div class="t-carrier" title="${car}"><i class="fa-solid fa-bus"></i><span class="t-car-name">${car}</span></div>
+                        ${dur ? `<div class="t-dur"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-clock"></use></svg> ${dur} в дорозі</div>` : ''}
+                        <div class="t-line"><div class="t-dot"></div><div class="t-dash"></div><span class="t-line-chip ${isDirect(rt) ? 'tlc-ok' : ''}">${isDirect(rt) ? 'без пересадок' : 'з пересадкою'}</span><div class="t-dash"></div><div class="t-arrow"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-right"></use></svg></div></div>
+                        <div class="t-carrier" title="${car}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg><span class="t-car-name">${car}</span></div>
                     </div>
                     <div class="t-ep" style="text-align:right">
                         <div class="t-time">${at}</div>
@@ -533,12 +514,12 @@
                         <div class="t-pricebox">
                             <div class="t-price">${pr}</div>
                             <div class="t-price-sub">за місце</div>
-                            <div class="t-seats"><i class="fa-solid fa-chair"></i> ${st} вільних</div>
+                            <div class="t-seats"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chair"></use></svg> ${st} вільних</div>
                         </div>
                     </div>
                 </div>
                 <div class="t-foot">
-                    <button class="t-toggle" type="button" data-i="${i}">Деталі рейсу <i class="fa-solid fa-chevron-down"></i></button>
+                    <button class="t-toggle" type="button" data-i="${i}">Деталі рейсу <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-down"></use></svg></button>
                     <button class="btn-ticket" data-i="${i}">${rt.bookable ? 'Забронювати' : 'Замовити'}</button>
                 </div>
                 <div class="t-details">
@@ -546,7 +527,7 @@
                     <div class="td-row"><div class="td-label">Оплата</div><div class="td-text">${paymentHtml(rt)}</div></div>
                     <div class="td-row"><div class="td-label">Знижки</div><div class="td-text td-disc">-</div></div>
                     <div class="td-row"><div class="td-label">Пересадки</div><div class="td-text">${transfersHtml(rt.change_info)}</div></div>
-                    <div class="td-row"><div class="td-label">Перевізник</div><div class="td-text td-carrier">${car}${rt.carrier_rating ? ` <span class="carr-badge cb-star"><i class="fa-solid fa-star"></i> ${escTxt(rt.carrier_rating)}</span>` : ''}${rt.carrier_reliability ? ` <span class="carr-badge cb-rel"><i class="fa-solid fa-shield-halved"></i> надійність ${escTxt(rt.carrier_reliability)}%</span>` : ''}</div></div>
+                    <div class="td-row"><div class="td-label">Перевізник</div><div class="td-text td-carrier">${car}${rt.carrier_rating ? ` <span class="carr-badge cb-star"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-star"></use></svg> ${escTxt(rt.carrier_rating)}</span>` : ''}${rt.carrier_reliability ? ` <span class="carr-badge cb-rel"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-shield-halved"></use></svg> надійність ${escTxt(rt.carrier_reliability)}%</span>` : ''}</div></div>
                     ${rt.baggage ? `<div class="td-row"><div class="td-label">Багаж</div><div class="td-text">${escTxt(rt.baggage)}</div></div>` : ''}
                 </div>
             </div>`;
@@ -604,7 +585,7 @@
         const d = await fetchDiscounts(rt.data_bundle);
         const real = (Array.isArray(d) ? d : []).filter(x => x.percent > 0);
         el.innerHTML = real.length
-            ? `<div class="disc-chips">${real.map(x => `<span class="disc-chip"><i class="fa-solid fa-tag"></i> ${escTxt(x.description)}</span>`).join('')}</div>`
+            ? `<div class="disc-chips">${real.map(x => `<span class="disc-chip"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-tag"></use></svg> ${escTxt(x.description)}</span>`).join('')}</div>`
             : 'Спеціальних знижок немає';
     }
 
@@ -617,7 +598,7 @@
         return `<div class="pax-row">
             <div class="pax-head">
                 <span class="pax-title"></span>
-                <button type="button" class="pax-del"><i class="fa-solid fa-circle-xmark"></i> Видалити</button>
+                <button type="button" class="pax-del"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-xmark"></use></svg> Видалити</button>
             </div>
             <div class="pax-grid">
                 <div class="fg"><label class="f-lbl">Ім'я</label><input type="text" class="f-inp pax-name" placeholder="Іван"></div>
@@ -646,7 +627,7 @@
         // опції: "Повний квиток" (за замовчуванням) + реальні знижки
         const opts = [{ id: '', percent: 0, label: 'Повний квиток' }].concat(real.map(d => ({ id: d.id, percent: d.percent, label: d.description })));
         block.innerHTML = `
-            <div class="disc-head"><span class="disc-title"><i class="fa-solid fa-tag" style="color:var(--orange);margin-right:6px"></i>Знижка для пасажирів</span></div>
+            <div class="disc-head"><span class="disc-title"><svg class="ic" style="color:var(--orange);margin-right:6px" aria-hidden="true"><use href="/_sprite.svg#i-tag"></use></svg>Знижка для пасажирів</span></div>
             <div class="disc-body">
                 ${rows.map((r, i) => {
                     const cur = _paxDiscSel[i] != null ? String(_paxDiscSel[i]) : '';
@@ -739,8 +720,8 @@
         document.getElementById('m-title').textContent = book ? 'Бронювання поїздки' : 'Замовити поїздку';
         document.getElementById('m-booknote').style.display = book ? 'flex' : 'none';
         document.getElementById('m-submit').innerHTML = book
-            ? '<i class="fa-solid fa-bolt"></i> Забронювати'
-            : '<i class="fa-solid fa-paper-plane"></i> Надіслати';
+            ? '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bolt"></use></svg> Забронювати'
+            : '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-paper-plane"></use></svg> Надіслати';
     }
     // Блокування прокрутки фону, поки відкрита модалка (надійно для iOS - через position:fixed)
     let _scrollY = 0;
@@ -776,11 +757,11 @@
         const fromSt = rt.departure_station ? stripCityTxt(rt.departure_station, dep) : '';
         const toSt = rt.arrival_station ? stripCityTxt(rt.arrival_station, arr) : '';
         document.getElementById('m-trip').innerHTML =
-            `<div class="mt-row"><i class="fa-regular fa-calendar"></i> <b>${escTxt(fmtNiceDate(rt.date || _date))}</b></div>` +
-            `<div class="mt-row"><i class="fa-regular fa-clock"></i> ${escTxt(dt || '-')}${at ? ' → ' + escTxt(at) : ''}${dur ? ` <span class="mt-dur">${escTxt(dur)}</span>` : ''}</div>` +
-            `<div class="mt-row"><i class="fa-solid fa-tag"></i> <b>${escTxt(fmtPrice(rt) || '-')}</b>&nbsp;/&nbsp;місце</div>` +
-            `<div class="mt-row"><i class="fa-solid fa-bus"></i> ${escTxt(rt.carrier || rt.company || 'Автобус')}</div>` +
-            ((fromSt || toSt) ? `<div class="mt-stations">${fromSt ? `<span><i class="fa-solid fa-location-dot"></i> ${escTxt(fromSt)}</span>` : ''}${toSt ? `<span><i class="fa-solid fa-flag-checkered"></i> ${escTxt(toSt)}</span>` : ''}</div>` : '');
+            `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-calendar"></use></svg> <b>${escTxt(fmtNiceDate(rt.date || _date))}</b></div>` +
+            `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-clock"></use></svg> ${escTxt(dt || '-')}${at ? ' → ' + escTxt(at) : ''}${dur ? ` <span class="mt-dur">${escTxt(dur)}</span>` : ''}</div>` +
+            `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-tag"></use></svg> <b>${escTxt(fmtPrice(rt) || '-')}</b>&nbsp;/&nbsp;місце</div>` +
+            `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg> ${escTxt(rt.carrier || rt.company || 'Автобус')}</div>` +
+            ((fromSt || toSt) ? `<div class="mt-stations">${fromSt ? `<span><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${escTxt(fromSt)}</span>` : ''}${toSt ? `<span><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-flag-checkered"></use></svg> ${escTxt(toSt)}</span>` : ''}</div>` : '');
         document.getElementById('m-form').style.display = 'block';
         document.getElementById('m-ok').style.display = 'none';
         document.getElementById('c-comment').value = '';
@@ -789,7 +770,7 @@
         document.getElementById('m-disc-note').style.display = 'none';
         // "Додатково" згорнуто; поле тварини - лише якщо рейс дозволяє тварин
         document.getElementById('more-body').style.display = 'none';
-        document.getElementById('more-chev').className = 'fa-solid fa-chevron-down';
+        document.getElementById('more-chev').classList.remove('rot');
         document.getElementById('pet-select').value = 'no';
         document.getElementById('pet-note').style.display = 'none';
         document.getElementById('pet-field').style.display = allowsPets(rt) ? 'block' : 'none';
@@ -806,7 +787,7 @@
         const b = document.getElementById('more-body');
         const open = b.style.display !== 'none';
         b.style.display = open ? 'none' : 'block';
-        document.getElementById('more-chev').className = open ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
+        document.getElementById('more-chev').classList.toggle('rot', !open);
     });
     // Зміна "з твариною" - показуємо примітку й перемикаємо режим кнопки (бронь ↔ заявка)
     document.getElementById('pet-select').addEventListener('change', () => {
@@ -845,7 +826,7 @@
         const willBook = canBookNow();
         const btn = document.getElementById('m-submit');
         btn.disabled = true;
-        btn.innerHTML = willBook ? '<i class="fa-solid fa-spinner fa-spin"></i> Бронюємо...' : '<i class="fa-solid fa-spinner fa-spin"></i> Надсилаємо...';
+        btn.innerHTML = willBook ? '<svg class="ic ic-spin" aria-hidden="true"><use href="/_sprite.svg#i-spinner"></use></svg> Бронюємо...' : '<svg class="ic ic-spin" aria-hidden="true"><use href="/_sprite.svg#i-spinner"></use></svg> Надсилаємо...';
 
         const rt = selRoute || {};
         const payload = {
@@ -883,7 +864,7 @@
                     ? 'Оплата - водієві при посадці.<br>Збережіть свої квитки:'
                     : 'Оплата - водієві при посадці.<br>Квитки надішле менеджер найближчим часом.';
                 document.getElementById('m-ok-tickets').innerHTML = tks.map((tk, i) =>
-                    `<a class="tk-link" href="${escTxt(tk.pdf)}" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf"></i> Завантажити квиток${tks.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('');
+                    `<a class="tk-link" href="${escTxt(tk.pdf)}" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-file-pdf"></use></svg> Завантажити квиток${tks.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('');
             } else {
                 document.getElementById('m-ok-title').textContent = 'Заявку прийнято!';
                 document.getElementById('m-ok-text').innerHTML = "Наш менеджер зв'яжеться<br>з вами найближчим часом.";
@@ -896,8 +877,8 @@
         } finally {
             btn.disabled = false;
             btn.innerHTML = canBookNow()
-                ? '<i class="fa-solid fa-bolt"></i> Забронювати'
-                : '<i class="fa-solid fa-paper-plane"></i> Надіслати';
+                ? '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bolt"></use></svg> Забронювати'
+                : '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-paper-plane"></use></svg> Надіслати';
         }
     });
     document.getElementById('m-close').addEventListener('click', closeBooking);
@@ -964,7 +945,7 @@
         btn.className = 'scroll-top';
         btn.type = 'button';
         btn.setAttribute('aria-label', 'Нагору');
-        btn.innerHTML = '<i class="fa-solid fa-arrow-up" aria-hidden="true"></i>';
+        btn.innerHTML = '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-up"></use></svg>';
         document.body.appendChild(btn);
         btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
         let ticking = false;

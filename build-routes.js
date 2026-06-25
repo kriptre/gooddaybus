@@ -43,7 +43,7 @@ function pageHtml(r) {
     const cfg = JSON.stringify({ fromId: r.fromId, toId: r.toId, fromName: r.fromName, toName: r.toName, slug: r.slug });
     const rev = routes.find(x => String(x.fromId) === String(r.toId) && String(x.toId) === String(r.fromId));
     const reverseLink = rev
-        ? `\n    <a class="route-reverse-link" href="/${rev.slug}"><i class="fa-solid fa-arrow-right-arrow-left"></i> Потрібен зворотний маршрут? ${escHtml(rev.fromName)} - ${escHtml(rev.toName)}</a>`
+        ? `\n    <a class="route-reverse-link" href="/${rev.slug}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-right-arrow-left"></use></svg> Потрібен зворотний маршрут? ${escHtml(rev.fromName)} - ${escHtml(rev.toName)}</a>`
         : '';
 
     return `<!DOCTYPE html>
