@@ -161,7 +161,7 @@
         .t-price { font-size: 38px; font-weight: 800; color: var(--text); letter-spacing: -1.6px; line-height: 1; }
         .t-price-sub { font-size: 12px; color: var(--text-3); margin-top: 3px; }
         .t-seats { font-size: 12px; color: var(--text-2); display: flex; align-items: center; justify-content: flex-end; gap: 5px; font-weight: 600; margin-top: 6px; }
-        .t-seats .ic { color: var(--text-3); font-size: 10px; }
+        .t-seats .ic { color: var(--text-3); font-size: 11px; position: relative; top: 0.5px; }
         .btn-ticket { background: var(--orange); color: #fff; border: none; border-radius: var(--r-sm); padding: 12px 20px; font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: var(--tr); white-space: nowrap; }
         .btn-ticket:hover { background: var(--orange-2); box-shadow: 0 4px 14px rgba(240,100,34,0.3); }
         .t-foot { border-top: 1px solid #F0F5FA; padding: 10px 24px; display: flex; align-items: center; gap: 10px; background: var(--bg); flex-wrap: wrap; }
@@ -198,8 +198,18 @@
         .pay-badge .ic { width: 1.25em; text-align: center; }
         .pb-none { background: var(--green-bg); color: var(--green); }
         .pb-part { background: var(--amber-bg, #FFF6E5); color: #C77700; }
-        .pb-full { background: var(--orange-bg); color: var(--orange); }
+        .pb-full { background: #FDECEA; color: var(--red); }
         .pay-note { margin-top: 7px; font-size: 12px; color: var(--text-3); }
+        /* Тип оплати - завжди видимий: кольорова смужка зліва по всій картці + бейдж біля ціни */
+        .ticket.pay-none { border-left: 6px solid var(--green); }
+        .ticket.pay-part { border-left: 6px solid #E8950C; }
+        .ticket.pay-full { border-left: 6px solid var(--red); }
+        .t-pay { display: inline-flex; align-items: center; font-size: 12.5px; font-weight: 800; border-radius: 50px; padding: 5px 13px; margin-top: 8px; line-height: 1.15; white-space: nowrap; }
+        .t-pay.pay-none { background: var(--green-bg); color: var(--green); }
+        .t-pay.pay-part { background: var(--amber-bg, #FFF6E5); color: #C77700; }
+        .t-pay.pay-full { background: #FDECEA; color: var(--red); }
+        .m-trip .mt-pay { grid-column: 1 / -1; margin-top: 2px; }
+        .m-trip .mt-pay .t-pay { margin-top: 0; }
         /* Рейтинг та надійність перевізника */
         .td-carrier { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .carr-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 800; border-radius: 50px; padding: 4px 11px; }
@@ -402,6 +412,8 @@
         .btn-submit { flex: 2; height: 48px; background: var(--orange); border: none; border-radius: var(--r); color: #fff; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: var(--tr); display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-submit:hover { background: var(--orange-2); box-shadow: 0 6px 20px rgba(240,100,34,0.3); }
         .m-booknote { margin-top: 10px; font-size: 12.5px; font-weight: 700; color: var(--orange); display: flex; align-items: center; gap: 6px; }
+        .m-groupnote { margin-top: 10px; font-size: 12px; color: #8A5A00; background: var(--amber-bg, #FFF6E5); border: 1px solid #F3D89A; border-radius: var(--r); padding: 9px 12px; display: flex; align-items: flex-start; gap: 7px; line-height: 1.5; }
+        .m-groupnote .ic { color: #C77700; margin-top: 2px; flex-shrink: 0; }
         .tk-link { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--orange-bg); color: var(--orange); border: 1px solid var(--orange-brd); border-radius: var(--r-sm); padding: 11px; font-weight: 800; font-size: 14px; margin-bottom: 8px; text-decoration: none; }
         .tk-link:hover { background: var(--orange); color: #fff; }
         #m-ok-tickets { margin-bottom: 18px; }

@@ -9,6 +9,14 @@
     // "Без передоплати", а умову показуємо в деталях рейсу.
     const isGroupPrepay = rt => rt.label_type === 'prepayment' && /груп/i.test(rt.price_label || '');
     const payCategory = rt => !rt.label_type ? 'none' : (isGroupPrepay(rt) ? 'group' : (rt.label_type === 'prepayment' ? 'partial' : 'full'));
+    // Поріг групи з тексту умови ("...для груп з трьох і більше осіб" → 3). Дзеркало серверної логіки.
+    const groupThreshold = rt => {
+        const s = String(rt.price_label || '').toLowerCase().replace(/['’ʼ]/g, '');
+        const m = s.match(/з\s+(двох|трьох|чотирьох|пяти|шести|(\d+))/);
+        if (!m) return 0;
+        if (m[2]) return parseInt(m[2], 10) || 0;
+        return { 'двох': 2, 'трьох': 3, 'чотирьох': 4, 'пяти': 5, 'шести': 6 }[m[1]] || 0;
+    };
     // Прямий рейс: change_info порожній АБО не містить слова "пересад"
     // (API часто пише туди текст на кшталт "Прямий рейс")
     const isDirect = rt => !rt.change_info || !/пересад/i.test(rt.change_info);
@@ -391,6 +399,15 @@
         return `<div class="pay-badges">${label}</div>` + (rt.price_label ? `<div class="pay-note">${escTxt(rt.price_label)}</div>` : '');
     }
 
+    // Головний бейдж типу оплати - завжди видимий на картці й у шапці модалки (щоб не ховався в деталях).
+    // none + group: для 1-2 пасажирів передоплати немає (нюанс про групи лишається в деталях).
+    function payTag(rt) {
+        const cat = payCategory(rt);
+        if (cat === 'partial') return { cls: 'pay-part', txt: 'Часткова передоплата' };
+        if (cat === 'full') return { cls: 'pay-full', txt: 'Повна передоплата' };
+        return { cls: 'pay-none', txt: 'Без передоплати' };
+    }
+
     function renderResults(routes, date) {
         const el = document.getElementById('results');
         const dep = document.getElementById('departure').value;
@@ -490,7 +507,8 @@
             const st    = escTxt(rt.free_seats !== undefined ? rt.free_seats : '?');
             const car   = escTxt(rt.carrier || rt.company || 'Автобус');
             const dur   = fmtDuration(rt.travel_time);
-            return `<div class="ticket" style="animation-delay:${Math.min(i*0.06,0.3)}s">
+            const pay   = payTag(rt);
+            return `<div class="ticket ${pay.cls}" style="animation-delay:${Math.min(i*0.06,0.3)}s">
                 <div class="t-main">
                     <div class="t-ep">
                         <div class="t-time">${dt}</div>
@@ -516,6 +534,7 @@
                             <div class="t-price-sub">за місце</div>
                             <div class="t-seats"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chair"></use></svg> ${st} вільних</div>
                         </div>
+                        <span class="t-pay ${pay.cls}">${pay.txt}</span>
                     </div>
                 </div>
                 <div class="t-foot">
@@ -678,10 +697,11 @@
             const idx = [...list.children].indexOf(row);
             row.remove();
             if (idx >= 0) _paxDiscSel.splice(idx, 1);
-            renumberPax(); renderDiscBlock();
+            renumberPax(); renderDiscBlock(); applyBookUI();
         });
         renumberPax();
         renderDiscBlock();
+        applyBookUI();
         return row;
     }
     // Нормалізація телефону при виході з поля: 067... → +38067..., 380... → +380...
@@ -711,10 +731,14 @@
     }
 
     let _bookMode = false; // true = рейс без передоплати, бронюємо одразу
+    let _isGroup = false, _groupThr = 0; // груповий рейс і поріг передоплати (з умови перевізника)
     const petChosen = () => document.getElementById('pet-select').value === 'yes';
-    // Реальна можливість автоброні: рейс bookable І їде БЕЗ тварини (з твариною - лише менеджер)
-    const canBookNow = () => _bookMode && !petChosen();
-    // Оновлює заголовок/підказку/кнопку відповідно до того, чи буде автобронь
+    const paxCount = () => document.querySelectorAll('#pax-list .pax-row').length;
+    // Група досягла порогу передоплати перевізника (від _groupThr осіб - потрібна передоплата)
+    const groupOver = () => _isGroup && _groupThr > 0 && paxCount() >= _groupThr;
+    // Реальна можливість автоброні: рейс bookable, БЕЗ тварини і група не перевищила поріг
+    const canBookNow = () => _bookMode && !petChosen() && !groupOver();
+    // Оновлює заголовок/підказку/кнопку/бейдж оплати відповідно до стану (з урахуванням групи)
     function applyBookUI() {
         const book = canBookNow();
         document.getElementById('m-title').textContent = book ? 'Бронювання поїздки' : 'Замовити поїздку';
@@ -722,6 +746,20 @@
         document.getElementById('m-submit').innerHTML = book
             ? '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bolt"></use></svg> Забронювати'
             : '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-paper-plane"></use></svg> Надіслати';
+        // Бейдж оплати в шапці: для групового рейсу залежить від кількості пасажирів
+        const badge = document.querySelector('#m-trip .mt-pay .t-pay');
+        if (badge && _isGroup) {
+            const over = groupOver();
+            badge.className = 't-pay ' + (over ? 'pay-part' : 'pay-none');
+            badge.textContent = over ? 'Попередня оплата 1 квитка' : 'Без передоплати';
+        }
+        // Примітка про умову групової передоплати (показуємо лише для групових рейсів)
+        const gn = document.getElementById('m-groupnote');
+        if (gn) {
+            const show = _isGroup && _groupThr > 0;
+            gn.style.display = show ? 'flex' : 'none';
+            if (show) gn.innerHTML = `<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-info"></use></svg> Від ${_groupThr} пасажирів перевізник бере передоплату за 1 квиток. До ${_groupThr - 1} включно - без передоплати, оплата водієві.`;
+        }
     }
     // Блокування прокрутки фону, поки відкрита модалка (надійно для iOS - через position:fixed)
     let _scrollY = 0;
@@ -748,6 +786,7 @@
     function openModal(rt, dep, arr, date) {
         selRoute = rt;
         _bookMode = !!rt.bookable;
+        _isGroup = isGroupPrepay(rt); _groupThr = groupThreshold(rt);
         _modalDiscounts = []; _paxDiscSel = []; _discOpen = false;
         const dt = rt.departure_time || rt.time_from || '';
         document.querySelector('#m-route span').textContent = `${dep} → ${arr}`;
@@ -761,6 +800,7 @@
             `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-clock"></use></svg> ${escTxt(dt || '-')}${at ? ' → ' + escTxt(at) : ''}${dur ? ` <span class="mt-dur">${escTxt(dur)}</span>` : ''}</div>` +
             `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-tag"></use></svg> <b>${escTxt(fmtPrice(rt) || '-')}</b>&nbsp;/&nbsp;місце</div>` +
             `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg> ${escTxt(rt.carrier || rt.company || 'Автобус')}</div>` +
+            `<div class="mt-row mt-pay"><span class="t-pay ${payTag(rt).cls}">${payTag(rt).txt}</span></div>` +
             ((fromSt || toSt) ? `<div class="mt-stations">${fromSt ? `<span><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${escTxt(fromSt)}</span>` : ''}${toSt ? `<span><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-flag-checkered"></use></svg> ${escTxt(toSt)}</span>` : ''}</div>` : '');
         document.getElementById('m-form').style.display = 'block';
         document.getElementById('m-ok').style.display = 'none';
