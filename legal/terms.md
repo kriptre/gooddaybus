@@ -140,7 +140,7 @@
 ## 13. Контакти
 
 - Сайт: [https://gooddaybus.com](https://gooddaybus.com)
-- Телефон / Viber / WhatsApp: +38 (096) 765-67-32
+- Телефон / Viber / WhatsApp: [+38 (096) 765-67-32](tel:+380967656732)
 - Telegram: [https://t.me/gooddaybus](https://t.me/gooddaybus)
 - Email: **serhii@gooddaybus.com**
 - Час роботи: щодня 7:00-23:00
