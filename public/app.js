@@ -813,6 +813,8 @@
         document.getElementById('more-chev').classList.remove('rot');
         document.getElementById('pet-select').value = 'no';
         document.getElementById('pet-note').style.display = 'none';
+        document.getElementById('m-consent').checked = false;
+        document.getElementById('m-consent-wrap').classList.remove('err');
         document.getElementById('pet-field').style.display = allowsPets(rt) ? 'block' : 'none';
         document.getElementById('pax-list').innerHTML = '';
         addPax(); // один порожній пасажир за замовчуванням
@@ -837,7 +839,17 @@
 
     document.getElementById('m-cancel').addEventListener('click', closeBooking);
     document.getElementById('modal-bg').addEventListener('click', e => { if (e.target === document.getElementById('modal-bg')) closeBooking(); });
+    document.getElementById('m-consent').addEventListener('change', e => {
+        if (e.target.checked) document.getElementById('m-consent-wrap').classList.remove('err');
+    });
     document.getElementById('m-submit').addEventListener('click', async () => {
+        // Згода з умовами обовʼязкова (активний opt-in, не передзаповнений)
+        const consent = document.getElementById('m-consent');
+        if (consent && !consent.checked) {
+            document.getElementById('m-consent-wrap').classList.add('err');
+            document.getElementById('m-consent-wrap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
         const rows = [...document.querySelectorAll('#pax-list .pax-row')];
         const passengers = [];
         let firstError = null;
@@ -907,7 +919,7 @@
                     `<a class="tk-link" href="${escTxt(tk.pdf)}" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-file-pdf"></use></svg> Завантажити квиток${tks.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('');
             } else {
                 document.getElementById('m-ok-title').textContent = 'Заявку прийнято!';
-                document.getElementById('m-ok-text').innerHTML = "Наш менеджер зв'яжеться<br>з вами найближчим часом.";
+                document.getElementById('m-ok-text').innerHTML = "Менеджер зв'яжеться з вами, узгодить деталі<br>та за потреби надасть реквізити для оплати.";
                 document.getElementById('m-ok-tickets').innerHTML = '';
             }
             document.getElementById('m-form').style.display = 'none';
@@ -979,21 +991,6 @@
     })();
     const noTrack = () => localStorage.getItem('gdb_notrack') === '1';
 
-    // Кнопка «нагору»: зʼявляється після прокрутки ~на екран, плавний підйом. Один елемент на всі сторінки.
-    function setupScrollTop() {
-        const btn = document.createElement('button');
-        btn.className = 'scroll-top';
-        btn.type = 'button';
-        btn.setAttribute('aria-label', 'Нагору');
-        btn.innerHTML = '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-up"></use></svg>';
-        document.body.appendChild(btn);
-        btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-        let ticking = false;
-        const update = () => { btn.classList.toggle('show', window.scrollY > window.innerHeight * 0.6); ticking = false; };
-        window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
-        update();
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
         // Лічильник візитів - один раз на сесію (крім позначених notrack)
         if (!sessionStorage.getItem('gdb_visited')) {
@@ -1013,5 +1010,4 @@
         ac('departure', 'departure-list', true);
         ac('arrival', 'arrival-list', false);
         document.getElementById('search-btn').addEventListener('click', search);
-        setupScrollTop();
     });

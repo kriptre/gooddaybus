@@ -3,14 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Google tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-97WNW2B4KV"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-97WNW2B4KV');
-    </script>
     <title>Автобус Варшава - Львів: квитки без передоплати | GoodDayBus</title>
     <meta name="description" content="GoodDayBus - зручний спосіб купити квиток на автобус Варшава - Львів: знайдіть рейс, забронюйте місце за хвилину, без реєстрації, без передоплат!">
     <link rel="canonical" href="https://gooddaybus.com/varshava-lviv">
@@ -117,7 +109,7 @@
     <noscript>
         <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     </noscript>
-    <link rel="stylesheet" href="/styles.css?v=699f2fa027">
+    <link rel="stylesheet" href="/styles.css?v=5e097d3827">
 </head>
 <body>
 
@@ -277,6 +269,12 @@
 </main>
 
 <footer>
+    <nav class="footer-legal" aria-label="Правова інформація">
+        <a href="/terms">Умови користування</a>
+        <a href="/privacy">Конфіденційність</a>
+        <a href="/refund">Скасування та повернення</a>
+        <a href="/cookies">Cookie</a>
+    </nav>
     <p>© 2026 <span>GoodDayBus</span> - Пасажирські перевезення Україна <svg class="ic" style="font-size:10px" aria-hidden="true"><use href="/_sprite.svg#i-arrow-right-arrow-left"></use></svg> Європа</p>
 </footer>
 
@@ -322,6 +320,10 @@
                 <input type="text" id="c-hp" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
             </div>
             <div class="m-total" id="m-total"></div>
+            <label class="m-consent" id="m-consent-wrap">
+                <input type="checkbox" id="m-consent">
+                <span>Я погоджуюся з <a href="/terms" target="_blank" rel="noopener">Умовами користування</a> та <a href="/privacy" target="_blank" rel="noopener">Політикою конфіденційності</a> і даю згоду на передачу вказаних даних перевізнику для оформлення поїздки.</span>
+            </label>
             <div class="modal-foot">
                 <button class="btn-cancel" id="m-cancel">Скасувати</button>
                 <button class="btn-submit" id="m-submit">
@@ -343,6 +345,7 @@
 
 
 <script>window.__ROUTE__ = {"fromId":97,"toId":33,"fromName":"Варшава","toName":"Львів","slug":"varshava-lviv"};</script>
-<script src="/app.js?v=699f2fa027"></script>
+<script src="/common.js?v=5e097d3827"></script>
+<script src="/app.js?v=5e097d3827"></script>
 </body>
 </html>

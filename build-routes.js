@@ -12,6 +12,7 @@ const routes = JSON.parse(fs.readFileSync(path.join(__dirname, 'routes.json'), '
 // Версія ассетів = короткий хеш вмісту app.js + styles.css. Підставляємо у ?v= для скидання кешу браузера на деплої.
 const ASSET_V = require('crypto').createHash('md5')
     .update(fs.readFileSync(path.join(PUB, 'app.js')))
+    .update(fs.readFileSync(path.join(PUB, 'common.js')))
     .update(fs.readFileSync(path.join(PUB, 'styles.css')))
     .digest('hex').slice(0, 10);
 
@@ -24,13 +25,12 @@ const escHtml = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt
 const escAttr = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // --- спільні фрагменти з index.html ---
-const gtag = between(html, '<!-- Google tag (gtag.js) - Google Analytics -->', '<meta name="google-site-verification"');
 const iconsFonts = between(html, '<!-- Іконки бренду', '<link rel="stylesheet" href="/styles.css');
 const header = between(html, '<header>', '</header>') + '</header>';
 const searchWrap = between(html, '<div class="search-wrap">', '<!-- Швидкий контакт');
 const quickContact = between(html, '<div class="quick-contact">', '<!-- CONTENT -->');
 const footer = between(html, '<footer>', '</footer>') + '</footer>';
-const modal = between(html, '<!-- MODAL -->', '<script src="/app.js');
+const modal = between(html, '<!-- MODAL -->', '<script src="/common.js');
 const contactSection = between(html, '<section class="contact-section">', '</main>'); // блок менеджера з головної
 
 function pageHtml(r) {
@@ -51,7 +51,6 @@ function pageHtml(r) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    ${gtag.trim()}
     <title>${escAttr(r.title)}</title>
     <meta name="description" content="${escAttr(r.desc)}">
     <link rel="canonical" href="${url}">
@@ -112,6 +111,7 @@ ${footer}
 
 ${modal}
 <script>window.__ROUTE__ = ${cfg};</script>
+<script src="/common.js?v=${ASSET_V}"></script>
 <script src="/app.js?v=${ASSET_V}"></script>
 </body>
 </html>
@@ -141,9 +141,13 @@ fs.writeFileSync(path.join(PUB, 'sitemap.xml'), sitemap);
 const idxPath = path.join(PUB, 'index.html');
 const idxStamped = fs.readFileSync(idxPath, 'utf8')
     .replace(/\/styles\.css(\?v=[a-z0-9]+)?/g, `/styles.css?v=${ASSET_V}`)
+    .replace(/\/common\.js(\?v=[a-z0-9]+)?/g, `/common.js?v=${ASSET_V}`)
     .replace(/\/app\.js(\?v=[a-z0-9]+)?/g, `/app.js?v=${ASSET_V}`);
 fs.writeFileSync(idxPath, idxStamped);
 
 console.log(`Згенеровано сторінок: ${made.length} (${made.join(', ')})`);
 console.log(`Sitemap оновлено: ${urls.length} URL`);
 console.log(`Версія ассетів (?v=): ${ASSET_V}`);
+
+// Юридичні сторінки (terms/privacy/refund/cookies) з legal/*.md
+require('./build-legal.js');
