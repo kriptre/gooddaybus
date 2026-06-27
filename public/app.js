@@ -814,7 +814,7 @@
         document.getElementById('pet-select').value = 'no';
         document.getElementById('pet-note').style.display = 'none';
         document.getElementById('m-consent').checked = false;
-        document.getElementById('m-consent-wrap').classList.remove('err');
+        document.getElementById('m-consent-wrap').classList.remove('err', 'checked');
         document.getElementById('pet-field').style.display = allowsPets(rt) ? 'block' : 'none';
         document.getElementById('pax-list').innerHTML = '';
         addPax(); // один порожній пасажир за замовчуванням
@@ -840,7 +840,9 @@
     document.getElementById('m-cancel').addEventListener('click', closeBooking);
     document.getElementById('modal-bg').addEventListener('click', e => { if (e.target === document.getElementById('modal-bg')) closeBooking(); });
     document.getElementById('m-consent').addEventListener('change', e => {
-        if (e.target.checked) document.getElementById('m-consent-wrap').classList.remove('err');
+        const wrap = document.getElementById('m-consent-wrap');
+        wrap.classList.toggle('checked', e.target.checked);
+        if (e.target.checked) wrap.classList.remove('err');
     });
     document.getElementById('m-submit').addEventListener('click', async () => {
         // Згода з умовами обовʼязкова (активний opt-in, не передзаповнений)
