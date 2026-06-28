@@ -954,12 +954,10 @@
             const j = await r.json().catch(() => ({}));
             const tks = (j.booked && Array.isArray(j.tickets)) ? j.tickets.filter(t => t.pdf) : [];
             if (j.booked) {
-                // Реальна ціна з виписаного квитка (може відрізнятись від показаної в пошуку) - щоб клієнт
-                // знав остаточну суму одразу, а не дізнавався про доплату при посадці.
-                const realPrice = Math.max(0, ...(Array.isArray(j.tickets) ? j.tickets : []).map(t => parseFloat(t.price)).filter(n => !isNaN(n)));
-                const priceLine = realPrice > 0 ? `Вартість: <b>${realPrice} ₴</b> за місце, оплата водієві при посадці.<br>` : 'Оплата - водієві при посадці.<br>';
                 document.getElementById('m-ok-title').textContent = 'Місця заброньовано!';
-                document.getElementById('m-ok-text').innerHTML = priceLine + (tks.length ? 'Збережіть свої квитки:' : 'Квитки надішле менеджер найближчим часом.');
+                document.getElementById('m-ok-text').innerHTML = tks.length
+                    ? 'Оплата - водієві при посадці.<br>Збережіть свої квитки:'
+                    : 'Оплата - водієві при посадці.<br>Квитки надішле менеджер найближчим часом.';
                 document.getElementById('m-ok-tickets').innerHTML = tks.map((tk, i) =>
                     `<a class="tk-link" href="${escTxt(tk.pdf)}" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-file-pdf"></use></svg> Завантажити квиток${tks.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('');
             } else {
