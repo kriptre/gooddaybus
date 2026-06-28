@@ -153,7 +153,10 @@
             lst.innerHTML = h; hl = -1; lst.style.display = 'block'; lst.classList.add('sg-wide');
             lst.querySelectorAll('.ac-route').forEach(el => el.addEventListener('click', () => applyRoute(el.dataset)));
         }
-        inp.addEventListener('focus', function () { if (this.value.trim().length < 2) showSuggest(); });
+        inp.addEventListener('focus', function () {
+            if (this.dataset.skipSuggest) { delete this.dataset.skipSuggest; return; } // автофокус після вибору «Звідки» - без панелі
+            if (this.value.trim().length < 2) showSuggest();
+        });
 
         inp.addEventListener('input', function () {
             const q = this.value.trim().toLowerCase();
@@ -169,6 +172,8 @@
                 el.addEventListener('click', () => {
                     inp.value = city.name; lst.style.display = 'none'; hl = -1;
                     isDep ? (depId = city.id) : (arrId = city.id);
+                    // Після вибору міста відправлення - автофокус у «Куди» (якщо порожнє), щоб не тягтись мишею
+                    if (isDep) { const a = document.getElementById('arrival'); if (a && !a.value.trim()) { a.dataset.skipSuggest = '1'; a.focus(); } }
                 });
                 lst.appendChild(el);
             });
