@@ -654,6 +654,20 @@ async function verifyBookable(body, paxCount) {
         rt = want ? routes.find(r => sameTrip(bundlePayload(r.data_bundle), want)) : null;
     }
     if (!rt) return { ok: false, reason: 'рейс не знайдено у свіжій видачі' };
+    // Захист від підміни рейсу: якщо точний data_bundle не знайшовся і ми взяли рейс за запасним
+    // збігом (trip_id/зупинки), він МУСИТЬ збігатися з обраним клієнтом за ціною/перевізником/часом.
+    // Інакше (кілька рейсів на цей напрямок + прострочений бандл) автобронь могла б створити квиток
+    // ІНШОГО рейсу - тоді НЕ бронюємо автоматично, віддаємо менеджеру.
+    const num = s => parseFloat(String(s == null ? '' : s).replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+    const norm = s => String(s || '').trim().toLowerCase();
+    const okPrice = !body.route_price || !rt.price || Math.abs(num(rt.price) - num(body.route_price)) < 1;
+    const okCarrier = !body.route_carrier || norm(rt.carrier || rt.company) === norm(body.route_carrier);
+    const tShown = norm(body.route_time), tFresh = norm(rt.departure_time || rt.time_from);
+    const okTime = !tShown || !tFresh || tShown === tFresh;
+    if (!okPrice || !okCarrier || !okTime) {
+        console.log(`[Booking] ⚠️ свіжий рейс ≠ обраному: ціна ${rt.price}/${body.route_price}, перевізник "${rt.carrier || rt.company}"/"${body.route_carrier}", час ${rt.departure_time || rt.time_from}/${body.route_time}`);
+        return { ok: false, reason: 'свіжі дані рейсу не збігаються з обраним (ціна/перевізник/час) - оформіть вручну' };
+    }
     if (rt.label_type) {
         // Передоплата лише для груп: бронюємо, поки пасажирів МЕНШЕ порогу перевізника
         if (!isGroupPrepay(rt)) return { ok: false, reason: `рейс потребує передоплати (${rt.label_type})` };
@@ -670,6 +684,8 @@ async function verifyBookable(body, paxCount) {
 // skipChecks=true - для легітимних "дублів" (зворотний рейс, мама+дитина на 1 номер),
 // які ми вже самі визнали безпечними; інакше contrabus відбив би їх повторною перевіркою.
 async function createBooking(data_bundle, passengers, skipChecks = false) {
+    // Діагностика (для звірки з логами contrabus): який саме рейс ідентифікує бандл, що шлемо на бронь
+    console.log(`[Booking] → create_booking, data_bundle рейс: ${JSON.stringify(bundlePayload(data_bundle))}`);
     if (BOOKING_DRY_RUN) {
         console.log(`[Booking] DRY RUN — бронь НЕ створюється, фейкові квитки${skipChecks ? ' (skip_checks)' : ''}`);
         return { ok: true, tickets: passengers.map((p, i) => ({ id: `DRYRUN-${i + 1}`, pdf: '' })) };
@@ -706,7 +722,7 @@ async function createBooking(data_bundle, passengers, skipChecks = false) {
     // PDF-посилання: пробуємо точне з get_ticket_info, інакше будуємо за відомим шаблоном
     const tickets = [];
     for (const id of ids) {
-        let pdf = ticketPdfLink(id);
+        let pdf = ticketPdfLink(id), price = null;
         try {
             const ti = await (await fetch(`${API_BASE_URL}/bookings/get_ticket_info`, {
                 method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -714,8 +730,15 @@ async function createBooking(data_bundle, passengers, skipChecks = false) {
             })).json();
             const info = Array.isArray(ti) ? ti[0] : ti;
             if (info && info.link_to_pdf) pdf = info.link_to_pdf;
+            // Реальна ціна виписаного квитка. Точну назву поля звіримо за логом нижче.
+            if (info) {
+                const p = info.price ?? info.ticket_price ?? info.cost ?? info.sum ?? info.amount ?? info.total ?? info.fare ?? null;
+                if (p != null && p !== '') { const n = parseFloat(String(p).replace(',', '.')); if (!isNaN(n)) price = n; }
+            }
+            // Лог повної відповіді - щоб підтвердити поле ціни/часу (прибрати після звірки)
+            console.log(`[Booking] ticket_info ${id}: ${JSON.stringify(info).slice(0, 700)}`);
         } catch (e) { /* лишаємо шаблонне посилання */ }
-        tickets.push({ id, pdf });
+        tickets.push({ id, pdf, price });
     }
     return { ok: true, tickets };
 }
@@ -858,6 +881,19 @@ app.post('/api/order', async (req, res) => {
             } else {
                 // Без попереджень: якщо в заявці однаковий номер у кількох - skip_checks
                 await doBook(repeatedPhone);
+            }
+        }
+
+        // Розбіжність ціни: фактична у виписаному квитку vs показана клієнту - сигнал менеджеру.
+        // (Буває, що у видачі contrabus результат показує одну ціну/перевізника, а його data_bundle
+        //  виписує квиток іншого рейсу - клієнт не має дізнатися про доплату аж при посадці.)
+        if (booked && tickets.length) {
+            const real = Math.max(0, ...tickets.map(t => (typeof t.price === 'number' ? t.price : 0)));
+            const shown = parseFloat(String(req.body.route_price || '').replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+            if (real > 0 && shown > 0 && Math.abs(real - shown) >= 1) {
+                const note = `Ціна у квитку ${real} ≠ показаної клієнту ${shown}. Звʼязатися з клієнтом щодо різниці!`;
+                check_warning = check_warning ? check_warning + ' · ' + note : note;
+                console.log(`[Order] ⚠️ price mismatch: показано ${shown}, у квитку ${real}`);
             }
         }
 

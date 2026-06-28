@@ -103,6 +103,33 @@
         search();
     }
 
+    // Нещодавні пошуки (localStorage) + популярні напрямки - показуємо при фокусі порожнього поля.
+    const POPULAR = [
+        { f: 'Київ', t: 'Варшава', fi: 4, ti: 97 },
+        { f: 'Львів', t: 'Краків', fi: 33, ti: 287 },
+        { f: 'Київ', t: 'Краків', fi: 4, ti: 287 },
+        { f: 'Львів', t: 'Варшава', fi: 33, ti: 97 },
+        { f: 'Київ', t: 'Берлін', fi: 4, ti: 49 },
+        { f: 'Львів', t: 'Прага', fi: 33, ti: 460 }
+    ];
+    const getRecent = () => { try { return JSON.parse(localStorage.getItem('gdb_recent') || '[]'); } catch (e) { return []; } };
+    function saveRecent(f, t, fi, ti) {
+        if (!f || !t || fi == null || ti == null) return;
+        try {
+            const l = getRecent().filter(r => !(String(r.fi) === String(fi) && String(r.ti) === String(ti)));
+            l.unshift({ f, t, fi, ti });
+            localStorage.setItem('gdb_recent', JSON.stringify(l.slice(0, 4)));
+        } catch (e) { }
+    }
+    // Підставити маршрут (обидва поля) і запустити пошук - для підказок «нещодавні/популярні»
+    function applyRoute(r) {
+        document.getElementById('departure').value = r.f; depId = +r.fi;
+        document.getElementById('arrival').value = r.t; arrId = +r.ti;
+        document.getElementById('departure-list').style.display = 'none';
+        document.getElementById('arrival-list').style.display = 'none';
+        search();
+    }
+
     function ac(inputId, listId, isDep) {
         const inp = document.getElementById(inputId);
         const lst = document.getElementById(listId);
@@ -116,10 +143,23 @@
             items[hl].scrollIntoView({ block: 'nearest' });
         };
 
+        const routeItemHtml = (r, icon) => `<div class="ac-item ac-route" data-f="${escTxt(r.f)}" data-t="${escTxt(r.t)}" data-fi="${r.fi}" data-ti="${r.ti}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#${icon}"></use></svg><span class="ac-route-txt">${escTxt(r.f)} → ${escTxt(r.t)}</span></div>`;
+        // Підказки при фокусі порожнього поля: нещодавні пошуки + популярні напрямки
+        function showSuggest() {
+            const recent = getRecent();
+            let h = '';
+            if (recent.length) h += '<div class="ac-head">Нещодавні</div>' + recent.map(r => routeItemHtml(r, 'i-clock')).join('');
+            h += '<div class="ac-head">Популярні напрямки</div>' + POPULAR.map(r => routeItemHtml(r, 'i-bolt')).join('');
+            lst.innerHTML = h; hl = -1; lst.style.display = 'block'; lst.classList.add('sg-wide');
+            lst.querySelectorAll('.ac-route').forEach(el => el.addEventListener('click', () => applyRoute(el.dataset)));
+        }
+        inp.addEventListener('focus', function () { if (this.value.trim().length < 2) showSuggest(); });
+
         inp.addEventListener('input', function () {
             const q = this.value.trim().toLowerCase();
             lst.innerHTML = ''; hl = -1;
-            if (q.length < 2 || !cities.length) { lst.style.display = 'none'; return; }
+            if (q.length < 2 || !cities.length) { if (!q && cities.length) showSuggest(); else lst.style.display = 'none'; return; }
+            lst.classList.remove('sg-wide');
             const res = cities.filter(c => c.name.toLowerCase().includes(q)).slice(0, 9);
             if (!res.length) { lst.style.display = 'none'; return; }
             res.forEach(city => {
@@ -192,6 +232,7 @@
         syncTypedIds();
         if (!depId || !arrId) { setStatus('Перевірте назви міст або оберіть зі списку підказок', 'error'); setTimeout(() => setStatus('',''), 3500); return; }
         if (depId === arrId) { setStatus('Вкажіть різні міста', 'error'); return; }
+        saveRecent(document.getElementById('departure').value, document.getElementById('arrival').value, depId, arrId);
         // На сторінці маршруту: якщо обрали ІНШИЙ напрямок - ведемо на головну з авто-пошуком
         // (URL сторінки завжди = її маршрут). Той самий маршрут (стрічка дат) шукаємо тут же.
         if (window.__ROUTE__ && (String(depId) !== String(window.__ROUTE__.fromId) || String(arrId) !== String(window.__ROUTE__.toId))) {
@@ -913,10 +954,12 @@
             const j = await r.json().catch(() => ({}));
             const tks = (j.booked && Array.isArray(j.tickets)) ? j.tickets.filter(t => t.pdf) : [];
             if (j.booked) {
+                // Реальна ціна з виписаного квитка (може відрізнятись від показаної в пошуку) - щоб клієнт
+                // знав остаточну суму одразу, а не дізнавався про доплату при посадці.
+                const realPrice = Math.max(0, ...(Array.isArray(j.tickets) ? j.tickets : []).map(t => parseFloat(t.price)).filter(n => !isNaN(n)));
+                const priceLine = realPrice > 0 ? `Вартість: <b>${realPrice} ₴</b> за місце, оплата водієві при посадці.<br>` : 'Оплата - водієві при посадці.<br>';
                 document.getElementById('m-ok-title').textContent = 'Місця заброньовано!';
-                document.getElementById('m-ok-text').innerHTML = tks.length
-                    ? 'Оплата - водієві при посадці.<br>Збережіть свої квитки:'
-                    : 'Оплата - водієві при посадці.<br>Квитки надішле менеджер найближчим часом.';
+                document.getElementById('m-ok-text').innerHTML = priceLine + (tks.length ? 'Збережіть свої квитки:' : 'Квитки надішле менеджер найближчим часом.');
                 document.getElementById('m-ok-tickets').innerHTML = tks.map((tk, i) =>
                     `<a class="tk-link" href="${escTxt(tk.pdf)}" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-file-pdf"></use></svg> Завантажити квиток${tks.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('');
             } else {
