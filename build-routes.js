@@ -125,8 +125,8 @@ for (const r of routes) {
     made.push(r.slug);
 }
 
-// --- sitemap: головна + усі сторінки маршрутів ---
-const urls = ['', ...routes.map(r => r.slug)];
+// --- sitemap: головна + FAQ + усі сторінки маршрутів ---
+const urls = ['', 'faq', ...routes.map(r => r.slug)];
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map(u => `  <url>
@@ -145,6 +145,14 @@ const idxStamped = fs.readFileSync(idxPath, 'utf8')
     .replace(/\/common\.js(\?v=[a-z0-9]+)?/g, `/common.js?v=${ASSET_V}`)
     .replace(/\/app\.js(\?v=[a-z0-9]+)?/g, `/app.js?v=${ASSET_V}`);
 fs.writeFileSync(idxPath, idxStamped);
+
+// --- faq.html - ручна сторінка, лише версіонуємо посилання на ассети ---
+const faqPath = path.join(PUB, 'faq.html');
+if (fs.existsSync(faqPath)) {
+    fs.writeFileSync(faqPath, fs.readFileSync(faqPath, 'utf8')
+        .replace(/\/styles\.css(\?v=[a-z0-9]+)?/g, `/styles.css?v=${ASSET_V}`)
+        .replace(/\/common\.js(\?v=[a-z0-9]+)?/g, `/common.js?v=${ASSET_V}`));
+}
 
 console.log(`Згенеровано сторінок: ${made.length} (${made.join(', ')})`);
 console.log(`Sitemap оновлено: ${urls.length} URL`);

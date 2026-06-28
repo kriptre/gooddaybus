@@ -4,21 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="index, follow, max-image-preview:none">
-    <title>Автобус Краків - Львів: квитки без передоплати | GoodDayBus</title>
-    <meta name="description" content="GoodDayBus - зручний спосіб купити квиток на автобус Краків - Львів: знайдіть рейс, забронюйте місце за хвилину, без реєстрації, без передоплат!">
-    <link rel="canonical" href="https://gooddaybus.com/krakiv-lviv">
+    <title>Автобус Берлін - Київ: квитки без передоплати | GoodDayBus</title>
+    <meta name="description" content="GoodDayBus - зручний спосіб купити квиток на автобус Берлін - Київ: знайдіть рейс, забронюйте місце за хвилину, без реєстрації, без передоплат!">
+    <link rel="canonical" href="https://gooddaybus.com/berlin-kyiv">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="GoodDayBus">
-    <meta property="og:title" content="Автобус Краків - Львів: квитки без передоплати | GoodDayBus">
-    <meta property="og:description" content="GoodDayBus - зручний спосіб купити квиток на автобус Краків - Львів: знайдіть рейс, забронюйте місце за хвилину, без реєстрації, без передоплат!">
-    <meta property="og:url" content="https://gooddaybus.com/krakiv-lviv">
+    <meta property="og:title" content="Автобус Берлін - Київ: квитки без передоплати | GoodDayBus">
+    <meta property="og:description" content="GoodDayBus - зручний спосіб купити квиток на автобус Берлін - Київ: знайдіть рейс, забронюйте місце за хвилину, без реєстрації, без передоплат!">
+    <meta property="og:url" content="https://gooddaybus.com/berlin-kyiv">
     <meta property="og:image" content="https://gooddaybus.com/og-image.jpg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:locale" content="uk_UA">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Автобус Краків - Львів: квитки без передоплати | GoodDayBus">
-    <meta name="twitter:description" content="GoodDayBus - зручний спосіб купити квиток на автобус Краків - Львів: знайдіть рейс, забронюйте місце за хвилину, без реєстрації, без передоплат!">
+    <meta name="twitter:title" content="Автобус Берлін - Київ: квитки без передоплати | GoodDayBus">
+    <meta name="twitter:description" content="GoodDayBus - зручний спосіб купити квиток на автобус Берлін - Київ: знайдіть рейс, забронюйте місце за хвилину, без реєстрації, без передоплат!">
     <meta name="twitter:image" content="https://gooddaybus.com/og-image.jpg">
     <script type="application/ld+json">
 {
@@ -30,7 +30,7 @@
       "name": "Як забронювати квиток онлайн?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Оберіть дату у стрічці або в пошуку, виберіть зручний рейс Краків - Львів за часом і ціною, вкажіть дані пасажирів і натисніть «Забронювати». Місце закріплюється одразу, без реєстрації."
+        "text": "Оберіть дату у стрічці або в пошуку, виберіть зручний рейс Берлін - Київ за часом і ціною, вкажіть дані пасажирів і натисніть «Забронювати». Місце закріплюється одразу, без реєстрації."
       }
     },
     {
@@ -46,7 +46,7 @@
       "name": "Чи є знижки на квитки?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "На багатьох рейсах Краків - Львів діють знижки (діти, пенсіонери, військові тощо). Доступні знижки видно в деталях рейсу при бронюванні; за потреби знадобиться підтверджуючий документ."
+        "text": "На багатьох рейсах Берлін - Київ діють знижки (діти, пенсіонери, військові тощо). Доступні знижки видно в деталях рейсу при бронюванні; за потреби знадобиться підтверджуючий документ."
       }
     },
     {
@@ -70,7 +70,7 @@
       "name": "Звідки відправляється автобус?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "З автовокзалів міста Краків; точна зупинка та станція прибуття у місті Львів вказані в деталях обраного рейсу."
+        "text": "З автовокзалів міста Берлін; точна зупинка та станція прибуття у місті Київ вказані в деталях обраного рейсу."
       }
     },
     {
@@ -110,7 +110,7 @@
     <noscript>
         <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     </noscript>
-    <link rel="stylesheet" href="/styles.css?v=7c882c92f0">
+    <link rel="stylesheet" href="/styles.css?v=d99babc747">
 </head>
 <body>
 
@@ -127,9 +127,9 @@
 <main>
 
 <section class="hero route-hero">
-    <h1>Автобус <span class="accent">Краків - Львів</span></h1>
+    <h1>Автобус <span class="accent">Берлін - Київ</span></h1>
     <p>Розклад, ціни та бронювання онлайн - без передоплати</p>
-    <a class="route-reverse-link" href="/lviv-krakiv"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-right-arrow-left"></use></svg> Потрібен зворотний маршрут? Львів - Краків</a>
+    <a class="route-reverse-link" href="/kyiv-berlin"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-right-arrow-left"></use></svg> Потрібен зворотний маршрут? Київ - Берлін</a>
 </section>
 
 <div class="search-wrap">
@@ -197,8 +197,8 @@
 </div>
 
 <section class="route-intro">
-    <h2>Автобусні квитки Краків - Львів онлайн</h2>
-    <p>GoodDayBus - зручний спосіб купити квиток на автобус Краків - Львів: знайдіть рейс, забронюйте місце за хвилину, без реєстрації, без передоплат! Рейси курсують регулярно від перевірених перевізників. На більшості рейсів передоплата не потрібна - оплата водієві при посадці. Дивіться час, ціну, зупинки відразу на сайті. Їдете з улюбленцем? Допоможемо оформити поїздку з твариною.</p>
+    <h2>Автобусні квитки Берлін - Київ онлайн</h2>
+    <p>GoodDayBus - зручний спосіб купити квиток на автобус Берлін - Київ: знайдіть рейс, забронюйте місце за хвилину, без реєстрації, без передоплат! Рейси курсують регулярно від перевірених перевізників. На більшості рейсів передоплата не потрібна - оплата водієві при посадці. Дивіться час, ціну, зупинки відразу на сайті. Їдете з улюбленцем? Допоможемо оформити поїздку з твариною.</p>
 </section>
 
 <section class="seo-section faq-wrap" style="padding-bottom:0">
@@ -206,12 +206,12 @@
     <h2>Часті <em>запитання</em></h2>
 </section>
 <section class="faq-section">
-        <details class="faq-item"><summary>Як забронювати квиток онлайн?</summary><div class="faq-a">Оберіть дату у стрічці або в пошуку, виберіть зручний рейс Краків - Львів за часом і ціною, вкажіть дані пасажирів і натисніть «Забронювати». Місце закріплюється одразу, без реєстрації.</div></details>
+        <details class="faq-item"><summary>Як забронювати квиток онлайн?</summary><div class="faq-a">Оберіть дату у стрічці або в пошуку, виберіть зручний рейс Берлін - Київ за часом і ціною, вкажіть дані пасажирів і натисніть «Забронювати». Місце закріплюється одразу, без реєстрації.</div></details>
         <details class="faq-item"><summary>Чи потрібна передоплата?</summary><div class="faq-a">На більшості рейсів передоплата не потрібна - оплата водієві при посадці. На окремих рейсах перевізник вимагає передоплату, це позначено в деталях рейсу.</div></details>
-        <details class="faq-item"><summary>Чи є знижки на квитки?</summary><div class="faq-a">На багатьох рейсах Краків - Львів діють знижки (діти, пенсіонери, військові тощо). Доступні знижки видно в деталях рейсу при бронюванні; за потреби знадобиться підтверджуючий документ.</div></details>
+        <details class="faq-item"><summary>Чи є знижки на квитки?</summary><div class="faq-a">На багатьох рейсах Берлін - Київ діють знижки (діти, пенсіонери, військові тощо). Доступні знижки видно в деталях рейсу при бронюванні; за потреби знадобиться підтверджуючий документ.</div></details>
         <details class="faq-item"><summary>Чи бувають пересадки?</summary><div class="faq-a">Є і прямі рейси, і рейси з пересадкою. Наявність та місце пересадки вказані в деталях кожного рейсу; у пошуку можна увімкнути фільтр «Без пересадок».</div></details>
         <details class="faq-item"><summary>Чи можна їхати з твариною?</summary><div class="faq-a">На рейсах, де перевізник це дозволяє (позначено в деталях). Бронювання з твариною оформлює менеджер - вартість залежить від розміру тварини.</div></details>
-        <details class="faq-item"><summary>Звідки відправляється автобус?</summary><div class="faq-a">З автовокзалів міста Краків; точна зупинка та станція прибуття у місті Львів вказані в деталях обраного рейсу.</div></details>
+        <details class="faq-item"><summary>Звідки відправляється автобус?</summary><div class="faq-a">З автовокзалів міста Берлін; точна зупинка та станція прибуття у місті Київ вказані в деталях обраного рейсу.</div></details>
         <details class="faq-item"><summary>Які документи потрібні для в'їзду в Україну?</summary><div class="faq-a">Закордонний біометричний паспорт. Для окремих категорій пасажирів можливі додаткові документи - уточнюйте у менеджера. Перетин кордону може зайняти додатковий час.</div></details>
 </section>
 
@@ -271,7 +271,6 @@
 
 <footer>
     <nav class="footer-legal" aria-label="Правова інформація">
-        <a href="/faq">Питання й відповіді</a>
         <a href="/terms">Умови користування</a>
         <a href="/privacy">Конфіденційність</a>
         <a href="/refund">Скасування та повернення</a>
@@ -347,8 +346,8 @@
 </div>
 
 
-<script>window.__ROUTE__ = {"fromId":287,"toId":33,"fromName":"Краків","toName":"Львів","slug":"krakiv-lviv"};</script>
-<script src="/common.js?v=7c882c92f0"></script>
-<script src="/app.js?v=7c882c92f0"></script>
+<script>window.__ROUTE__ = {"fromId":49,"toId":4,"fromName":"Берлін","toName":"Київ","slug":"berlin-kyiv"};</script>
+<script src="/common.js?v=d99babc747"></script>
+<script src="/app.js?v=d99babc747"></script>
 </body>
 </html>
