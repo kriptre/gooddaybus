@@ -80,6 +80,7 @@ for (const d of DOCS) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, follow">
     <title>${escAttr(d.title)}</title>
     <meta name="description" content="${escAttr(d.desc)}">
     <link rel="canonical" href="${SITE}/${d.slug}">
