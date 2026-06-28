@@ -526,6 +526,11 @@
 .m-consent input:checked + .ck-box::after, .m-consent.checked .ck-box::after { content: ''; position: absolute; left: 5px; top: 1px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 .m-consent input:focus-visible + .ck-box { outline: 2px solid var(--orange); outline-offset: 2px; }
 .m-consent a { color: var(--orange); font-weight: 700; }
+/* Доступність: видима рамка фокуса лише при навігації з клавіатури (при кліку мишею не зʼявляється).
+   Поля вводу мають власну підсвітку (box-shadow на :focus), тож тут лише кнопки/посилання/select. */
+a:focus-visible, button:focus-visible, select:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--orange); outline-offset: 2px; border-radius: 6px;
+}
 .m-consent.err { color: var(--red); }
 .m-consent.err .ck-box { border-color: var(--red); }
 .m-consent.err a { color: var(--red); }

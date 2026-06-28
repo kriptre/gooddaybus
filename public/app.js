@@ -2,8 +2,10 @@
     let cities = [], depId = null, arrId = null, selRoute = null;
     let _routes = [], _view = [], _dep = '', _arr = '', _date = '', _sortBy = 'departure';
     // Фільтри рейсів: 'noprepay' = без передоплати, 'direct' = без пересадок.
-    // Порожній набір = показувати всі.
-    let _filters = new Set();
+    // Порожній набір = показувати всі. Памʼятаємо вибір між пошуками й візитами (localStorage).
+    const FILTERS_KEY = 'gdb_filters';
+    let _filters = new Set((() => { try { return JSON.parse(localStorage.getItem(FILTERS_KEY) || '[]'); } catch (e) { return []; } })());
+    const saveFilters = () => { try { localStorage.setItem(FILTERS_KEY, JSON.stringify([..._filters])); } catch (e) { } };
     // "Передоплата лише для груп" (текст на кшталт "для груп з трьох і більше осіб"):
     // для 1-2 пасажирів це фактично без передоплати - рахуємо такі рейси у фільтрі
     // "Без передоплати", а умову показуємо в деталях рейсу.
@@ -506,6 +508,7 @@
         el.querySelectorAll('.filter-btn').forEach(b => b.addEventListener('click', () => {
             const k = b.dataset.filter;
             _filters.has(k) ? _filters.delete(k) : _filters.add(k);
+            saveFilters();
             renderTickets();
         }));
         renderTickets();
@@ -666,9 +669,9 @@
                 <button type="button" class="pax-del"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-xmark"></use></svg> Видалити</button>
             </div>
             <div class="pax-grid">
-                <div class="fg"><label class="f-lbl">Ім'я</label><input type="text" class="f-inp pax-name" placeholder="Іван"></div>
-                <div class="fg"><label class="f-lbl">Прізвище</label><input type="text" class="f-inp pax-surname" placeholder="Петренко"></div>
-                <div class="fg pax-phone-fg"><label class="f-lbl">Телефон</label><input type="tel" class="f-inp pax-phone" placeholder="+380 XX XXX XX XX" inputmode="tel"></div>
+                <div class="fg"><label class="f-lbl">Ім'я</label><input type="text" class="f-inp pax-name" placeholder="Іван" autocomplete="given-name"></div>
+                <div class="fg"><label class="f-lbl">Прізвище</label><input type="text" class="f-inp pax-surname" placeholder="Петренко" autocomplete="family-name"></div>
+                <div class="fg pax-phone-fg"><label class="f-lbl">Телефон</label><input type="tel" class="f-inp pax-phone" placeholder="+380 XX XXX XX XX" inputmode="tel" autocomplete="tel"></div>
             </div>
         </div>`;
     }
