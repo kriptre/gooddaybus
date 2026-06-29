@@ -339,6 +339,9 @@
         list.innerHTML = clients.map(c => {
             const initial = (c.client_name || '?').trim().charAt(0);
             const word = c.trips === 1 ? 'поїздка' : (c.trips < 5 ? 'поїздки' : 'поїздок');
+            const tripsBadge = c.trips > 0
+                ? `<div class="badge b-new">${c.trips} ${word}</div>`
+                : `<div class="badge b-cancelled" title="Лише скасовані заявки - не рахуються у статистиці">0 поїздок · відмова</div>`;
             return `<div class="order client-card" data-phone="${esc(c.client_phone)}">
                 <div class="o-top">
                     <div class="o-client">
@@ -349,7 +352,7 @@
                         </div>
                     </div>
                     <div class="o-meta">
-                        <div class="badge b-new">${c.trips} ${word}</div>
+                        ${tripsBadge}
                         <div style="margin-top:6px">остання: ${fmtDate(c.last_order)}</div>
                     </div>
                 </div>

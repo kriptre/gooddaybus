@@ -147,7 +147,7 @@ function statusCounts() {
 // КОЖЕН пасажир заявки = окремий клієнт. Групуємо за (телефон + ім'я),
 // тож мама й син з одним номером лишаються двома різними клієнтами.
 function listClients(q, fromDay, toDay) {
-    let sql = 'SELECT created_at, client_name, client_phone, passengers, route_from, route_to, route_date FROM orders';
+    let sql = 'SELECT created_at, status, client_name, client_phone, passengers, route_from, route_to, route_date FROM orders';
     const params = [];
     if (fromDay && toDay) { sql += ' WHERE substr(created_at,1,10) BETWEEN ? AND ?'; params.push(fromDay, toDay); }
     sql += ' ORDER BY created_at ASC';
@@ -167,10 +167,11 @@ function listClients(q, fromDay, toDay) {
             const key = digits(p.phone) + '|' + norm(fullName);
             let c = map.get(key);
             if (!c) {
-                c = { client_name: fullName, client_phone: p.phone || '', trips: 0 };
+                c = { client_name: fullName, client_phone: p.phone || '', trips: 0, cancelled: 0 };
                 map.set(key, c);
             }
-            c.trips++;
+            // Скасовані заявки (Відмова) не рахуємо як поїздку, але клієнта лишаємо в базі (контакт зберігається)
+            if (o.status === 'cancelled') c.cancelled++; else c.trips++;
             // заявки відсортовані за зростанням дати → останнє присвоєння = найсвіжіша поїздка
             c.last_order = o.created_at;
             c.last_from = o.route_from;
@@ -189,9 +190,9 @@ function listClients(q, fromDay, toDay) {
     return arr;
 }
 
-// --- Кількість унікальних клієнтів ---
+// --- Кількість унікальних клієнтів (лише з реальними поїздками; скасовані-онлі не рахуємо) ---
 function clientsCount() {
-    return listClients().length;
+    return listClients().filter(c => c.trips > 0).length;
 }
 
 // --- Оновлення статусу / нотатки менеджера ---
@@ -317,7 +318,7 @@ function getStats(from, to) {
         summary: {
             ordersTotal: one(`SELECT COUNT(*) n FROM orders WHERE ${W}`, ...R).n,
             passengersTotal: one(`SELECT COALESCE(SUM(seats),0) n FROM orders WHERE ${W}`, ...R).n,
-            clientsTotal: clients.length,
+            clientsTotal: clients.filter(c => c.trips > 0).length,
             searchesTotal: one(`SELECT COUNT(*) n FROM searches WHERE ${W}`, ...R).n,
             visitsTotal: one('SELECT COALESCE(SUM(count),0) n FROM visits WHERE day BETWEEN ? AND ?', ...R).n
         },
@@ -334,7 +335,7 @@ function getStats(from, to) {
         noResults: db.prepare(`SELECT (from_name || ' → ' || to_name) route, COUNT(*) n FROM searches
             WHERE ${W} AND COALESCE(from_name,'') <> ''
             GROUP BY route HAVING MAX(results) = 0 ORDER BY n DESC LIMIT 8`).all(...R),
-        topClients: clients.slice().sort((a, b) => b.trips - a.trips).slice(0, 10).map(c => ({ name: c.client_name, phone: c.client_phone, trips: c.trips }))
+        topClients: clients.filter(c => c.trips > 0).sort((a, b) => b.trips - a.trips).slice(0, 10).map(c => ({ name: c.client_name, phone: c.client_phone, trips: c.trips }))
     };
 }
 
