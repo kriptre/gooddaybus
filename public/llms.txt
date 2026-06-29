@@ -1,0 +1,30 @@
+# GoodDayBus
+
+> GoodDayBus - інформаційний онлайн-агрегатор для бронювання квитків на автобуси з України до Європи. Це не перевізник: сервіс збирає рейси перевірених перевізників, щоб порівняти ціни, час і зупинки та забронювати місце за хвилину без реєстрації. На більшості рейсів передоплата не потрібна - оплата водієві при посадці.
+
+## Основне
+- Що це: агрегатор бронювання автобусних квитків Україна - Європа (не перевізник, не власний автопарк)
+- Оплата: на більшості рейсів без передоплати, водієві при посадці; на окремих рейсах - передоплата за реквізитами менеджера
+- Бронювання: без реєстрації, близько хвилини
+- Підтримка: щодня 7:00-23:00 - Telegram https://t.me/gooddaybus, Viber, WhatsApp, телефон +38 (096) 765-67-32
+
+## Сторінки
+- [Головна - пошук і бронювання рейсів](https://gooddaybus.com/)
+- [Питання й відповіді (FAQ)](https://gooddaybus.com/faq)
+- [Умови користування](https://gooddaybus.com/terms)
+- [Політика конфіденційності](https://gooddaybus.com/privacy)
+- [Скасування та повернення](https://gooddaybus.com/refund)
+
+## Маршрути
+- [Київ - Варшава](https://gooddaybus.com/kyiv-varshava)
+- [Варшава - Київ](https://gooddaybus.com/varshava-kyiv)
+- [Львів - Краків](https://gooddaybus.com/lviv-krakiv)
+- [Краків - Львів](https://gooddaybus.com/krakiv-lviv)
+- [Київ - Краків](https://gooddaybus.com/kyiv-krakiv)
+- [Краків - Київ](https://gooddaybus.com/krakiv-kyiv)
+- [Львів - Варшава](https://gooddaybus.com/lviv-varshava)
+- [Варшава - Львів](https://gooddaybus.com/varshava-lviv)
+- [Київ - Берлін](https://gooddaybus.com/kyiv-berlin)
+- [Берлін - Київ](https://gooddaybus.com/berlin-kyiv)
+- [Львів - Прага](https://gooddaybus.com/lviv-praha)
+- [Прага - Львів](https://gooddaybus.com/praha-lviv)
