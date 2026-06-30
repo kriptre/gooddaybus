@@ -26,6 +26,7 @@ const escAttr = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&l
 
 // --- спільні фрагменти з index.html ---
 const iconsFonts = between(html, '<!-- Іконки бренду', '<link rel="stylesheet" href="/styles.css');
+const gtmHead = between(html, '<!-- GTM-HEAD START -->', '<!-- GTM-HEAD END -->') + '<!-- GTM-HEAD END -->';
 const header = between(html, '<header>', '</header>') + '</header>';
 const searchWrap = between(html, '<div class="search-wrap">', '<!-- Швидкий контакт');
 const quickContact = between(html, '<div class="quick-contact">', '<!-- CONTENT -->');
@@ -51,6 +52,7 @@ function pageHtml(r) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    ${gtmHead}
     <meta name="robots" content="index, follow, max-image-preview:none">
     <title>${escAttr(r.title)}</title>
     <meta name="description" content="${escAttr(r.desc)}">

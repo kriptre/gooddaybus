@@ -19,6 +19,7 @@ const between = (s, a, b) => {
     return s.slice(i, j);
 };
 const iconsFonts = between(html, '<!-- Іконки бренду', '<link rel="stylesheet" href="/styles.css');
+const gtmHead = between(html, '<!-- GTM-HEAD START -->', '<!-- GTM-HEAD END -->') + '<!-- GTM-HEAD END -->';
 const header = between(html, '<header>', '</header>') + '</header>';
 const footer = between(html, '<footer>', '</footer>') + '</footer>';
 
@@ -80,6 +81,7 @@ for (const d of DOCS) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    ${gtmHead}
     <meta name="robots" content="noindex, follow">
     <title>${escAttr(d.title)}</title>
     <meta name="description" content="${escAttr(d.desc)}">

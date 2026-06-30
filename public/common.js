@@ -1,20 +1,16 @@
 // Спільний скрипт для всіх сторінок (головна, маршрути, юридичні):
-// 1) згода на cookie + завантаження Google Tag Manager і Google Analytics ЛИШЕ після згоди (GDPR opt-in);
+// 1) cookie-банер + Google Consent Mode: GTM вантажиться інлайн у <head> (default = denied),
+//    а тут оновлюємо згоду до granted після натискання «Прийняти» (GDPR). GA4/інші теги - у GTM;
 // 2) кнопка «нагору». Не залежить від форми пошуку, тож безпечний на будь-якій сторінці.
 (function () {
     'use strict';
-    var GTM_ID = 'GTM-K75LDP9M';
 
-    // Підключаємо Google Tag Manager динамічно - лише якщо користувач натиснув «Прийняти» (GDPR opt-in).
-    // GA4 (G-97WNW2B4KV) та інші теги налаштовані ВСЕРЕДИНІ контейнера GTM, тож окремий gtag тут не потрібен -
-    // інакше GA4 рахувався б двічі (і через GTM, і напряму).
-    function loadAnalytics() {
-        if (window.__gtmLoaded) return; window.__gtmLoaded = true;
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
-        var s = document.createElement('script');
-        s.async = true; s.src = 'https://www.googletagmanager.com/gtm.js?id=' + GTM_ID;
-        document.head.appendChild(s);
+    // GTM і Consent Mode (default denied) вже підключені інлайн у <head>. Тут лише оновлюємо
+    // згоду на granted, коли користувач натиснув «Прийняти» - далі рішення приймає GTM.
+    function grantConsent() {
+        if (typeof window.gtag === 'function') {
+            window.gtag('consent', 'update', { ad_storage: 'granted', ad_user_data: 'granted', ad_personalization: 'granted', analytics_storage: 'granted' });
+        }
     }
 
     var getConsent = function () { try { return localStorage.getItem('gdb_cookie'); } catch (e) { return null; } };
@@ -35,16 +31,17 @@
         document.body.appendChild(bar);
         requestAnimationFrame(function () { bar.classList.add('show'); });
         var close = function () { bar.classList.remove('show'); setTimeout(function () { bar.remove(); }, 250); };
-        bar.querySelector('.ck-accept').addEventListener('click', function () { setConsent('accepted'); loadAnalytics(); close(); });
+        bar.querySelector('.ck-accept').addEventListener('click', function () { setConsent('accepted'); grantConsent(); close(); });
         bar.querySelector('.ck-min').addEventListener('click', function () { setConsent('declined'); close(); });
         bar.querySelector('.ck-reject').addEventListener('click', function () { setConsent('declined'); close(); });
     }
 
     function initConsent() {
         var c = getConsent();
-        if (c === 'accepted') { loadAnalytics(); return; }   // повторний візит зі згодою
-        if (c === 'declined') { return; }              // відмовився - аналітики немає
-        showBanner();                                  // вибору ще немає - показуємо банер (без аналітики)
+        // Стан consent для повторних візитів виставляє інлайн-скрипт у <head> (granted, якщо раніше «Прийняти»).
+        // Тут лишається тільки показати банер, якщо вибору ще не було.
+        if (c === 'accepted' || c === 'declined') return;
+        showBanner();
     }
 
     // Кнопка «нагору»: зʼявляється після прокрутки ~на екран.
