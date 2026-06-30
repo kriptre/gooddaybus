@@ -27,6 +27,7 @@ const escAttr = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&l
 // --- спільні фрагменти з index.html ---
 const iconsFonts = between(html, '<!-- Іконки бренду', '<link rel="stylesheet" href="/styles.css');
 const gtmHead = between(html, '<!-- GTM-HEAD START -->', '<!-- GTM-HEAD END -->') + '<!-- GTM-HEAD END -->';
+const gtmBody = between(html, '<!-- GTM-BODY START -->', '<!-- GTM-BODY END -->') + '<!-- GTM-BODY END -->';
 const header = between(html, '<header>', '</header>') + '</header>';
 const searchWrap = between(html, '<div class="search-wrap">', '<!-- Швидкий контакт');
 const quickContact = between(html, '<div class="quick-contact">', '<!-- CONTENT -->');
@@ -77,6 +78,7 @@ ${JSON.stringify(faqSchema, null, 2)}
     <link rel="stylesheet" href="/styles.css?v=${ASSET_V}">
 </head>
 <body>
+${gtmBody}
 
 ${header}
 <main>

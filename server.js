@@ -39,6 +39,7 @@ app.use(helmet({
             fontSrc: ["'self'", 'https://cdnjs.cloudflare.com', 'https://fonts.gstatic.com', 'data:'],
             imgSrc: ["'self'", 'data:', 'https://www.googletagmanager.com', 'https://*.google-analytics.com'],
             connectSrc: ["'self'", 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://*.analytics.google.com', 'https://www.googletagmanager.com'],
+            frameSrc: ["'self'", 'https://www.googletagmanager.com'],
             objectSrc: ["'none'"],
             frameAncestors: ["'none'"]
         }

@@ -20,6 +20,7 @@ const between = (s, a, b) => {
 };
 const iconsFonts = between(html, '<!-- Іконки бренду', '<link rel="stylesheet" href="/styles.css');
 const gtmHead = between(html, '<!-- GTM-HEAD START -->', '<!-- GTM-HEAD END -->') + '<!-- GTM-HEAD END -->';
+const gtmBody = between(html, '<!-- GTM-BODY START -->', '<!-- GTM-BODY END -->') + '<!-- GTM-BODY END -->';
 const header = between(html, '<header>', '</header>') + '</header>';
 const footer = between(html, '<footer>', '</footer>') + '</footer>';
 
@@ -90,6 +91,7 @@ for (const d of DOCS) {
     <link rel="stylesheet" href="/styles.css?v=${ASSET_V}">
 </head>
 <body>
+${gtmBody}
 
 ${header}
 <main class="legal">
