@@ -51,7 +51,7 @@
 
         /* ── HERO ── */
         .hero {
-            background: linear-gradient(155deg, #FFF8F2 0%, #FFFFFF 55%, #EDF5FF 100%);
+            background: linear-gradient(180deg, #FFF8F2 0%, #FFFFFF 60%);
             position: relative; overflow: hidden;
             padding: 64px 24px 96px; text-align: center;
         }
@@ -519,13 +519,15 @@
 /* === Cookie-банер: компактна плашка знизу (не на весь екран) === */
 .cookie-bar { position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: 560px; margin: 0 auto; background: var(--white); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: 0 8px 30px rgba(26,35,50,.18); padding: 16px 18px; z-index: 80; display: flex; flex-direction: column; gap: 12px; opacity: 0; transform: translateY(12px); transition: opacity .25s ease, transform .25s ease; }
 .cookie-bar.show { opacity: 1; transform: none; }
+.cookie-top { display: flex; align-items: flex-start; gap: 12px; }
+.cookie-ico { flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; background: var(--orange-bg); display: flex; align-items: center; justify-content: center; }
 .cookie-txt { font-size: 13px; color: var(--text-2); line-height: 1.5; }
 .cookie-txt a { color: var(--orange); font-weight: 700; }
-.cookie-btns { display: flex; flex-wrap: wrap; gap: 8px; }
-.ck-btn { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800; border-radius: 50px; padding: 9px 18px; cursor: pointer; border: 1px solid var(--border); background: var(--white); color: var(--text-2); transition: var(--tr); }
-.ck-btn:hover { border-color: var(--orange-brd); color: var(--text); }
-.ck-accept { background: var(--orange); border-color: var(--orange); color: #fff; }
-.ck-accept:hover { filter: brightness(.96); color: #fff; }
+.cookie-btns { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.ck-btn { font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; border-radius: 50px; padding: 11px 28px; cursor: pointer; border: 1px solid var(--orange); background: var(--orange); color: #fff; transition: var(--tr); }
+.ck-btn:hover { filter: brightness(.96); }
+.ck-link { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; background: none; border: none; color: var(--text-3); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; padding: 8px 4px; transition: var(--tr); }
+.ck-link:hover { color: var(--text); }
 
 /* === Чекбокс згоди у формі бронювання === */
 .m-consent { position: relative; display: flex; align-items: flex-start; gap: 9px; font-size: 12.5px; color: var(--text-2); line-height: 1.45; margin: 4px 0 14px; padding: 0 26px; cursor: pointer; }

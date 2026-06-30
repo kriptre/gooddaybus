@@ -22,18 +22,19 @@
         bar.setAttribute('role', 'dialog');
         bar.setAttribute('aria-label', 'Згода на використання cookie');
         bar.innerHTML =
-            '<div class="cookie-txt">Ми використовуємо файли cookie для роботи сайту та знеособленої аналітики, щоб робити сервіс зручнішим. Детальніше - у <a href="/cookies">Політиці cookie</a>.</div>' +
+            '<div class="cookie-top">' +
+            '<span class="cookie-ico" aria-hidden="true"><svg viewBox="0 0 32 32" width="22" height="22"><circle cx="16" cy="16" r="13" fill="#F06422"/><circle cx="12" cy="11" r="2" fill="#fff"/><circle cx="20.5" cy="13" r="1.6" fill="#fff"/><circle cx="14" cy="20" r="1.8" fill="#fff"/><circle cx="21" cy="20.5" r="1.4" fill="#fff"/></svg></span>' +
+            '<div class="cookie-txt">Ми використовуємо cookie, щоб сайт працював зручно і ми могли робити його кращим для вас. Натисніть «Прийняти» - це допомагає нам покращувати сервіс. Детальніше - у <a href="/cookies">Політиці cookie</a>.</div>' +
+            '</div>' +
             '<div class="cookie-btns">' +
             '<button type="button" class="ck-btn ck-accept">Прийняти</button>' +
-            '<button type="button" class="ck-btn ck-min">Лише необхідні</button>' +
-            '<button type="button" class="ck-btn ck-reject">Відхилити</button>' +
+            '<button type="button" class="ck-link ck-min">Лише необхідні</button>' +
             '</div>';
         document.body.appendChild(bar);
         requestAnimationFrame(function () { bar.classList.add('show'); });
         var close = function () { bar.classList.remove('show'); setTimeout(function () { bar.remove(); }, 250); };
         bar.querySelector('.ck-accept').addEventListener('click', function () { setConsent('accepted'); grantConsent(); close(); });
         bar.querySelector('.ck-min').addEventListener('click', function () { setConsent('declined'); close(); });
-        bar.querySelector('.ck-reject').addEventListener('click', function () { setConsent('declined'); close(); });
     }
 
     function initConsent() {
