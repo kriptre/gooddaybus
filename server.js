@@ -29,14 +29,14 @@ function getLanIp() {
     return 'localhost';
 }
 
-// Безпекові заголовки. CSP налаштований під наш інлайн-стиль/скрипти та FontAwesome CDN.
+// Безпекові заголовки. CSP: лише self + Google Fonts + GTM/GA (жодних інших CDN).
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com', 'https://www.googletagmanager.com'],
-            styleSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com'],
-            fontSrc: ["'self'", 'https://cdnjs.cloudflare.com', 'https://fonts.gstatic.com', 'data:'],
+            scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com'],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
             imgSrc: ["'self'", 'data:', 'https://www.googletagmanager.com', 'https://*.google-analytics.com'],
             connectSrc: ["'self'", 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://*.analytics.google.com', 'https://www.googletagmanager.com'],
             frameSrc: ["'self'", 'https://www.googletagmanager.com'],
