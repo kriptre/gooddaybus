@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        .ic{width:1em;height:1em;fill:currentColor;display:inline-block;vertical-align:-.125em;flex-shrink:0}
         :root{
             --orange:#F06422;--orange-2:#D95818;--orange-bg:#FFF5EE;--orange-brd:rgba(240,100,34,0.18);
             --blue:#1A6DB5;--text:#1A2332;--text-2:#5E6E80;--text-3:#647585;
@@ -117,7 +117,7 @@
 
 <div class="login-bg" id="login">
     <div class="login-card">
-        <div class="logo-icon"><i class="fa-solid fa-chart-column"></i></div>
+        <div class="logo-icon"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chart-column"></use></svg></div>
         <h2>Аналітика</h2>
         <p>Введіть ключ доступу</p>
         <div class="login-err" id="login-err"></div>
@@ -129,19 +129,19 @@
 <div id="app" class="hidden">
     <header>
         <div class="logo">
-            <div class="logo-icon"><i class="fa-solid fa-bus"></i></div>
+            <div class="logo-icon"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg></div>
             <span class="logo-name">Goodday<span>Bus</span></span>
             <span class="logo-sub">Аналітика</span>
         </div>
         <div class="hdr-right">
             <span class="refresh-info" id="refresh-info"></span>
             <div class="period">
-                <button class="hbtn" id="period-btn"><i class="fa-regular fa-calendar"></i> <span id="period-label">Останні 28 днів</span> <i class="fa-solid fa-chevron-down" style="font-size:10px"></i></button>
+                <button class="hbtn" id="period-btn"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-calendar"></use></svg> <span id="period-label">Останні 28 днів</span> <svg class="ic" style="font-size:10px" aria-hidden="true"><use href="/_sprite.svg#i-chevron-down"></use></svg></button>
                 <div class="period-menu hidden" id="period-menu"></div>
             </div>
-            <a href="admin.html" class="hbtn"><i class="fa-solid fa-list-check"></i> Заявки</a>
-            <button class="hbtn" id="reset-btn" title="Обнулити пошуки та візити (заявки не чіпає)"><i class="fa-solid fa-eraser"></i> Скинути</button>
-            <button class="hbtn" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Вийти</button>
+            <a href="admin.html" class="hbtn"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-list-check"></use></svg> Заявки</a>
+            <button class="hbtn" id="reset-btn" title="Обнулити пошуки та візити (заявки не чіпає)"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-eraser"></use></svg> Скинути</button>
+            <button class="hbtn" id="logout-btn"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-right-from-bracket"></use></svg> Вийти</button>
         </div>
     </header>
 

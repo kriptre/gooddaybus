@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const FA = '6.4.0';
-const REGULAR = ['calendar', 'clock', 'credit-card', 'lightbulb'];
+const REGULAR = ['calendar', 'clock', 'credit-card', 'lightbulb', 'address-book', 'folder-open'];
 const BRANDS = ['telegram', 'viber', 'whatsapp'];
 const SOLID = [
     'location-dot', 'spinner', 'circle-info', 'circle-dot', 'circle-xmark',
@@ -15,7 +15,10 @@ const SOLID = [
     'chair', 'users', 'user', 'ticket', 'star', 'snowflake', 'sliders', 'shield-halved',
     'route', 'right-left', 'restroom', 'plus', 'plug', 'money-bill-wave', 'map-pin',
     'location-crosshairs', 'hand-holding-dollar', 'flag-checkered', 'file-pdf', 'envelope',
-    'coins', 'child-reaching', 'check', 'ban', 'wifi'
+    'coins', 'child-reaching', 'check', 'ban', 'wifi',
+    // для панелі менеджера (admin/stats) - щоб не тягнути FontAwesome із CDN
+    'chart-column', 'clock-rotate-left', 'comment-dots', 'eraser', 'file-csv', 'floppy-disk',
+    'hand', 'list-check', 'right-from-bracket', 'rotate-left', 'trash', 'triangle-exclamation', 'xmark'
 ];
 
 const get = url => new Promise((resolve, reject) => {

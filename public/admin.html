@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        .ic{width:1em;height:1em;fill:currentColor;display:inline-block;vertical-align:-.125em;flex-shrink:0}
         :root {
             --orange:#F06422; --orange-2:#D95818; --orange-bg:#FFF5EE; --orange-brd:rgba(240,100,34,0.18);
             --blue:#1A6DB5; --text:#1A2332; --text-2:#5E6E80; --text-3:#647585;
@@ -48,13 +48,13 @@
         .client-card{cursor:pointer}
         .client-card:hover{border-color:var(--orange-brd)}
         .client-hint{font-size:12px;color:var(--text-3);display:inline-flex;align-items:center;gap:6px;margin-left:auto}
-        .client-hint i{color:var(--orange)}
+        .client-hint .ic{color:var(--orange)}
 
         /* Toolbar: пошук + експорт */
         .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
         .search-box{flex:1;min-width:240px;display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:0 14px;height:46px;transition:var(--tr)}
         .search-box:focus-within{border-color:var(--orange);box-shadow:0 0 0 3px rgba(240,100,34,0.1)}
-        .search-box i{color:var(--text-3);font-size:14px}
+        .search-box .ic{color:var(--text-3);font-size:14px}
         .search-box input{flex:1;border:none;outline:none;background:transparent;font-family:inherit;font-size:15px;font-weight:600;color:var(--text)}
         .search-box input::placeholder{color:var(--text-3);font-weight:400}
         .search-clear{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:15px;padding:4px;line-height:1}
@@ -86,13 +86,13 @@
 
         .o-route{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:0 22px 16px;color:var(--text-2);font-size:14px}
         .o-route .rt{display:flex;align-items:center;gap:7px;font-weight:700;color:var(--text)}
-        .o-route .rt i{color:var(--orange);font-size:12px}
+        .o-route .rt .ic{color:var(--orange);font-size:12px}
         .o-route .sep{color:var(--text-3)}
         .o-stations{margin:0 22px 14px;display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--text-2)}
-        .o-stations i{color:var(--orange);width:14px;text-align:center;margin-right:4px}
+        .o-stations .ic{color:var(--orange);width:14px;text-align:center;margin-right:4px}
         .o-pax{margin:0 22px 14px;display:flex;flex-direction:column;gap:5px}
         .o-pax-title{font-size:12px;font-weight:800;color:var(--text-2);display:flex;align-items:center;gap:6px}
-        .o-pax-title i{color:var(--orange)}
+        .o-pax-title .ic{color:var(--orange)}
         .pax-item{font-size:13px;color:var(--text-2)}
         .pax-item b{color:var(--text-3);margin-right:4px}
         .pax-item a{color:var(--text);font-weight:700;text-decoration:none}
@@ -100,7 +100,7 @@
         .pax-disc-badge{font-size:11px;font-weight:800;color:var(--orange);background:var(--orange-bg);border:1px solid var(--orange-brd);border-radius:50px;padding:1px 9px;margin-left:4px}
         .o-warn{margin:0 22px 14px;background:var(--red-bg);border:1px solid rgba(217,48,37,0.25);border-radius:var(--r);padding:11px 14px;font-size:13px;font-weight:700;color:var(--red);display:flex;align-items:center;gap:8px}
         .o-comment{margin:0 22px 16px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;font-size:13px;color:var(--text-2)}
-        .o-comment i{color:var(--text-3);margin-right:6px}
+        .o-comment .ic{color:var(--text-3);margin-right:6px}
 
         .o-note{padding:0 22px 14px}
         .o-note textarea{width:100%;background:var(--bg);border:2px solid var(--border);border-radius:var(--r);padding:9px 12px;font-family:inherit;font-size:13px;color:var(--text);resize:vertical;min-height:40px;outline:none;transition:var(--tr)}
@@ -125,7 +125,7 @@
         .client-card .o-actions{justify-content:flex-end}
 
         .empty{text-align:center;padding:80px 20px;color:var(--text-3)}
-        .empty i{font-size:42px;margin-bottom:16px;display:block;color:var(--border)}
+        .empty .ic{font-size:42px;margin-bottom:16px;display:block;color:var(--border)}
         .empty h3{font-size:18px;color:var(--text-2);font-weight:700;margin-bottom:6px}
 
         /* Login */
@@ -147,7 +147,7 @@
 <!-- LOGIN -->
 <div class="login-bg" id="login">
     <div class="login-card">
-        <div class="logo-icon"><i class="fa-solid fa-bus"></i></div>
+        <div class="logo-icon"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg></div>
         <h2>Панель менеджера</h2>
         <p>Введіть ключ доступу, щоб переглянути заявки клієнтів</p>
         <div class="login-err" id="login-err"></div>
@@ -160,25 +160,25 @@
 <div id="app" class="hidden">
     <header>
         <div class="logo">
-            <div class="logo-icon"><i class="fa-solid fa-bus"></i></div>
+            <div class="logo-icon"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg></div>
             <span class="logo-name">Goodday<span>Bus</span></span>
             <span class="logo-sub">Заявки</span>
         </div>
         <div class="hdr-right">
             <span class="refresh-info" id="refresh-info">Оновлено щойно</span>
-            <a href="stats.html" class="btn-logout" style="text-decoration:none"><i class="fa-solid fa-chart-column"></i> Аналітика</a>
-            <button class="btn-logout" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Вийти</button>
+            <a href="stats.html" class="btn-logout" style="text-decoration:none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chart-column"></use></svg> Аналітика</a>
+            <button class="btn-logout" id="logout-btn"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-right-from-bracket"></use></svg> Вийти</button>
         </div>
     </header>
 
     <div class="wrap">
         <div class="toolbar">
             <div class="search-box">
-                <i class="fa-solid fa-magnifying-glass"></i>
+                <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-magnifying-glass"></use></svg>
                 <input type="text" id="search-input" placeholder="Пошук за прізвищем, ім'ям або телефоном...">
-                <button class="search-clear hidden" id="search-clear" title="Очистити"><i class="fa-solid fa-xmark"></i></button>
+                <button class="search-clear hidden" id="search-clear" title="Очистити"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-xmark"></use></svg></button>
             </div>
-            <button class="btn-export" id="export-btn"><i class="fa-solid fa-file-csv"></i> Експорт CSV</button>
+            <button class="btn-export" id="export-btn"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-file-csv"></use></svg> Експорт CSV</button>
         </div>
         <div class="tabs" id="tabs">
             <button class="tab active" data-status="">Всі <span class="cnt" id="c-all">0</span></button>
@@ -333,7 +333,7 @@
     function renderClients(clients) {
         const list = document.getElementById('list');
         if (!clients.length) {
-            list.innerHTML = `<div class="empty"><i class="fa-regular fa-address-book"></i><h3>Клієнтів не знайдено</h3><p>Тут з'являться клієнти після перших заявок</p></div>`;
+            list.innerHTML = `<div class="empty"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-address-book"></use></svg><h3>Клієнтів не знайдено</h3><p>Тут з'являться клієнти після перших заявок</p></div>`;
             return;
         }
         list.innerHTML = clients.map(c => {
@@ -348,7 +348,7 @@
                         <div class="o-ava">${esc(initial)}</div>
                         <div>
                             <div class="o-name">${esc(c.client_name)}</div>
-                            <a href="tel:${esc(c.client_phone)}" class="o-phone" onclick="event.stopPropagation()"><i class="fa-solid fa-phone" style="font-size:11px"></i> ${esc(c.client_phone)}</a>
+                            <a href="tel:${esc(c.client_phone)}" class="o-phone" onclick="event.stopPropagation()"><svg class="ic" style="font-size:11px" aria-hidden="true"><use href="/_sprite.svg#i-phone"></use></svg> ${esc(c.client_phone)}</a>
                         </div>
                     </div>
                     <div class="o-meta">
@@ -357,12 +357,12 @@
                     </div>
                 </div>
                 <div class="o-route">
-                    <span class="rt"><i class="fa-solid fa-location-dot"></i> ${esc(c.last_from) || '-'} → ${esc(c.last_to) || '-'}</span>
-                    ${c.last_date ? `<span class="sep">·</span><span><i class="fa-regular fa-calendar" style="color:var(--orange)"></i> ${esc(c.last_date)}</span>` : ''}
-                    <span class="client-hint"><i class="fa-solid fa-clock-rotate-left"></i> натисніть, щоб побачити всі поїздки</span>
+                    <span class="rt"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${esc(c.last_from) || '-'} → ${esc(c.last_to) || '-'}</span>
+                    ${c.last_date ? `<span class="sep">·</span><span><svg class="ic" style="color:var(--orange)" aria-hidden="true"><use href="/_sprite.svg#i-calendar"></use></svg> ${esc(c.last_date)}</span>` : ''}
+                    <span class="client-hint"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-clock-rotate-left"></use></svg> натисніть, щоб побачити всі поїздки</span>
                 </div>
                 <div class="o-actions">
-                    <button class="act act-del" data-delphone="${esc(c.client_phone)}" data-name="${esc(c.client_name)}" data-trips="${c.trips}"><i class="fa-solid fa-trash"></i> Видалити клієнта</button>
+                    <button class="act act-del" data-delphone="${esc(c.client_phone)}" data-name="${esc(c.client_name)}" data-trips="${c.trips}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-trash"></use></svg> Видалити клієнта</button>
                 </div>
             </div>`;
         }).join('');
@@ -421,7 +421,7 @@
     function renderSales(list) {
         const el = document.getElementById('list');
         if (!list.length) {
-            el.innerHTML = `<div class="empty"><i class="fa-solid fa-ticket"></i><h3>Бронювань немає</h3><p>Тут - реальні бронювання з вашого акаунту Contrabus</p></div>`;
+            el.innerHTML = `<div class="empty"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-ticket"></use></svg><h3>Бронювань немає</h3><p>Тут - реальні бронювання з вашого акаунту Contrabus</p></div>`;
             return;
         }
         el.innerHTML = list.map(b => {
@@ -434,7 +434,7 @@
                         <div class="o-ava">${esc(initial)}</div>
                         <div>
                             <div class="o-name">${esc(b.name_surname)}</div>
-                            <a href="tel:${esc(b.phone)}" class="o-phone"><i class="fa-solid fa-phone" style="font-size:11px"></i> ${esc(b.phone)}</a>
+                            <a href="tel:${esc(b.phone)}" class="o-phone"><svg class="ic" style="font-size:11px" aria-hidden="true"><use href="/_sprite.svg#i-phone"></use></svg> ${esc(b.phone)}</a>
                         </div>
                     </div>
                     <div class="o-meta">
@@ -443,13 +443,13 @@
                     </div>
                 </div>
                 <div class="o-route">
-                    <span class="rt"><i class="fa-solid fa-location-dot"></i> ${esc(b.from)} → ${esc(b.to)}</span>
-                    <span class="sep">·</span><span><i class="fa-regular fa-calendar" style="color:var(--orange)"></i> ${esc(b.date)}${b.departure_time ? ', ' + esc(b.departure_time) : ''}</span>
-                    ${b.carrier ? `<span class="sep">·</span><span><i class="fa-solid fa-bus" style="color:var(--orange)"></i> ${esc(b.carrier)}</span>` : ''}
+                    <span class="rt"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${esc(b.from)} → ${esc(b.to)}</span>
+                    <span class="sep">·</span><span><svg class="ic" style="color:var(--orange)" aria-hidden="true"><use href="/_sprite.svg#i-calendar"></use></svg> ${esc(b.date)}${b.departure_time ? ', ' + esc(b.departure_time) : ''}</span>
+                    ${b.carrier ? `<span class="sep">·</span><span><svg class="ic" style="color:var(--orange)" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg> ${esc(b.carrier)}</span>` : ''}
                 </div>
                 <div class="o-actions">
                     <span style="font-size:12px;color:var(--text-3)">Квиток #${esc(b.ticket_id)}${b.agent ? ' · агент ' + esc(b.agent) : ''}</span>
-                    ${b.link_to_pdf ? `<a class="act act-pdf" href="${esc(b.link_to_pdf)}" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf"></i> Квиток PDF</a>` : ''}
+                    ${b.link_to_pdf ? `<a class="act act-pdf" href="${esc(b.link_to_pdf)}" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-file-pdf"></use></svg> Квиток PDF</a>` : ''}
                 </div>
             </div>`;
         }).join('');
@@ -465,7 +465,7 @@
     function render(orders) {
         const list = document.getElementById('list');
         if (!orders.length) {
-            list.innerHTML = `<div class="empty"><i class="fa-regular fa-folder-open"></i><h3>Заявок немає</h3><p>Тут з'являться нові заявки від клієнтів</p></div>`;
+            list.innerHTML = `<div class="empty"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-folder-open"></use></svg><h3>Заявок немає</h3><p>Тут з'являться нові заявки від клієнтів</p></div>`;
             return;
         }
         list.innerHTML = orders.map(o => {
@@ -476,7 +476,7 @@
                         <div class="o-ava">${esc(initial)}</div>
                         <div>
                             <div class="o-name">${esc(o.client_name)}</div>
-                            <a href="tel:${esc(o.client_phone)}" class="o-phone"><i class="fa-solid fa-phone" style="font-size:11px"></i> ${esc(o.client_phone)}</a>
+                            <a href="tel:${esc(o.client_phone)}" class="o-phone"><svg class="ic" style="font-size:11px" aria-hidden="true"><use href="/_sprite.svg#i-phone"></use></svg> ${esc(o.client_phone)}</a>
                         </div>
                     </div>
                     <div class="o-meta">
@@ -487,27 +487,27 @@
                     </div>
                 </div>
                 <div class="o-route">
-                    <span class="rt"><i class="fa-solid fa-location-dot"></i> ${esc(o.route_from)||'-'} → ${esc(o.route_to)||'-'}</span>
-                    <span class="sep">·</span><span><i class="fa-solid fa-ticket" style="color:var(--orange)"></i> ${o.seats || 1} місць</span>
-                    ${o.route_date ? `<span class="sep">·</span><span><i class="fa-regular fa-calendar" style="color:var(--orange)"></i> ${esc(o.route_date)}${o.route_time?', '+esc(o.route_time):''}</span>` : ''}
-                    ${o.route_price ? `<span class="sep">·</span><span><i class="fa-solid fa-tag" style="color:var(--orange)"></i> ${esc(o.route_price)}</span>` : ''}
-                    ${o.route_carrier ? `<span class="sep">·</span><span><i class="fa-solid fa-bus" style="color:var(--orange)"></i> ${esc(o.route_carrier)}</span>` : ''}
+                    <span class="rt"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${esc(o.route_from)||'-'} → ${esc(o.route_to)||'-'}</span>
+                    <span class="sep">·</span><span><svg class="ic" style="color:var(--orange)" aria-hidden="true"><use href="/_sprite.svg#i-ticket"></use></svg> ${o.seats || 1} місць</span>
+                    ${o.route_date ? `<span class="sep">·</span><span><svg class="ic" style="color:var(--orange)" aria-hidden="true"><use href="/_sprite.svg#i-calendar"></use></svg> ${esc(o.route_date)}${o.route_time?', '+esc(o.route_time):''}</span>` : ''}
+                    ${o.route_price ? `<span class="sep">·</span><span><svg class="ic" style="color:var(--orange)" aria-hidden="true"><use href="/_sprite.svg#i-tag"></use></svg> ${esc(o.route_price)}</span>` : ''}
+                    ${o.route_carrier ? `<span class="sep">·</span><span><svg class="ic" style="color:var(--orange)" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg> ${esc(o.route_carrier)}</span>` : ''}
                 </div>
-                ${(o.route_from_station || o.route_to_station) ? `<div class="o-stations">${o.route_from_station ? `<div><i class="fa-solid fa-location-dot"></i> ${esc(o.route_from_station)}</div>` : ''}${o.route_to_station ? `<div><i class="fa-solid fa-flag-checkered"></i> ${esc(o.route_to_station)}</div>` : ''}</div>` : ''}
-                ${(() => { const pax = parsePax(o.passengers); return (pax.length > 1 || pax.some(p => p.discount_percent > 0)) ? `<div class="o-pax"><div class="o-pax-title"><i class="fa-solid fa-users"></i> Пасажири:</div>${pax.map((p, i) => `<span class="pax-item"><b>${i + 1}.</b> ${esc(p.name)} ${esc(p.surname)} - <a href="tel:${esc(p.phone)}">${esc(p.phone)}</a>${p.discount_percent > 0 ? ` <span class="pax-disc-badge">🏷 ${esc(p.discount_label || 'пільга')}</span>` : ''}</span>`).join('')}</div>` : ''; })()}
-                ${(() => { const tks = parsePax(o.tickets); return o.booked && tks.length ? `<div class="o-tickets">${tks.map((t, i) => t.pdf ? `<a class="act act-pdf" href="${esc(t.pdf)}" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf"></i> Квиток ${tks.length > 1 ? i + 1 : ''} (${esc(t.id)})</a>` : `<span style="font-size:12px;color:var(--text-3)">🎟 ${esc(t.id)}</span>`).join(' ')}</div>` : ''; })()}
-                ${o.check_warning ? `<div class="o-warn"><i class="fa-solid fa-triangle-exclamation"></i> ${esc(o.check_warning)}</div>` : ''}
-                ${o.comment ? `<div class="o-comment"><i class="fa-solid fa-comment-dots"></i>${esc(o.comment)}</div>` : ''}
+                ${(o.route_from_station || o.route_to_station) ? `<div class="o-stations">${o.route_from_station ? `<div><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${esc(o.route_from_station)}</div>` : ''}${o.route_to_station ? `<div><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-flag-checkered"></use></svg> ${esc(o.route_to_station)}</div>` : ''}</div>` : ''}
+                ${(() => { const pax = parsePax(o.passengers); return (pax.length > 1 || pax.some(p => p.discount_percent > 0)) ? `<div class="o-pax"><div class="o-pax-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-users"></use></svg> Пасажири:</div>${pax.map((p, i) => `<span class="pax-item"><b>${i + 1}.</b> ${esc(p.name)} ${esc(p.surname)} - <a href="tel:${esc(p.phone)}">${esc(p.phone)}</a>${p.discount_percent > 0 ? ` <span class="pax-disc-badge">🏷 ${esc(p.discount_label || 'пільга')}</span>` : ''}</span>`).join('')}</div>` : ''; })()}
+                ${(() => { const tks = parsePax(o.tickets); return o.booked && tks.length ? `<div class="o-tickets">${tks.map((t, i) => t.pdf ? `<a class="act act-pdf" href="${esc(t.pdf)}" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-file-pdf"></use></svg> Квиток ${tks.length > 1 ? i + 1 : ''} (${esc(t.id)})</a>` : `<span style="font-size:12px;color:var(--text-3)">🎟 ${esc(t.id)}</span>`).join(' ')}</div>` : ''; })()}
+                ${o.check_warning ? `<div class="o-warn"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-triangle-exclamation"></use></svg> ${esc(o.check_warning)}</div>` : ''}
+                ${o.comment ? `<div class="o-comment"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-comment-dots"></use></svg>${esc(o.comment)}</div>` : ''}
                 <div class="o-note">
                     <textarea placeholder="Нотатка менеджера (напр. «передзвонити після 18:00»)" data-note="${o.id}">${esc(o.manager_note)}</textarea>
                 </div>
                 <div class="o-actions">
-                    ${o.status !== 'in_progress' && o.status !== 'done' ? `<button class="act act-take" data-set="in_progress" data-id="${o.id}"><i class="fa-solid fa-hand"></i> Взяти в роботу</button>` : ''}
-                    ${o.status !== 'done' ? `<button class="act act-done" data-set="done" data-id="${o.id}"><i class="fa-solid fa-check"></i> Опрацьовано</button>` : ''}
-                    ${o.status !== 'cancelled' ? `<button class="act act-cancel" data-set="cancelled" data-id="${o.id}"><i class="fa-solid fa-xmark"></i> Відмова</button>` : ''}
-                    ${o.status === 'done' || o.status === 'cancelled' ? `<button class="act act-reopen" data-set="new" data-id="${o.id}"><i class="fa-solid fa-rotate-left"></i> Повернути</button>` : ''}
-                    <button class="act act-save" data-savenote="${o.id}"><i class="fa-solid fa-floppy-disk"></i> Зберегти нотатку</button>
-                    <button class="act act-del" data-del="${o.id}" title="Видалити заявку"><i class="fa-solid fa-trash"></i></button>
+                    ${o.status !== 'in_progress' && o.status !== 'done' ? `<button class="act act-take" data-set="in_progress" data-id="${o.id}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-hand"></use></svg> Взяти в роботу</button>` : ''}
+                    ${o.status !== 'done' ? `<button class="act act-done" data-set="done" data-id="${o.id}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-check"></use></svg> Опрацьовано</button>` : ''}
+                    ${o.status !== 'cancelled' ? `<button class="act act-cancel" data-set="cancelled" data-id="${o.id}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-xmark"></use></svg> Відмова</button>` : ''}
+                    ${o.status === 'done' || o.status === 'cancelled' ? `<button class="act act-reopen" data-set="new" data-id="${o.id}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-rotate-left"></use></svg> Повернути</button>` : ''}
+                    <button class="act act-save" data-savenote="${o.id}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-floppy-disk"></use></svg> Зберегти нотатку</button>
+                    <button class="act act-del" data-del="${o.id}" title="Видалити заявку"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-trash"></use></svg></button>
                 </div>
             </div>`;
         }).join('');
@@ -538,7 +538,7 @@
                 body: JSON.stringify(body)
             });
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            if (btn) { btn.innerHTML = '<i class="fa-solid fa-check"></i> Збережено'; setTimeout(load, 700); }
+            if (btn) { btn.innerHTML = '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-check"></use></svg> Збережено'; setTimeout(load, 700); }
             else load();
         } catch (e) { alert('Помилка: ' + e.message); if (btn) btn.disabled = false; }
     }
