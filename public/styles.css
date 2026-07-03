@@ -231,6 +231,7 @@
         .skel-right { display: flex; flex-direction: column; align-items: flex-end; }
         @media (max-width: 760px) { .skel-card { grid-template-columns: 1fr; } .skel-right { align-items: flex-start; } }
         .no-res { text-align: center; padding: 70px 20px; animation: slideUp 0.35s ease both; }
+        .no-res-art { width: 200px; height: auto; display: block; margin: 0 auto 14px; }
         .no-res-ico { width: 72px; height: 72px; background: var(--white); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 28px; color: var(--text-3); }
         .no-res h3 { font-size: 18px; font-weight: 700; color: var(--text-2); margin-bottom: 8px; }
         .no-res p { font-size: 14px; color: var(--text-3); }
@@ -442,8 +443,12 @@
             .search-row { grid-template-columns: 1fr; }
             .swap-btn { width: 100%; }
             .btn-search { width: 100%; justify-content: center; }
-            /* Тач-таргети фільтрів/сортування ≥44px - зручно тиснути пальцем */
+            /* Тач-таргети ≥44px - зручно тиснути пальцем */
             .sort-btn { min-height: 44px; display: inline-flex; align-items: center; }
+            .ac-item { min-height: 44px; }
+            .pax-del { padding: 10px 12px; }
+            .ck-link { padding: 12px 8px; }
+            .ds-arr { width: 44px; }
             /* Більше повітря між картками рейсів, щоб вони не зливались при скролі */
             .ticket { margin-bottom: 22px; box-shadow: 0 3px 12px rgba(26,35,50,0.10); border-color: #D5DEE8; }
             .t-main { grid-template-columns: 1fr 1fr; }

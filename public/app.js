@@ -40,8 +40,16 @@
     function citiesReady() {
         setStatus(`${cities.length} міст у наявності - оберіть напрямок`, 'success');
         document.getElementById('search-btn').disabled = false;
-        if (window.__ROUTE__) initRoutePage();   // сторінка маршруту: підставити напрямок, стрічка дат, авто-пошук
-        else applyQueryParams();                 // головна: deep-link /?from=&to=&date=
+        if (window.__ROUTE__) { initRoutePage(); return; }  // сторінка маршруту: підставити напрямок, стрічка дат, авто-пошук
+        applyQueryParams();                                 // головна: deep-link /?from=&to=&date=
+        // Автофокус на «Звідки»: можна одразу друкувати місто. Лише десктоп (на мобільному
+        // висувалась би клавіатура) і лише коли поле порожнє (diplink уже все заповнив).
+        // skipSuggest - щоб панель популярних напрямків не розкривалась сама.
+        const dep = document.getElementById('departure');
+        if (dep && !dep.value && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+            dep.dataset.skipSuggest = '1';
+            dep.focus({ preventScroll: true });
+        }
     }
     async function loadCities() {
         try {
@@ -479,7 +487,19 @@
 
         if (!Array.isArray(routes) || !routes.length) {
             el.innerHTML = `<div class="no-res">
-                <div class="no-res-ico"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bus-simple"></use></svg></div>
+                <svg class="no-res-art" viewBox="0 0 220 120" aria-hidden="true">
+                    <line x1="14" y1="103" x2="206" y2="103" stroke="#D5DEE8" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 14"/>
+                    <rect x="34" y="30" width="118" height="58" rx="12" fill="#FFF5EE" stroke="#F06422" stroke-width="3"/>
+                    <path d="M152 42h16c6 0 11 4 12 10l3 18c1 6-3 11-9 11h-22z" fill="#FFF5EE" stroke="#F06422" stroke-width="3" stroke-linejoin="round"/>
+                    <rect x="46" y="42" width="22" height="18" rx="4" fill="#fff" stroke="#F3C7AC" stroke-width="2"/>
+                    <rect x="76" y="42" width="22" height="18" rx="4" fill="#fff" stroke="#F3C7AC" stroke-width="2"/>
+                    <rect x="106" y="42" width="22" height="18" rx="4" fill="#fff" stroke="#F3C7AC" stroke-width="2"/>
+                    <circle cx="64" cy="90" r="11" fill="#fff" stroke="#5E6E80" stroke-width="3"/>
+                    <circle cx="136" cy="90" r="11" fill="#fff" stroke="#5E6E80" stroke-width="3"/>
+                    <circle cx="187" cy="42" r="17" fill="none" stroke="#5E6E80" stroke-width="3.5"/>
+                    <line x1="199" y1="55" x2="209" y2="66" stroke="#5E6E80" stroke-width="4" stroke-linecap="round"/>
+                    <text x="187" y="48" text-anchor="middle" font-family="Nunito, sans-serif" font-size="17" font-weight="800" fill="#F06422">?</text>
+                </svg>
                 <h3>Рейсів не знайдено</h3>
                 <p>На ${date} за напрямком ${dep} → ${arr} рейсів немає.</p>
                 <div class="suggest-box" id="suggest-box">
@@ -881,7 +901,11 @@
         document.getElementById('m-consent-wrap').classList.remove('err', 'checked');
         document.getElementById('pet-field').style.display = allowsPets(rt) ? 'block' : 'none';
         document.getElementById('pax-list').innerHTML = '';
-        addPax(); // один порожній пасажир за замовчуванням
+        // Памʼять кількості пасажирів: скільки їхало минулого разу - стільки рядків і відкриваємо
+        // (зайві легко прибрати хрестиком). Ліміт 5 - як у автоброні.
+        let paxN = 1;
+        try { paxN = Math.min(5, Math.max(1, parseInt(localStorage.getItem('gdb_paxn'), 10) || 1)); } catch (e) { }
+        for (let i = 0; i < paxN; i++) addPax();
         applyBookUI();
         document.getElementById('modal-bg').classList.add('open');
         lockScroll(); // блокуємо фон, щоб не "просвічував" скрол головної
@@ -975,6 +999,7 @@
                 throw new Error(err.error || `HTTP ${r.status}`);
             }
             const j = await r.json().catch(() => ({}));
+            try { localStorage.setItem('gdb_paxn', String(payload.passengers.length)); } catch (e) { }
             const tks = (j.booked && Array.isArray(j.tickets)) ? j.tickets.filter(t => t.pdf) : [];
             if (j.booked) {
                 document.getElementById('m-ok-title').textContent = 'Місця заброньовано!';
