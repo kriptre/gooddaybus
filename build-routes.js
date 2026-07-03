@@ -1,19 +1,41 @@
 // Генератор статичних сторінок маршрутів. Запуск: node build-routes.js
-// Бере спільні фрагменти з public/index.html (щоб не дублювати й не розходитись),
-// дані - з routes.json. Пише public/<slug>.html і оновлює public/sitemap.xml.
+// 1) Мінімізує ассети: app.js/common.js/styles.css → app.min.js/common.min.js/styles.min.css
+//    (сторінки посилаються на .min-версії; вихідні файли лишаються для розробки).
+// 2) Бере спільні фрагменти з public/index.html (щоб не дублювати й не розходитись),
+//    дані - з routes.json. Пише public/<slug>.html і оновлює public/sitemap.xml.
 const fs = require('fs');
 const path = require('path');
 
 const PUB = path.join(__dirname, 'public');
 const SITE = 'https://gooddaybus.com';
+
+(async () => {
+
+// --- мінімізація ассетів (terser + csso, лише devDependencies - на сервері не потрібні) ---
+const rd = f => fs.readFileSync(path.join(PUB, f), 'utf8');
+const wr = (f, s) => fs.writeFileSync(path.join(PUB, f), s);
+const tj = async src => {
+    const r = await require('terser').minify(src, { compress: true, mangle: true });
+    if (r.error) throw r.error;
+    return r.code;
+};
+const kb = s => (Buffer.byteLength(s) / 1024).toFixed(0);
+const srcApp = rd('app.js'), srcCommon = rd('common.js'), srcCss = rd('styles.css');
+const minApp = await tj(srcApp);
+const minCommon = await tj(srcCommon);
+const minCss = require('csso').minify(srcCss).css;
+wr('app.min.js', minApp);
+wr('common.min.js', minCommon);
+wr('styles.min.css', minCss);
+console.log(`Мінімізовано: app.js ${kb(srcApp)}→${kb(minApp)}КБ · common.js ${kb(srcCommon)}→${kb(minCommon)}КБ · styles.css ${kb(srcCss)}→${kb(minCss)}КБ`);
+
 const html = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8');
 const routes = JSON.parse(fs.readFileSync(path.join(__dirname, 'routes.json'), 'utf8'));
 
-// Версія ассетів = короткий хеш вмісту app.js + styles.css. Підставляємо у ?v= для скидання кешу браузера на деплої.
+// Версія ассетів = короткий хеш МІНІМІЗОВАНОГО вмісту (саме його вантажить браузер).
+// Підставляємо у ?v= для скидання кешу браузера на деплої.
 const ASSET_V = require('crypto').createHash('md5')
-    .update(fs.readFileSync(path.join(PUB, 'app.js')))
-    .update(fs.readFileSync(path.join(PUB, 'common.js')))
-    .update(fs.readFileSync(path.join(PUB, 'styles.css')))
+    .update(minApp).update(minCommon).update(minCss)
     .digest('hex').slice(0, 10);
 
 const between = (s, a, b) => {
@@ -25,14 +47,14 @@ const escHtml = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt
 const escAttr = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // --- спільні фрагменти з index.html ---
-const iconsFonts = between(html, '<!-- Іконки бренду', '<link rel="stylesheet" href="/styles.css');
+const iconsFonts = between(html, '<!-- Іконки бренду', '<link rel="stylesheet" href="/styles.min.css');
 const gtmHead = between(html, '<!-- GTM-HEAD START -->', '<!-- GTM-HEAD END -->') + '<!-- GTM-HEAD END -->';
 const gtmBody = between(html, '<!-- GTM-BODY START -->', '<!-- GTM-BODY END -->') + '<!-- GTM-BODY END -->';
 const header = between(html, '<header>', '</header>') + '</header>';
 const searchWrap = between(html, '<div class="search-wrap">', '<!-- Швидкий контакт');
 const quickContact = between(html, '<div class="quick-contact">', '<!-- CONTENT -->');
 const footer = between(html, '<footer>', '</footer>') + '</footer>';
-const modal = between(html, '<!-- MODAL -->', '<script src="/common.js');
+const modal = between(html, '<!-- MODAL -->', '<script src="/common.min.js');
 const contactSection = between(html, '<section class="contact-section">', '</main>'); // блок менеджера з головної
 
 function pageHtml(r) {
@@ -75,7 +97,7 @@ function pageHtml(r) {
 ${JSON.stringify(faqSchema, null, 2)}
     </script>
     ${iconsFonts.trim()}
-    <link rel="stylesheet" href="/styles.css?v=${ASSET_V}">
+    <link rel="stylesheet" href="/styles.min.css?v=${ASSET_V}">
 </head>
 <body>
 ${gtmBody}
@@ -116,8 +138,8 @@ ${footer}
 
 ${modal}
 <script>window.__ROUTE__ = ${cfg};</script>
-<script src="/common.js?v=${ASSET_V}"></script>
-<script src="/app.js?v=${ASSET_V}"></script>
+<script src="/common.min.js?v=${ASSET_V}"></script>
+<script src="/app.min.js?v=${ASSET_V}"></script>
 </body>
 </html>
 `;
@@ -168,17 +190,17 @@ fs.writeFileSync(path.join(PUB, 'llms.txt'), llms);
 // --- версіонуємо посилання на ассети в index.html (head-стилі + скрипт у кінці) ---
 const idxPath = path.join(PUB, 'index.html');
 const idxStamped = fs.readFileSync(idxPath, 'utf8')
-    .replace(/\/styles\.css(\?v=[a-z0-9]+)?/g, `/styles.css?v=${ASSET_V}`)
-    .replace(/\/common\.js(\?v=[a-z0-9]+)?/g, `/common.js?v=${ASSET_V}`)
-    .replace(/\/app\.js(\?v=[a-z0-9]+)?/g, `/app.js?v=${ASSET_V}`);
+    .replace(/\/styles\.min\.css(\?v=[a-z0-9]+)?/g, `/styles.min.css?v=${ASSET_V}`)
+    .replace(/\/common\.min\.js(\?v=[a-z0-9]+)?/g, `/common.min.js?v=${ASSET_V}`)
+    .replace(/\/app\.min\.js(\?v=[a-z0-9]+)?/g, `/app.min.js?v=${ASSET_V}`);
 fs.writeFileSync(idxPath, idxStamped);
 
 // --- faq.html - ручна сторінка, лише версіонуємо посилання на ассети ---
 const faqPath = path.join(PUB, 'faq.html');
 if (fs.existsSync(faqPath)) {
     fs.writeFileSync(faqPath, fs.readFileSync(faqPath, 'utf8')
-        .replace(/\/styles\.css(\?v=[a-z0-9]+)?/g, `/styles.css?v=${ASSET_V}`)
-        .replace(/\/common\.js(\?v=[a-z0-9]+)?/g, `/common.js?v=${ASSET_V}`));
+        .replace(/\/styles\.min\.css(\?v=[a-z0-9]+)?/g, `/styles.min.css?v=${ASSET_V}`)
+        .replace(/\/common\.min\.js(\?v=[a-z0-9]+)?/g, `/common.min.js?v=${ASSET_V}`));
 }
 
 console.log(`Згенеровано сторінок: ${made.length} (${made.join(', ')})`);
@@ -187,3 +209,5 @@ console.log(`Версія ассетів (?v=): ${ASSET_V}`);
 
 // Юридичні сторінки (terms/privacy/refund/cookies) з legal/*.md
 require('./build-legal.js');
+
+})().catch(e => { console.error('[Build] Помилка:', e.message); process.exit(1); });

@@ -175,7 +175,14 @@ function makeRateLimiter(windowMs, max) {
     const hits = new Map(); // ip -> [мітки часу]
     return ip => {
         const now = Date.now();
-        if (hits.size > 10000) hits.clear(); // запобіжник від розростання пам'яті
+        // Запобіжник памʼяті: прибираємо лише ПРОТУХЛІ записи (раніше clear() обнуляв
+        // ліміти всім одразу - вузьке вікно для сплеску запитів)
+        if (hits.size > 10000) {
+            for (const [k, a] of hits) {
+                const fresh = a.filter(t => now - t < windowMs);
+                if (fresh.length) hits.set(k, fresh); else hits.delete(k);
+            }
+        }
         const arr = (hits.get(ip) || []).filter(t => now - t < windowMs);
         if (arr.length >= max) { hits.set(ip, arr); return true; }
         arr.push(now);

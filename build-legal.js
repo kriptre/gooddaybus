@@ -7,10 +7,12 @@ const PUB = path.join(__dirname, 'public');
 const SITE = 'https://gooddaybus.com';
 const html = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8');
 
+// Хеш - від мінімізованих файлів (саме їх вантажить браузер). Генерує build-routes.js,
+// тож при окремому запуску (node build-legal.js) спершу зберіть основну сторінку.
 const ASSET_V = require('crypto').createHash('md5')
-    .update(fs.readFileSync(path.join(PUB, 'app.js')))
-    .update(fs.readFileSync(path.join(PUB, 'common.js')))
-    .update(fs.readFileSync(path.join(PUB, 'styles.css')))
+    .update(fs.readFileSync(path.join(PUB, 'app.min.js')))
+    .update(fs.readFileSync(path.join(PUB, 'common.min.js')))
+    .update(fs.readFileSync(path.join(PUB, 'styles.min.css')))
     .digest('hex').slice(0, 10);
 
 const between = (s, a, b) => {
@@ -18,7 +20,7 @@ const between = (s, a, b) => {
     if (i < 0 || j < 0) throw new Error(`фрагмент не знайдено: ${a} .. ${b}`);
     return s.slice(i, j);
 };
-const iconsFonts = between(html, '<!-- Іконки бренду', '<link rel="stylesheet" href="/styles.css');
+const iconsFonts = between(html, '<!-- Іконки бренду', '<link rel="stylesheet" href="/styles.min.css');
 const gtmHead = between(html, '<!-- GTM-HEAD START -->', '<!-- GTM-HEAD END -->') + '<!-- GTM-HEAD END -->';
 const gtmBody = between(html, '<!-- GTM-BODY START -->', '<!-- GTM-BODY END -->') + '<!-- GTM-BODY END -->';
 const header = between(html, '<header>', '</header>') + '</header>';
@@ -88,7 +90,7 @@ for (const d of DOCS) {
     <meta name="description" content="${escAttr(d.desc)}">
     <link rel="canonical" href="${SITE}/${d.slug}">
     ${iconsFonts.trim()}
-    <link rel="stylesheet" href="/styles.css?v=${ASSET_V}">
+    <link rel="stylesheet" href="/styles.min.css?v=${ASSET_V}">
 </head>
 <body>
 ${gtmBody}
@@ -102,7 +104,7 @@ ${mdToHtml(md)}
 
 ${footer}
 
-<script src="/common.js?v=${ASSET_V}"></script>
+<script src="/common.min.js?v=${ASSET_V}"></script>
 </body>
 </html>
 `;
