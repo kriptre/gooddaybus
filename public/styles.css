@@ -548,6 +548,9 @@ a:focus-visible, button:focus-visible, select:focus-visible, summary:focus-visib
 .m-consent.err { color: var(--red); }
 .m-consent.err .ck-box { border-color: var(--red); }
 .m-consent.err a { color: var(--red); }
+/* Підпис-підказка під галочкою: зʼявляється лише разом із червоною рамкою (клас err) */
+.m-consent .ck-err-note { display: none; }
+.m-consent.err .ck-err-note { display: block; margin-top: 6px; font-size: 12.5px; font-weight: 800; color: var(--red); }
 
 /* === Посилання у футері === */
 .footer-legal { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 20px; margin-bottom: 14px; }
