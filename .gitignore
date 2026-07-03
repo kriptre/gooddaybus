@@ -8,6 +8,7 @@ node_modules/
 orders.db
 orders.db-journal
 orders.db-wal
+orders.db-shm
 backups/
 .claude/
 
