@@ -12,6 +12,10 @@ const DATA_DIR = process.env.DATA_DIR || __dirname;
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const db = new DatabaseSync(path.join(DATA_DIR, 'orders.db'));
+// WAL: запис не блокує читання, і база стійкіша до раптової смерті процесу (деплой/OOM).
+// Поруч зʼявляються службові файли -wal/-shm - це нормально (вони в .gitignore).
+db.exec('PRAGMA journal_mode = WAL');
+db.exec('PRAGMA synchronous = NORMAL'); // безпечний компроміс для WAL: швидше, цілісність зберігається
 
 // --- Резервна копія бази (один файл на день, зберігаємо останні 14) ---
 function backupDb() {

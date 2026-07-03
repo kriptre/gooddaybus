@@ -197,7 +197,11 @@ app.get('/api/cities', async (req, res) => {
         if (citiesLimited(req.ip || 'unknown')) {
             return res.status(429).json({ error: 'Забагато запитів. Зачекайте хвилину.' });
         }
-        res.json(await getCities());
+        // Фронту потрібні лише id та name (автокомпліт) — віддаємо мінімум (231КБ → ~вдвічі менше).
+        // Повні дані (lat_lon, country_code) лишаються на сервері для /api/suggest.
+        // Кеш браузера на 30 хв: повторні заходи не тягнуть список заново.
+        res.set('Cache-Control', 'public, max-age=1800');
+        res.json((await getCities()).map(c => ({ id: c.id, name: c.name })));
     } catch (err) {
         serverError(res, err, 'Cities');
     }

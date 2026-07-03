@@ -34,16 +34,31 @@
         document.getElementById('status-txt').textContent = txt;
     }
 
+    // Кеш списку міст у localStorage (доба): повторні заходи стартують миттєво без запиту.
+    // Список майже не змінюється, тож доба відставання неощутима; протух - тягнемо свіжий.
+    const CITIES_LS = 'gdb_cities', CITIES_TTL = 24 * 60 * 60 * 1000;
+    function citiesReady() {
+        setStatus(`${cities.length} міст у наявності - оберіть напрямок`, 'success');
+        document.getElementById('search-btn').disabled = false;
+        if (window.__ROUTE__) initRoutePage();   // сторінка маршруту: підставити напрямок, стрічка дат, авто-пошук
+        else applyQueryParams();                 // головна: deep-link /?from=&to=&date=
+    }
     async function loadCities() {
+        try {
+            const c = JSON.parse(localStorage.getItem(CITIES_LS));
+            if (c && Array.isArray(c.data) && c.data.length && Date.now() - c.t < CITIES_TTL) {
+                cities = c.data;
+                citiesReady();
+                return;
+            }
+        } catch (e) { /* кеш пошкоджено - тягнемо з сервера */ }
         setStatus('Завантаження міст...', 'loading');
         try {
             const r = await fetch(`${PROXY_BASE}/cities`);
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             cities = await r.json();
-            setStatus(`${cities.length} міст у наявності - оберіть напрямок`, 'success');
-            document.getElementById('search-btn').disabled = false;
-            if (window.__ROUTE__) initRoutePage();   // сторінка маршруту: підставити напрямок, стрічка дат, авто-пошук
-            else applyQueryParams();                 // головна: deep-link /?from=&to=&date=
+            try { localStorage.setItem(CITIES_LS, JSON.stringify({ t: Date.now(), data: cities })); } catch (e) { }
+            citiesReady();
         } catch (e) { setStatus(`Помилка: ${e.message}`, 'error'); }
     }
 
