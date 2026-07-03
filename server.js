@@ -136,30 +136,35 @@ function serverError(res, err, tag = 'API') {
 
 let authToken = null;
 let tokenExpiry = null;
+let tokenPromise = null; // дедуплікація: паралельні запити чекають ОДИН логін, а не роблять кожен свій
 
 // Функція отримання/оновлення токену (кешується на 50 хвилин)
-async function getToken() {
+function getToken() {
     if (authToken && tokenExpiry && Date.now() < tokenExpiry) {
+        return Promise.resolve(authToken);
+    }
+    if (tokenPromise) return tokenPromise;
+
+    tokenPromise = (async () => {
+        console.log('[Auth] Отримуємо новий токен...');
+        const res = await fetch(`${API_BASE_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ login: API_LOGIN, password: API_PASSWORD })
+        });
+
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`Авторизація не вдалась (${res.status}): ${text}`);
+        }
+
+        const data = await res.json();
+        authToken = data.token;
+        tokenExpiry = Date.now() + 50 * 60 * 1000; // 50 хвилин
+        console.log('[Auth] Токен отримано успішно');
         return authToken;
-    }
-
-    console.log('[Auth] Отримуємо новий токен...');
-    const res = await fetch(`${API_BASE_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ login: API_LOGIN, password: API_PASSWORD })
-    });
-
-    if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Авторизація не вдалась (${res.status}): ${text}`);
-    }
-
-    const data = await res.json();
-    authToken = data.token;
-    tokenExpiry = Date.now() + 50 * 60 * 1000; // 50 хвилин
-    console.log('[Auth] Токен отримано успішно');
-    return authToken;
+    })().finally(() => { tokenPromise = null; });
+    return tokenPromise;
 }
 
 // ==========================================
@@ -182,11 +187,16 @@ const searchLimited    = makeRateLimiter(60 * 1000, 30);     // пошук: 30/�
 const suggestLimited   = makeRateLimiter(60 * 1000, 6);      // підказки (важкі): 6/хв
 const discountsLimited = makeRateLimiter(60 * 1000, 30);     // знижки: 30/хв
 const orderLimited     = makeRateLimiter(10 * 60 * 1000, 5); // заявки: 5 за 10 хв
+const citiesLimited    = makeRateLimiter(60 * 1000, 20);     // список міст (важкий JSON): 20/хв
+const visitLimited     = makeRateLimiter(60 * 1000, 10);     // лічильник візитів (пише в БД): 10/хв
 
 // GET /api/cities — список міст (через 30-хв кеш getCities, щоб не бити
 // contrabus на кожне відкриття сайту)
 app.get('/api/cities', async (req, res) => {
     try {
+        if (citiesLimited(req.ip || 'unknown')) {
+            return res.status(429).json({ error: 'Забагато запитів. Зачекайте хвилину.' });
+        }
         res.json(await getCities());
     } catch (err) {
         serverError(res, err, 'Cities');
@@ -435,9 +445,10 @@ async function sendBackupToTelegram(file) {
     }
 }
 
-// Екранування для parse_mode=HTML (надійніше за Markdown, бо у даних бувають _ * тощо)
+// Екранування для parse_mode=HTML (надійніше за Markdown, бо у даних бувають _ * тощо).
+// Лапки теж екрануємо - значення підставляються й у href="..." (Telegram розуміє &quot;).
 function escHtml(s) {
-    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // Прибираємо дублювання назви міста на початку адреси станції ("Запоріжжя, Автовокзал…" → "Автовокзал…")
@@ -489,7 +500,7 @@ function orderMessageText(order, footer) {
         const tks = orderTickets(order);
         t += `\n\n✅ <b>ЗАБРОНЬОВАНО автоматично</b> - оплата водієві при посадці`;
         if (tks.length) t += '\n' + tks.map((tk, i) => tk.pdf
-            ? `🎟 <a href="${tk.pdf}">Квиток ${escHtml(tk.id)}</a>`
+            ? `🎟 <a href="${escHtml(tk.pdf)}">Квиток ${escHtml(tk.id)}</a>`
             : `🎟 Квиток ${escHtml(tk.id)}`).join('\n');
     }
     if (order.route_from_station) t += `\n\n🚏 <b>Посадка:</b> ${escHtml(stripCity(order.route_from_station, order.route_from))}`;
@@ -895,9 +906,10 @@ app.post('/api/order', async (req, res) => {
     }
 });
 
-// POST /api/visit — лічильник відвідувань (публічний, без даних користувача)
+// POST /api/visit — лічильник відвідувань (публічний, без даних користувача).
+// Ліміт за IP: без нього скриптом можна за ніч роздути лічильник і зіпсувати статистику.
 app.post('/api/visit', (req, res) => {
-    if (!skipStats(req)) { try { db.logVisit(); } catch (e) {} }
+    if (!visitLimited(req.ip || 'unknown') && !skipStats(req)) { try { db.logVisit(); } catch (e) {} }
     res.status(204).end();
 });
 
@@ -925,6 +937,12 @@ app.post('/api/discounts', async (req, res) => {
 });
 
 // --- Захист панелі менеджера простим ключем ---
+// Порівняння за постійний час (timingSafeEqual): звичайне !== відповідає швидше на
+// перший неправильний символ, що теоретично дозволяє підбирати ключ за таймінгом.
+const timingSafeEq = (a, b) => {
+    const ba = Buffer.from(String(a || '')), bb = Buffer.from(String(b || ''));
+    return ba.length === bb.length && require('crypto').timingSafeEqual(ba, bb);
+};
 // Анти-брутфорс: після 20 невдалих спроб з одного IP за 10 хв — блокування на час вікна.
 const adminFails = new Map(); // ip -> [мітки часу невдалих спроб]
 function requireAdmin(req, res, next) {
@@ -937,7 +955,7 @@ function requireAdmin(req, res, next) {
         return res.status(429).json({ error: 'Забагато невдалих спроб. Спробуйте за 10 хвилин.' });
     }
     const key = req.get('x-admin-key'); // лише заголовок — ключ не потрапляє в URL/логи/історію
-    if (key !== ADMIN_KEY) {
+    if (!timingSafeEq(key, ADMIN_KEY)) {
         fails.push(now);
         adminFails.set(ip, fails);
         return res.status(401).json({ error: 'Невірний ключ доступу' });
