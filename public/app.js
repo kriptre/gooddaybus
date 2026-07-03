@@ -938,6 +938,9 @@
         if (consent && !consent.checked) {
             document.getElementById('m-consent-wrap').classList.add('err');
             document.getElementById('m-consent-wrap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Явне повідомлення, а не лише червона рамка: без нього людина не розуміє,
+            // чому кнопка "не працює", і йде дзвонити (реальний випадок).
+            alert('Поставте, будь ласка, галочку згоди з умовами - без неї ми не можемо прийняти заявку.');
             return;
         }
         const rows = [...document.querySelectorAll('#pax-list .pax-row')];

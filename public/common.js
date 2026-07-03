@@ -5,6 +5,26 @@
 (function () {
     'use strict';
 
+    // Звіт про JS-збої на сервер: інакше помилка в браузері клієнта - невидима зона
+    // ("не можу забронювати", а в логах порожньо). Максимум 3 звіти за візит.
+    var errSent = 0;
+    function reportError(msg, src, line) {
+        if (errSent >= 3) return; errSent++;
+        try {
+            fetch('/api/client-error', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
+                body: JSON.stringify({
+                    msg: String(msg || '').slice(0, 300), src: String(src || '').slice(0, 200), line: line || 0,
+                    page: location.pathname, ua: navigator.userAgent.slice(0, 140)
+                })
+            });
+        } catch (e) { }
+    }
+    window.addEventListener('error', function (e) { reportError(e.message, e.filename, e.lineno); });
+    window.addEventListener('unhandledrejection', function (e) {
+        reportError('unhandledrejection: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason || '')), '', 0);
+    });
+
     // GTM і Consent Mode (default denied) вже підключені інлайн у <head>. Тут лише оновлюємо
     // згоду на granted, коли користувач натиснув «Прийняти» - далі рішення приймає GTM.
     function grantConsent() {

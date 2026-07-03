@@ -189,6 +189,7 @@ const discountsLimited = makeRateLimiter(60 * 1000, 30);     // знижки: 30
 const orderLimited     = makeRateLimiter(10 * 60 * 1000, 5); // заявки: 5 за 10 хв
 const citiesLimited    = makeRateLimiter(60 * 1000, 20);     // список міст (важкий JSON): 20/хв
 const visitLimited     = makeRateLimiter(60 * 1000, 10);     // лічильник візитів (пише в БД): 10/хв
+const cliErrLimited    = makeRateLimiter(60 * 1000, 5);      // звіти про JS-збої: 5/хв
 
 // GET /api/cities — список міст (через 30-хв кеш getCities, щоб не бити
 // contrabus на кожне відкриття сайту)
@@ -785,15 +786,24 @@ app.post('/api/order', async (req, res) => {
     try {
         const { passengers, hp } = req.body;
 
-        // 1) Honeypot: приховане поле, яке заповнюють лише боти → тихо ігноруємо
-        if (hp) {
-            console.log('[Order] Заблоковано бота (honeypot)');
-            return res.status(201).json({ ok: true }); // вдаємо успіх, щоб бот не повторював
-        }
+        // 1) Honeypot: приховане поле, яке заповнюють боти. Раніше такі заявки мовчки
+        //    відкидались - але автозаповнення браузера зрідка заповнює його і в реальних
+        //    людей, і клієнт губився безслідно. Тепер заявка СТВОРЮЄТЬСЯ з позначкою
+        //    менеджеру (без автоброні - щоб бот не міг сам створити бронь у contrabus).
+        //    Шум від ботів обмежують rate-limit (5 за 10 хв) і валідація полів нижче.
+        const hpFlag = !!hp;
+        if (hpFlag) console.log('[Order] ⚠️ Honeypot заповнено - заявку створюємо з позначкою, без автоброні');
 
         // 2) Готуємо й перевіряємо список пасажирів (з обмеженням довжин і кількості — захист від сміття/DoS)
+        // Кожна відмова логуються з деталями: "тиха" відмова без сліду в логах уже коштувала
+        // нам клієнта, який не зміг оформити заявку (див. reject400 нижче).
+        const reject400 = (msg) => {
+            const p0 = Array.isArray(passengers) && passengers[0] ? passengers[0] : {};
+            console.log(`[Order] ✋ Відхилено (400): ${msg} · перший пасажир: "${cap(p0.name, 40)} ${cap(p0.surname, 40)}", тел "${cap(p0.phone, 24)}" · ${cap(req.body.route_from, 40)} → ${cap(req.body.route_to, 40)} ${cap(req.body.route_date, 16)}`);
+            return res.status(400).json({ error: msg });
+        };
         if (Array.isArray(passengers) && passengers.length > MAX_PASSENGERS) {
-            return res.status(400).json({ error: `Забагато пасажирів (максимум ${MAX_PASSENGERS})` });
+            return reject400(`Забагато пасажирів (максимум ${MAX_PASSENGERS})`);
         }
         const list = (Array.isArray(passengers) ? passengers : [])
             .slice(0, MAX_PASSENGERS)
@@ -805,16 +815,16 @@ app.post('/api/order', async (req, res) => {
             .filter(p => p.name || p.surname || p.phone);
 
         if (!list.length) {
-            return res.status(400).json({ error: 'Додайте хоча б одного пасажира' });
+            return reject400('Додайте хоча б одного пасажира');
         }
         for (let i = 0; i < list.length; i++) {
             const p = list[i];
             if (p.name.length < 1 || p.surname.length < 1) {
-                return res.status(400).json({ error: `Вкажіть ім'я та прізвище пасажира №${i + 1}` });
+                return reject400(`Вкажіть ім'я та прізвище пасажира №${i + 1}`);
             }
             const d = phoneDigits(p.phone);
             if (d < 9 || d > 15) {
-                return res.status(400).json({ error: `Перевірте телефон пасажира №${i + 1}` });
+                return reject400(`Перевірте телефон пасажира №${i + 1}`);
             }
         }
 
@@ -832,14 +842,15 @@ app.post('/api/order', async (req, res) => {
         // 5) Якщо просять автобронь - СПОЧАТКУ звіряємо рейс зі свіжою видачею contrabus:
         //    це дає і дозвіл на бронь, і свіжий data_bundle (клієнтський живе ~6 годин
         //    і перестає збігатися після перевипуску кешу пошуку).
-        // З твариною автобронь неможлива (ціна за тварину залежить від перевізника) - лише менеджер
-        const wantBook = !!(req.body.book && BOOKING_ENABLED) && !req.body.pet;
+        // З твариною автобронь неможлива (ціна за тварину залежить від перевізника) - лише менеджер.
+        // З honeypot-позначкою теж не бронюємо автоматично - лише через менеджера.
+        const wantBook = !!(req.body.book && BOOKING_ENABLED) && !req.body.pet && !hpFlag;
         let verdict = null;
         if (wantBook) verdict = await verifyBookable(req.body, list.length);
 
         // 6) Перевірка телефонів на чорний список / дублі (ДО створення - щоб зберегти позначку).
         //    Заявку НЕ блокуємо: вона приходить, але з позначкою. Для автоброні беремо свіжий бандл.
-        let check_warning = '';
+        let check_warning = hpFlag ? 'Спрацював анти-бот (honeypot) - можливо, автозаповнення браузера. Звʼяжіться з клієнтом і оформіть вручну.' : '';
         const checkBundle = (verdict && verdict.ok) ? verdict.route.data_bundle : req.body.data_bundle;
         if (checkBundle) {
             try {
@@ -850,7 +861,7 @@ app.post('/api/order', async (req, res) => {
                 });
                 const j = await r.json();
                 if (j && j.message && !/no possible|not found|немає/i.test(j.message)) {
-                    check_warning = j.message;
+                    check_warning = (check_warning ? check_warning + ' · ' : '') + j.message;
                     console.log(`[Order] ⚠️ allow_check: ${j.message}`);
                 }
             } catch (e) { /* перевірка не критична */ }
@@ -877,13 +888,16 @@ app.post('/api/order', async (req, res) => {
                 check_warning += ' · Автобронь пропущено через це попередження';
                 console.log('[Booking] Попередження не схоже на дубль - менеджеру');
             } else if (check_warning && DUP_RE.test(check_warning)) {
-                // Дубль: дозволяємо лише якщо НЕ той самий маршрут уже заброньовано
-                if (await hasSameRouteBooking(list.map(p => p.phone), req.body.route_from, req.body.route_to)) {
-                    check_warning = 'Дубль того самого напрямку - можливо, повторне бронювання. Обробіть вручну.';
-                    console.log('[Booking] Дубль того самого маршруту - менеджеру');
-                } else {
-                    console.log('[Booking] Дубль іншого маршруту/зворотний - бронюємо (skip_checks)');
-                    await doBook(true);
+                // Дубль: бронюємо В БУДЬ-ЯКОМУ разі (політика: краще забронювати і, якщо це справді
+                // помилковий повтор, вручну скасувати в Contrabus - ніж відмовити реальному клієнту,
+                // який їде тим самим напрямком ще раз). skip_checks, інакше contrabus відіб'є.
+                const sameRoute = await hasSameRouteBooking(list.map(p => p.phone), req.body.route_from, req.body.route_to);
+                console.log(sameRoute
+                    ? '[Booking] Дубль того самого маршруту - бронюємо, менеджеру позначка звірити'
+                    : '[Booking] Дубль іншого маршруту/зворотний - бронюємо (skip_checks)');
+                await doBook(true);
+                if (booked && sameRoute) {
+                    check_warning = '⚠️ Можливий ПОВТОР тієї самої броні (той самий напрямок нещодавно вже бронювався цим телефоном). Звірте із попередніми замовленнями - якщо це помилковий дубль, скасуйте зайву бронь у Contrabus.';
                 }
             } else {
                 // Без попереджень: якщо в заявці однаковий номер у кількох - skip_checks
@@ -914,6 +928,17 @@ app.post('/api/order', async (req, res) => {
 // Ліміт за IP: без нього скриптом можна за ніч роздути лічильник і зіпсувати статистику.
 app.post('/api/visit', (req, res) => {
     if (!visitLimited(req.ip || 'unknown') && !skipStats(req)) { try { db.logVisit(); } catch (e) {} }
+    res.status(204).end();
+});
+
+// POST /api/client-error — звіт про JS-збій у браузері клієнта (тільки в лог сервера).
+// Без цього помилка на боці клієнта - невидима зона: людина "не може забронювати",
+// а в логах порожньо. Нічого не зберігаємо в БД, лише console.log під rate-limit.
+app.post('/api/client-error', (req, res) => {
+    if (!cliErrLimited(req.ip || 'unknown')) {
+        const b = req.body || {};
+        console.log(`[ClientError] ${cap(b.msg, 300)} @ ${cap(b.src, 200)}:${+b.line || 0} · сторінка ${cap(b.page, 100)} · ${cap(b.ua, 140)}`);
+    }
     res.status(204).end();
 });
 
