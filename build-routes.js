@@ -124,7 +124,6 @@ ${quickContact}
 </section>
 
 <section class="seo-section faq-wrap" style="padding-bottom:0">
-    <div class="seo-eyebrow">Поширені запитання</div>
     <h2>Часті <em>запитання</em></h2>
 </section>
 <section class="faq-section">

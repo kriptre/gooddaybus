@@ -1,6 +1,9 @@
     const PROXY_BASE = '/api'; // той самий сервер, що віддає сайт (працює і локально, і на домені)
     let cities = [], depId = null, arrId = null, selRoute = null;
     let _routes = [], _view = [], _dep = '', _arr = '', _date = '', _sortBy = 'departure';
+    let _sortDir = 1;    // 1 = за зростанням; повторний клік по активному сортуванню - реверс
+    let _shown = 20;     // скільки карток показано ("Показати ще" довантажує порціями)
+    const SHOW_STEP = 20;
     // Фільтри рейсів: 'noprepay' = без передоплати, 'direct' = без пересадок.
     // Порожній набір = показувати всі. Памʼятаємо вибір між пошуками й візитами (localStorage).
     const FILTERS_KEY = 'gdb_filters';
@@ -106,6 +109,9 @@
         const R = window.__ROUTE__;
         document.getElementById('departure').value = R.fromName; depId = R.fromId;
         document.getElementById('arrival').value = R.toName; arrId = R.toId;
+        // Стрічку дат переносимо всередину білої картки пошуку - щоб не висіла окремо
+        const strip = document.getElementById('date-strip'), card = document.querySelector('.search-card');
+        if (strip && card) card.appendChild(strip);
         buildDateStrip(document.getElementById('date-input').value); // дата = сьогодні (вже виставлена)
         search();
     }
@@ -180,13 +186,14 @@
         }
         inp.addEventListener('focus', function () {
             if (this.dataset.skipSuggest) { delete this.dataset.skipSuggest; return; } // автофокус після вибору «Звідки» - без панелі
-            if (this.value.trim().length < 2) showSuggest();
+            // Панель «Нещодавні/Популярні» показуємо лише у полі «Звідки» - у «Куди» вона заважає
+            if (isDep && this.value.trim().length < 2) showSuggest();
         });
 
         inp.addEventListener('input', function () {
             const q = this.value.trim().toLowerCase();
             lst.innerHTML = ''; hl = -1;
-            if (q.length < 2 || !cities.length) { if (!q && cities.length) showSuggest(); else lst.style.display = 'none'; return; }
+            if (q.length < 2 || !cities.length) { if (!q && cities.length && isDep) showSuggest(); else lst.style.display = 'none'; return; }
             lst.classList.remove('sg-wide');
             const res = cities.filter(c => c.name.toLowerCase().includes(q)).slice(0, 9);
             if (!res.length) { lst.style.display = 'none'; return; }
@@ -516,6 +523,7 @@
         }
         setStatus(`Знайдено рейсів: ${routes.length}`, 'success');
         _routes = routes; _dep = dep; _arr = arr; _date = date;
+        _shown = SHOW_STEP; // новий пошук - знову з першої порції
 
         el.innerHTML = `
             <div class="res-hdr">
@@ -537,16 +545,32 @@
             <div id="tickets"></div>`;
 
         el.querySelectorAll('.sort-btn[data-sort]').forEach(b => b.addEventListener('click', () => {
-            _sortBy = b.dataset.sort;
+            // Повторний клік по активному сортуванню - зміна напрямку (ранні ⇄ пізні, дешеві ⇄ дорогі)
+            if (_sortBy === b.dataset.sort) _sortDir = -_sortDir;
+            else { _sortBy = b.dataset.sort; _sortDir = 1; }
+            _shown = SHOW_STEP;
             renderTickets();
         }));
         el.querySelectorAll('.filter-btn').forEach(b => b.addEventListener('click', () => {
             const k = b.dataset.filter;
             _filters.has(k) ? _filters.delete(k) : _filters.add(k);
             saveFilters();
+            _shown = SHOW_STEP;
             renderTickets();
         }));
         renderTickets();
+    }
+
+    // Візуальні зірки рейтингу перевізника (заповнені/порожні). Рейтинг буває за
+    // 5-бальною або 10-бальною шкалою - приводимо до 5. Немає даних - нічого не малюємо.
+    function starsHtml(raw) {
+        const v = parseFloat(String(raw == null ? '' : raw).replace(',', '.'));
+        if (!v || v <= 0) return '';
+        const scale10 = v > 5;
+        const filled = Math.max(1, Math.min(5, Math.round(scale10 ? v / 2 : v)));
+        let s = '';
+        for (let i = 1; i <= 5; i++) s += `<svg class="ic ${i <= filled ? 'st-on' : 'st-off'}" aria-hidden="true"><use href="/_sprite.svg#i-star"></use></svg>`;
+        return ` <span class="carr-stars" title="Рейтинг ${escTxt(raw)} з ${scale10 ? 10 : 5}">${s}<span class="st-num">${escTxt(raw)}</span></span>`;
     }
 
     // Час "HH:MM" -> хвилини; повна дата+час рейсу -> timestamp для сортування за виїздом
@@ -558,7 +582,11 @@
 
     function renderTickets() {
         const tickets = document.getElementById('tickets');
-        document.querySelectorAll('.sort-btn[data-sort]').forEach(b => b.classList.toggle('active', b.dataset.sort === _sortBy));
+        document.querySelectorAll('.sort-btn[data-sort]').forEach(b => {
+            const act = b.dataset.sort === _sortBy;
+            b.classList.toggle('active', act);
+            b.classList.toggle('desc', act && _sortDir === -1); // стрілка напрямку через CSS ::after
+        });
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', _filters.has(b.dataset.filter)));
 
         // Фільтри (порожній набір = усі рейси)
@@ -573,13 +601,14 @@
             return;
         }
 
-        _view = pool.slice().sort((a, b) => {
+        _view = pool.slice().sort((a, b) => _sortDir * (() => {
             if (_sortBy === 'price')    return (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0);
             if (_sortBy === 'duration') return (a.travel_time || Infinity) - (b.travel_time || Infinity);
             return routeDepartTs(a) - routeDepartTs(b); // departure
-        });
+        })());
 
-        tickets.innerHTML = _view.map((rt, i) => {
+        // Порційний рендер: довгі списки (100+ рейсів) не вивалюємо всі одразу
+        tickets.innerHTML = _view.slice(0, _shown).map((rt, i) => {
             // Усі рядки з API екрануємо (escTxt) — захист на випадок несподіваного HTML у даних
             const dt    = escTxt(rt.departure_time || rt.time_from || '-:-');
             const at    = escTxt(rt.arrival_time   || rt.time_to   || '-:-');
@@ -630,11 +659,26 @@
                     <div class="td-row"><div class="td-label">Оплата</div><div class="td-text">${paymentHtml(rt)}</div></div>
                     <div class="td-row"><div class="td-label">Знижки</div><div class="td-text td-disc">-</div></div>
                     <div class="td-row"><div class="td-label">Пересадки</div><div class="td-text">${transfersHtml(rt.change_info)}</div></div>
-                    <div class="td-row"><div class="td-label">Перевізник</div><div class="td-text td-carrier">${car}${rt.carrier_rating ? ` <span class="carr-badge cb-star"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-star"></use></svg> ${escTxt(rt.carrier_rating)}</span>` : ''}${rt.carrier_reliability ? ` <span class="carr-badge cb-rel"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-shield-halved"></use></svg> надійність ${escTxt(rt.carrier_reliability)}%</span>` : ''}</div></div>
+                    <div class="td-row"><div class="td-label">Перевізник</div><div class="td-text td-carrier">${car}${starsHtml(rt.carrier_rating)}${rt.carrier_reliability ? ` <span class="carr-badge cb-rel"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-shield-halved"></use></svg> надійність ${escTxt(rt.carrier_reliability)}%</span>` : ''}</div></div>
                     ${rt.baggage ? `<div class="td-row"><div class="td-label">Багаж</div><div class="td-text">${escTxt(rt.baggage)}</div></div>` : ''}
+                    <div class="td-foot">
+                        <button class="td-close" type="button"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-up"></use></svg> Згорнути</button>
+                        <button class="btn-ticket" data-i="${i}">${rt.bookable ? 'Забронювати' : 'Замовити'}</button>
+                    </div>
                 </div>
             </div>`;
-        }).join('');
+        }).join('') + (_view.length > _shown
+            ? `<button class="show-more" type="button">Показати ще ${Math.min(SHOW_STEP, _view.length - _shown)} · всього ${_view.length} ${routeWord(_view.length)}</button>`
+            : '');
+
+        const more = tickets.querySelector('.show-more');
+        if (more) more.addEventListener('click', () => { _shown += SHOW_STEP; renderTickets(); });
+        tickets.querySelectorAll('.td-close').forEach(b => b.addEventListener('click', () => {
+            const ticket = b.closest('.ticket');
+            ticket.querySelector('.t-details').classList.remove('open');
+            ticket.querySelector('.t-toggle').classList.remove('open');
+            ticket.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }));
 
         tickets.querySelectorAll('.btn-ticket').forEach(b => {
             b.addEventListener('click', () => openModal(_view[b.dataset.i], _dep, _arr, _date));
@@ -687,8 +731,19 @@
         if (!Array.isArray(cached)) el.textContent = 'Завантаження…'; // показуємо лише якщо реально чекаємо мережу
         const d = await fetchDiscounts(rt.data_bundle);
         const real = (Array.isArray(d) ? d : []).filter(x => x.percent > 0);
+        // Опис із API: "Назва | ціна (-N%)". Розбираємо, щоб ВІДСОТОК був помітним акцентом,
+        // а решта - нейтральною (раніше все зливалось у суцільне зелене).
+        // Відсоток у назві дублюється ("Діти - 25%") - зрізаємо хвіст, бо відсоток уже в бейджі
+        const stripPct = s => String(s || '').replace(/\(?\s*[-−]?\s*\d+\s*%\s*\)?\s*$/, '').replace(/[-–|·,\s]+$/, '').trim();
+        const chip = x => {
+            const parts = String(x.description || '').split('|');
+            const name = escTxt(stripPct(parts[0]));
+            const price = escTxt((parts[1] || '').replace(/\(.*?\)/, '').trim());
+            const pct = `<b class="dc-pct">-${escTxt(x.percent)}%</b>`;
+            return `<span class="disc-chip"><span class="dc-name">${name}</span>${price ? `<span class="dc-price">${price}</span>` : ''}${pct}</span>`;
+        };
         el.innerHTML = real.length
-            ? `<div class="disc-chips">${real.map(x => `<span class="disc-chip"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-tag"></use></svg> ${escTxt(x.description)}</span>`).join('')}</div>`
+            ? `<div class="disc-chips">${real.map(chip).join('')}</div>`
             : 'Спеціальних знижок немає';
     }
 

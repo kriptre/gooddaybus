@@ -119,6 +119,9 @@
         .sort-btn { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-2); background: var(--white); border: 1px solid var(--border); border-radius: 50px; padding: 7px 16px; cursor: pointer; transition: var(--tr); }
         .sort-btn:hover { border-color: var(--orange-brd); color: var(--text); }
         .sort-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; }
+        /* Напрямок активного сортування: ↑ за зростанням, ↓ після повторного кліку */
+        .sort-btn[data-sort].active::after { content: ' ↑'; }
+        .sort-btn[data-sort].active.desc::after { content: ' ↓'; }
         .sort-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
         /* Фільтри: у вимкненому стані - нейтральні (як сортування), помітність дає підпис "Фільтри:" */
         .filter-btn .ic { font-size: 12px; margin-right: 4px; }
@@ -179,6 +182,22 @@
         .t-toggle.open .ic { transform: rotate(180deg); }
         .t-details { display: none; padding: 4px 24px 18px; background: var(--bg); }
         .t-details.open { display: block; animation: slideUp 0.25s ease both; }
+        /* Підвал розгорнутих деталей: дубль кнопок, щоб не скролити назад угору картки */
+        .td-foot { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+        .td-foot .btn-ticket { margin-left: auto; }
+        .td-close { display: inline-flex; align-items: center; gap: 7px; font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-2); background: var(--white); border: 1px solid var(--border); border-radius: 50px; padding: 9px 16px; cursor: pointer; transition: var(--tr); }
+        .td-close:hover { border-color: var(--orange-brd); color: var(--text); }
+        /* Зірки рейтингу перевізника */
+        .carr-stars { display: inline-flex; align-items: center; gap: 2px; margin-left: 8px; }
+        .carr-stars .ic { font-size: 12px; }
+        .carr-stars .st-on { color: #F5A623; }
+        .carr-stars .st-off { color: var(--border); }
+        .carr-stars .st-num { font-size: 12px; font-weight: 800; color: var(--text-2); margin-left: 5px; }
+        /* Кнопка порційного довантаження результатів */
+        .show-more { display: block; width: 100%; margin: 6px 0 2px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; color: var(--orange); background: var(--orange-bg); border: 1px solid var(--orange-brd); border-radius: var(--r-lg); padding: 14px; cursor: pointer; transition: var(--tr); }
+        .show-more:hover { background: var(--orange); color: #fff; }
+        /* Стрічка дат усередині білої картки пошуку (сторінки маршрутів) */
+        .search-card .date-strip { max-width: none; margin: 16px 0 0; padding: 16px 0 0; border-top: 1px solid var(--border); }
         .td-row { display: flex; gap: 14px; padding: 11px 0; border-bottom: 1px solid #EAF0F6; }
         .td-row:last-child { border-bottom: none; }
         .td-label { flex: 0 0 84px; font-size: 11px; font-weight: 800; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.4px; padding-top: 3px; }
@@ -195,8 +214,11 @@
         .amen { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--text); background: var(--white); border: 1px solid var(--border); border-radius: 50px; padding: 6px 13px; }
         /* Знижки в деталях - зеленими бейджами (видно вигоду), а не сірим текстом */
         .disc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-        .disc-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; color: var(--green); background: var(--green-bg); border: 1px solid rgba(26,158,94,0.28); border-radius: 50px; padding: 5px 12px; }
-        .disc-chip .ic { font-size: 10px; }
+        /* Нейтральна плашка, акцент - лише на відсотку знижки */
+        .disc-chip { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; background: var(--white); border: 1px solid var(--border); border-radius: 50px; padding: 4px 6px 4px 12px; }
+        .disc-chip .dc-name { font-weight: 600; color: var(--text-2); }
+        .disc-chip .dc-price { font-weight: 700; color: var(--text); white-space: nowrap; }
+        .disc-chip .dc-pct { font-weight: 800; color: #fff; background: var(--green); border-radius: 50px; padding: 3px 9px; white-space: nowrap; }
         /* Тип оплати у деталях */
         .pay-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; border-radius: 50px; padding: 5px 13px; }
         .pay-badge .ic { width: 1.25em; text-align: center; }
@@ -296,6 +318,10 @@
         .seo-section h2 { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 400; color: var(--text); text-align: center; line-height: 1.15; margin-bottom: 22px; }
         .seo-section h2 em { font-style: italic; color: var(--orange); }
         .seo-section p { font-size: 15px; color: var(--text-2); line-height: 1.75; margin: 0 auto 14px; max-width: 720px; text-align: center; }
+        /* Популярні напрямки одразу під пошуком (швидкий перехід + внутрішні посилання вище) */
+        .pop-routes { max-width: 920px; margin: 0 auto; padding: 34px 20px 0; }
+        .pop-routes h3 { text-align: center; font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 16px; }
+        .pop-routes .seo-tag { background: var(--white); }
         .seo-routes { margin-top: 30px; }
         .seo-routes h3 { text-align: center; font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 16px; }
         .seo-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
@@ -307,8 +333,9 @@
         .faq-item { border: 1px solid var(--border); border-radius: var(--r); background: var(--white); margin-bottom: 10px; overflow: hidden; }
         .faq-item summary { list-style: none; cursor: pointer; padding: 16px 18px; font-size: 15px; font-weight: 700; color: var(--text); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .faq-item summary::-webkit-details-marker { display: none; }
-        .faq-item summary::after { content: '+'; font-size: 22px; font-weight: 400; color: var(--orange); line-height: 1; flex-shrink: 0; transition: transform 0.2s; }
-        .faq-item[open] summary::after { content: '\2212'; }
+        /* Маркер розкриття: стрілочка вниз (стає вгору у відкритому стані) */
+        .faq-item summary::after { content: ''; width: 9px; height: 9px; border-right: 2.5px solid var(--orange); border-bottom: 2.5px solid var(--orange); transform: rotate(45deg) translateY(-2px); flex-shrink: 0; transition: transform 0.2s; }
+        .faq-item[open] summary::after { transform: rotate(225deg) translateY(-2px); }
         .faq-item summary:hover { color: var(--orange); }
         .faq-item .faq-a { padding: 0 18px 16px; font-size: 14px; color: var(--text-2); line-height: 1.65; }
         /* Плавне відкриття відповіді: анімація висоти в нових браузерах + легке проявлення всюди (дешево) */
