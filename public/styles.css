@@ -196,6 +196,8 @@
         /* Кнопка порційного довантаження результатів */
         .show-more { display: block; width: 100%; margin: 6px 0 2px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; color: var(--orange); background: var(--orange-bg); border: 1px solid var(--orange-brd); border-radius: var(--r-lg); padding: 14px; cursor: pointer; transition: var(--tr); }
         .show-more:hover { background: var(--orange); color: #fff; }
+        .more-skel { animation: mskel-in 0.15s ease both; }
+        @keyframes mskel-in { from { opacity: 0; } to { opacity: 1; } }
         /* Стрічка дат усередині білої картки пошуку (сторінки маршрутів) */
         .search-card .date-strip { max-width: none; margin: 16px 0 0; padding: 16px 0 0; border-top: 1px solid var(--border); }
         .td-row { display: flex; gap: 14px; padding: 11px 0; border-bottom: 1px solid #EAF0F6; }

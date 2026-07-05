@@ -320,8 +320,8 @@
     }
 
     // Картки-плейсхолдери на час повільного пошуку
-    function skeletonHtml() {
-        const card = `<div class="skel-card">
+    function skelCardHtml() {
+        return `<div class="skel-card">
             <div class="skel-left">
                 <div class="skel-bar" style="width:88px;height:30px"></div>
                 <div class="skel-bar" style="width:120px;height:13px;margin-top:10px"></div>
@@ -332,8 +332,8 @@
                 <div class="skel-bar" style="width:130px;height:40px;margin-top:14px;border-radius:8px"></div>
             </div>
         </div>`;
-        return card.repeat(4);
     }
+    function skeletonHtml() { return skelCardHtml().repeat(4); }
 
     const UA_MONTHS = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
     // "06.06.2026" -> "6 чер"
@@ -607,8 +607,14 @@
             return routeDepartTs(a) - routeDepartTs(b); // departure
         })());
 
-        // Порційний рендер: довгі списки (100+ рейсів) не вивалюємо всі одразу
-        tickets.innerHTML = _view.slice(0, _shown).map((rt, i) => {
+        // Порційний рендер: перша порція одразу, решта - по кнопці «Показати ще»
+        tickets.innerHTML = _view.slice(0, _shown).map((rt, i) => ticketCardHtml(rt, i)).join('');
+        wireCards(tickets.querySelectorAll('.ticket'));
+        updateMoreBtn();
+    }
+
+    // Розмітка однієї картки рейсу (i - абсолютний індекс у _view, для data-i)
+    function ticketCardHtml(rt, i) {
             // Усі рядки з API екрануємо (escTxt) — захист на випадок несподіваного HTML у даних
             const dt    = escTxt(rt.departure_time || rt.time_from || '-:-');
             const at    = escTxt(rt.arrival_time   || rt.time_to   || '-:-');
@@ -621,7 +627,7 @@
             const car   = escTxt(rt.carrier || rt.company || 'Автобус');
             const dur   = fmtDuration(rt.travel_time);
             const pay   = payTag(rt);
-            return `<div class="ticket ${pay.cls}" style="animation-delay:${Math.min(i*0.06,0.3)}s">
+            return `<div class="ticket ${pay.cls}" style="animation-delay:${Math.min((i % SHOW_STEP) * 0.05, 0.28)}s">
                 <div class="t-main">
                     <div class="t-ep">
                         <div class="t-time">${dt}</div>
@@ -667,41 +673,74 @@
                     </div>
                 </div>
             </div>`;
-        }).join('') + (_view.length > _shown
-            ? `<button class="show-more" type="button">Показати ще ${Math.min(SHOW_STEP, _view.length - _shown)} · всього ${_view.length} ${routeWord(_view.length)}</button>`
-            : '');
+    }
 
-        const more = tickets.querySelector('.show-more');
-        if (more) more.addEventListener('click', () => { _shown += SHOW_STEP; renderTickets(); });
-        tickets.querySelectorAll('.td-close').forEach(b => b.addEventListener('click', () => {
-            const ticket = b.closest('.ticket');
-            ticket.querySelector('.t-details').classList.remove('open');
-            ticket.querySelector('.t-toggle').classList.remove('open');
-            ticket.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }));
-
-        tickets.querySelectorAll('.btn-ticket').forEach(b => {
-            b.addEventListener('click', () => openModal(_view[b.dataset.i], _dep, _arr, _date));
-            // Предзавантаження знижок ще до кліку (на наведення курсором / дотик)
-            const pf = () => prefetchDiscounts(_view[b.dataset.i]);
-            b.addEventListener('pointerenter', pf);
-            b.addEventListener('touchstart', pf, { passive: true });
-        });
-        tickets.querySelectorAll('.t-toggle').forEach(b => {
-            const pf = () => prefetchDiscounts(_view[b.dataset.i]);
-            b.addEventListener('pointerenter', pf);
-            b.addEventListener('touchstart', pf, { passive: true });
-            b.addEventListener('click', () => {
-            const ticket = b.closest('.ticket');
-            const det = ticket.querySelector('.t-details');
-            const open = det.classList.toggle('open');
-            b.classList.toggle('open', open);
-            if (open && det.dataset.discLoaded !== '1') {
-                det.dataset.discLoaded = '1';
-                loadDiscounts(_view[b.dataset.i], ticket.querySelector('.td-disc'));
-            }
+    // Навішування обробників на набір карток (нові додаємо окремо, наявні не чіпаємо)
+    function wireCards(nodes) {
+        nodes.forEach(ticket => {
+            const cd = ticket.querySelector('.td-close');
+            if (cd) cd.addEventListener('click', () => {
+                ticket.querySelector('.t-details').classList.remove('open');
+                ticket.querySelector('.t-toggle').classList.remove('open');
+                ticket.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             });
+            ticket.querySelectorAll('.btn-ticket').forEach(b => {
+                b.addEventListener('click', () => openModal(_view[b.dataset.i], _dep, _arr, _date));
+                const pf = () => prefetchDiscounts(_view[b.dataset.i]); // предзавантаження знижок ще до кліку
+                b.addEventListener('pointerenter', pf);
+                b.addEventListener('touchstart', pf, { passive: true });
+            });
+            const tg = ticket.querySelector('.t-toggle');
+            if (tg) {
+                const pf = () => prefetchDiscounts(_view[tg.dataset.i]);
+                tg.addEventListener('pointerenter', pf);
+                tg.addEventListener('touchstart', pf, { passive: true });
+                tg.addEventListener('click', () => {
+                    const det = ticket.querySelector('.t-details');
+                    const open = det.classList.toggle('open');
+                    tg.classList.toggle('open', open);
+                    if (open && det.dataset.discLoaded !== '1') {
+                        det.dataset.discLoaded = '1';
+                        loadDiscounts(_view[tg.dataset.i], ticket.querySelector('.td-disc'));
+                    }
+                });
+            }
         });
+    }
+
+    // Кнопка «Показати ще»: додає наступну порцію (наявні картки не перерендерюються)
+    function updateMoreBtn() {
+        const tickets = document.getElementById('tickets');
+        const old = tickets.querySelector('.show-more'); if (old) old.remove();
+        if (_view.length <= _shown) return;
+        const btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'show-more';
+        btn.textContent = `Показати ще ${Math.min(SHOW_STEP, _view.length - _shown)} · всього ${_view.length} ${routeWord(_view.length)}`;
+        btn.addEventListener('click', () => loadMore(btn));
+        tickets.appendChild(btn);
+    }
+
+    // Довантаження порції зі скелетоном: на місці кнопки коротко показуємо скелетон-картки,
+    // потім дорисовуємо реальні (наявні картки не чіпаємо - без миготіння й стрибка скролу).
+    let _loadingMore = false;
+    function loadMore(btn) {
+        if (_loadingMore) return; _loadingMore = true;
+        const start = _shown, end = Math.min(_shown + SHOW_STEP, _view.length), count = end - start;
+        const skel = document.createElement('div');
+        skel.className = 'more-skel';
+        skel.innerHTML = skelCardHtml().repeat(Math.min(count, 6));
+        btn.replaceWith(skel);
+        setTimeout(() => {
+            _shown = end;
+            const frag = document.createElement('div');
+            frag.innerHTML = _view.slice(start, end).map((rt, j) => ticketCardHtml(rt, start + j)).join('');
+            const newCards = [...frag.children];
+            newCards.forEach(c => skel.parentNode.insertBefore(c, skel));
+            wireCards(newCards);
+            skel.remove();
+            _loadingMore = false;
+            updateMoreBtn();
+        }, 400);
     }
 
     // Підвантаження знижок рейсу при відкритті деталей
