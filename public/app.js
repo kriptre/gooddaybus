@@ -45,13 +45,15 @@
         document.getElementById('search-btn').disabled = false;
         if (window.__ROUTE__) { initRoutePage(); return; }  // сторінка маршруту: підставити напрямок, стрічка дат, авто-пошук
         applyQueryParams();                                 // головна: deep-link /?from=&to=&date=
-        // Автофокус на «Звідки»: можна одразу друкувати місто. Лише десктоп (на мобільному
-        // висувалась би клавіатура) і лише коли поле порожнє (diplink уже все заповнив).
-        // skipSuggest - щоб панель популярних напрямків не розкривалась сама.
+        // Автофокус на «Звідки» + одразу показуємо панель «Нещодавні/Популярні напрямки»
+        // (focus-обробник сам викличе showSuggest, бо поле порожнє). Лише десктоп -
+        // на мобільному висувалась би клавіатура; і лише коли поле порожнє (deep-link усе заповнив).
         const dep = document.getElementById('departure');
         if (dep && !dep.value && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-            dep.dataset.skipSuggest = '1';
             dep.focus({ preventScroll: true });
+            // Явно шлемо focus-подію: деякі браузери не диспатчать її з програмного .focus(),
+            // а панель «Нещодавні/Популярні» відкриває саме focus-обробник.
+            dep.dispatchEvent(new FocusEvent('focus'));
         }
     }
     async function loadCities() {
@@ -1193,8 +1195,10 @@
         document.getElementById('date-wrap').addEventListener('click', () => {
             try { if (typeof dateInput.showPicker === 'function') dateInput.showPicker(); else dateInput.focus(); } catch (err) {}
         });
-        loadCities();
+        // Автокомпліт навішуємо ДО loadCities: при кеш-хіті loadCities синхронно робить
+        // автофокус на «Звідки», і focus-обробник має вже існувати, щоб показати панель.
         ac('departure', 'departure-list', true);
         ac('arrival', 'arrival-list', false);
+        loadCities();
         document.getElementById('search-btn').addEventListener('click', search);
     });
