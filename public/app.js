@@ -45,15 +45,13 @@
         document.getElementById('search-btn').disabled = false;
         if (window.__ROUTE__) { initRoutePage(); return; }  // сторінка маршруту: підставити напрямок, стрічка дат, авто-пошук
         applyQueryParams();                                 // головна: deep-link /?from=&to=&date=
-        // Автофокус на «Звідки» + одразу показуємо панель «Нещодавні/Популярні напрямки»
-        // (focus-обробник сам викличе showSuggest, бо поле порожнє). Лише десктоп -
-        // на мобільному висувалась би клавіатура; і лише коли поле порожнє (deep-link усе заповнив).
+        // Автофокус на «Звідки»: курсор одразу в полі, але панель «Нещодавні/Популярні»
+        // НЕ розкриваємо (skipSuggest) - вона зʼявиться, щойно користувач клікне/почне вводити.
+        // Лише десктоп (на мобільному висувалась би клавіатура) і лише коли поле порожнє.
         const dep = document.getElementById('departure');
         if (dep && !dep.value && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+            dep.dataset.skipSuggest = '1';
             dep.focus({ preventScroll: true });
-            // Явно шлемо focus-подію: деякі браузери не диспатчать її з програмного .focus(),
-            // а панель «Нещодавні/Популярні» відкриває саме focus-обробник.
-            dep.dispatchEvent(new FocusEvent('focus'));
         }
     }
     async function loadCities() {
@@ -187,9 +185,14 @@
             lst.querySelectorAll('.ac-route').forEach(el => el.addEventListener('click', () => applyRoute(el.dataset)));
         }
         inp.addEventListener('focus', function () {
-            if (this.dataset.skipSuggest) { delete this.dataset.skipSuggest; return; } // автофокус після вибору «Звідки» - без панелі
+            if (this.dataset.skipSuggest) { delete this.dataset.skipSuggest; return; } // автофокус на вході - без панелі (панель за кліком)
             // Панель «Нещодавні/Популярні» показуємо лише у полі «Звідки» - у «Куди» вона заважає
             if (isDep && this.value.trim().length < 2) showSuggest();
+        });
+        // Клік по полю відкриває панель навіть коли воно ВЖЕ у фокусі (після автофокуса на вході),
+        // адже повторний клік у сфокусоване поле focus-подію не породжує.
+        inp.addEventListener('click', function () {
+            if (isDep && this.value.trim().length < 2 && lst.style.display !== 'block') showSuggest();
         });
 
         inp.addEventListener('input', function () {
