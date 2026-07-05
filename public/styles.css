@@ -119,9 +119,12 @@
         .sort-btn { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-2); background: var(--white); border: 1px solid var(--border); border-radius: 50px; padding: 7px 16px; cursor: pointer; transition: var(--tr); }
         .sort-btn:hover { border-color: var(--orange-brd); color: var(--text); }
         .sort-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; }
-        /* Напрямок активного сортування: ↑ за зростанням, ↓ після повторного кліку */
-        .sort-btn[data-sort].active::after { content: ' ↑'; }
-        .sort-btn[data-sort].active.desc::after { content: ' ↓'; }
+        /* Напрямок активного сортування: SVG-шеврон (текстова стрілка ↑ рендерилась дрібно і не по центру).
+           За зростанням - вгору, повторний клік (desc) - перевертаємо. */
+        .sort-btn { display: inline-flex; align-items: center; }
+        .sort-btn .sort-dir { display: none; font-size: 11px; margin-left: 6px; }
+        .sort-btn.active .sort-dir { display: inline-block; }
+        .sort-btn.active.desc .sort-dir { transform: rotate(180deg); }
         .sort-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
         /* Фільтри: у вимкненому стані - нейтральні (як сортування), помітність дає підпис "Фільтри:" */
         .filter-btn .ic { font-size: 12px; margin-right: 4px; }

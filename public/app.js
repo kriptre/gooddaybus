@@ -537,9 +537,9 @@
             </div>
             <div class="sort-bar">
                 <span class="sort-lbl"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-down-short-wide"></use></svg> Сортувати:</span>
-                <button class="sort-btn" data-sort="price">Найдешевші</button>
-                <button class="sort-btn" data-sort="duration">Найшвидші</button>
-                <button class="sort-btn" data-sort="departure">За часом виїзду</button>
+                <button class="sort-btn" data-sort="price">Найдешевші<svg class="ic sort-dir" aria-hidden="true"><use href="/_sprite.svg#i-chevron-up"></use></svg></button>
+                <button class="sort-btn" data-sort="duration">Найшвидші<svg class="ic sort-dir" aria-hidden="true"><use href="/_sprite.svg#i-chevron-up"></use></svg></button>
+                <button class="sort-btn" data-sort="departure">За часом виїзду<svg class="ic sort-dir" aria-hidden="true"><use href="/_sprite.svg#i-chevron-up"></use></svg></button>
             </div>
             <div class="sort-bar filter-bar">
                 <span class="sort-lbl sort-lbl-f"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-filter"></use></svg> Фільтри:</span>
