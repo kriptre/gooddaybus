@@ -530,6 +530,10 @@
         _routes = routes; _dep = dep; _arr = arr; _date = date;
         _shown = SHOW_STEP; // новий пошук - знову з першої порції
 
+        // Подвійний шеврон ↕ на кожній кнопці сортування: одразу видно, що напрямок
+        // можна перемкнути (текуче підсвічене, друге приглушене). Без цього реверс був прихований.
+        const sortArrows = '<span class="sort-dir" aria-hidden="true"><svg viewBox="0 0 10 14"><path class="sd-up" d="M5 0.5 L9 4.5 L1 4.5 Z"/><path class="sd-dn" d="M5 13.5 L9 9.5 L1 9.5 Z"/></svg></span>';
+
         el.innerHTML = `
             <div class="res-hdr">
                 <div class="res-title">${dep} → ${arr} · ${date}</div>
@@ -537,9 +541,9 @@
             </div>
             <div class="sort-bar">
                 <span class="sort-lbl"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-down-short-wide"></use></svg> Сортувати:</span>
-                <button class="sort-btn" data-sort="price">Найдешевші<svg class="ic sort-dir" aria-hidden="true"><use href="/_sprite.svg#i-chevron-up"></use></svg></button>
-                <button class="sort-btn" data-sort="duration">Найшвидші<svg class="ic sort-dir" aria-hidden="true"><use href="/_sprite.svg#i-chevron-up"></use></svg></button>
-                <button class="sort-btn" data-sort="departure">За часом виїзду<svg class="ic sort-dir" aria-hidden="true"><use href="/_sprite.svg#i-chevron-up"></use></svg></button>
+                <button class="sort-btn" data-sort="price">Найдешевші${sortArrows}</button>
+                <button class="sort-btn" data-sort="duration">Найшвидші${sortArrows}</button>
+                <button class="sort-btn" data-sort="departure">За часом виїзду${sortArrows}</button>
             </div>
             <div class="sort-bar filter-bar">
                 <span class="sort-lbl sort-lbl-f"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-filter"></use></svg> Фільтри:</span>

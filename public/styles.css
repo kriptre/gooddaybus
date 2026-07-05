@@ -119,12 +119,15 @@
         .sort-btn { font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-2); background: var(--white); border: 1px solid var(--border); border-radius: 50px; padding: 7px 16px; cursor: pointer; transition: var(--tr); }
         .sort-btn:hover { border-color: var(--orange-brd); color: var(--text); }
         .sort-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; }
-        /* Напрямок активного сортування: SVG-шеврон (текстова стрілка ↑ рендерилась дрібно і не по центру).
-           За зростанням - вгору, повторний клік (desc) - перевертаємо. */
+        /* Подвійний шеврон напрямку сортування. На всіх кнопках приглушений (натяк, що напрямок
+           перемикається кліком), на активній підсвічене поточне: asc - верх, desc - низ. */
         .sort-btn { display: inline-flex; align-items: center; }
-        .sort-btn .sort-dir { display: none; font-size: 11px; margin-left: 6px; }
-        .sort-btn.active .sort-dir { display: inline-block; }
-        .sort-btn.active.desc .sort-dir { transform: rotate(180deg); }
+        .sort-dir { margin-left: 7px; display: inline-flex; }
+        .sort-dir svg { display: block; width: 9px; height: 13px; }
+        .sd-up, .sd-dn { fill: var(--text-3); opacity: .35; }
+        .sort-btn.active .sd-up, .sort-btn.active .sd-dn { fill: #fff; opacity: .45; }
+        .sort-btn.active:not(.desc) .sd-up { opacity: 1; }
+        .sort-btn.active.desc .sd-dn { opacity: 1; }
         .sort-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
         /* Фільтри: у вимкненому стані - нейтральні (як сортування), помітність дає підпис "Фільтри:" */
         .filter-btn .ic { font-size: 12px; margin-right: 4px; }
