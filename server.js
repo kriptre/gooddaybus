@@ -619,6 +619,9 @@ async function initTelegram() {
 
 const phoneDigits = s => (String(s || '').match(/\d/g) || []).length;
 const cap = (v, n) => String(v == null ? '' : v).slice(0, n); // обрізаємо надто довгі рядки
+// Для підстановки НЕДОВІРЕНИХ рядків у console.log: прибираємо переноси/керівні символи,
+// інакше зловмисник \n-ом у полі підробляє цілі рядки лога (перевірено - працювало)
+const logStr = (v, n = 200) => cap(v, n).replace(/[\x00-\x1f\x7f]+/g, ' ');
 
 // Нормалізація телефону: люди в Україні часто вводять без коду країни (067...) або без
 // плюса (380...). Прибираємо роздільники та приводимо явно українські формати до
@@ -806,7 +809,7 @@ app.post('/api/order', async (req, res) => {
         // нам клієнта, який не зміг оформити заявку (див. reject400 нижче).
         const reject400 = (msg) => {
             const p0 = Array.isArray(passengers) && passengers[0] ? passengers[0] : {};
-            console.log(`[Order] ✋ Відхилено (400): ${msg} · перший пасажир: "${cap(p0.name, 40)} ${cap(p0.surname, 40)}", тел "${cap(p0.phone, 24)}" · ${cap(req.body.route_from, 40)} → ${cap(req.body.route_to, 40)} ${cap(req.body.route_date, 16)}`);
+            console.log(`[Order] ✋ Відхилено (400): ${msg} · перший пасажир: "${logStr(p0.name, 40)} ${logStr(p0.surname, 40)}", тел "${logStr(p0.phone, 24)}" · ${logStr(req.body.route_from, 40)} → ${logStr(req.body.route_to, 40)} ${logStr(req.body.route_date, 16)}`);
             return res.status(400).json({ error: msg });
         };
         if (Array.isArray(passengers) && passengers.length > MAX_PASSENGERS) {
@@ -869,7 +872,7 @@ app.post('/api/order', async (req, res) => {
                 const j = await r.json();
                 if (j && j.message && !/no possible|not found|немає/i.test(j.message)) {
                     check_warning = (check_warning ? check_warning + ' · ' : '') + j.message;
-                    console.log(`[Order] ⚠️ allow_check: ${j.message}`);
+                    console.log(`[Order] ⚠️ allow_check: ${logStr(j.message)}`);
                 }
             } catch (e) { /* перевірка не критична */ }
         }
@@ -922,7 +925,7 @@ app.post('/api/order', async (req, res) => {
             passengers: list, client_name, client_phone, check_warning, booked, tickets,
             pet: !!req.body.pet
         });
-        console.log(`[Order] Нова заявка #${order.id} — ${client_name}, ${client_phone}, пасажирів: ${list.length}${booked ? ' · ЗАБРОНЬОВАНО' : ''}`);
+        console.log(`[Order] Нова заявка #${order.id} — ${logStr(client_name, 80)}, ${logStr(client_phone, 24)}, пасажирів: ${list.length}${booked ? ' · ЗАБРОНЬОВАНО' : ''}`);
 
         notifyTelegram(order); // не чекаємо — відправляється у фоні
         res.status(201).json({ ok: true, id: order.id, booked, tickets: booked ? tickets : undefined });
@@ -944,7 +947,7 @@ app.post('/api/visit', (req, res) => {
 app.post('/api/client-error', (req, res) => {
     if (!cliErrLimited(req.ip || 'unknown')) {
         const b = req.body || {};
-        console.log(`[ClientError] ${cap(b.msg, 300)} @ ${cap(b.src, 200)}:${+b.line || 0} · сторінка ${cap(b.page, 100)} · ${cap(b.ua, 140)}`);
+        console.log(`[ClientError] ${logStr(b.msg, 300)} @ ${logStr(b.src)}:${+b.line || 0} · сторінка ${logStr(b.page, 100)} · ${logStr(b.ua, 140)}`);
     }
     res.status(204).end();
 });
@@ -1184,11 +1187,23 @@ app.delete('/api/clients', requireAdmin, (req, res) => {
         const phone = req.query.phone;
         if (!phone) return res.status(400).json({ error: 'Потрібен phone' });
         const n = db.deleteClient(phone, req.query.name);
-        console.log(`[Delete] Клієнт ${req.query.name || ''} ${phone} — змінено заявок: ${n}`);
+        console.log(`[Delete] Клієнт ${logStr(req.query.name, 80)} ${logStr(phone, 24)} — змінено заявок: ${n}`);
         res.json({ ok: true, deleted: n });
     } catch (err) {
         serverError(res, err);
     }
+});
+
+// Єдиний обробник помилок (має бути ОСТАННІМ). Без нього Express на битий JSON /
+// завелике тіло віддає HTML зі стектрейсом - шляхи файлів і структура node_modules.
+app.use((err, req, res, next) => {
+    if (res.headersSent) return next(err);
+    if (err && err.type === 'entity.too.large') return res.status(413).json({ error: 'Завеликий запит' });
+    if (err && (err.type === 'entity.parse.failed' || err instanceof SyntaxError)) {
+        return res.status(400).json({ error: 'Некоректний формат запиту' });
+    }
+    console.error('[Unhandled]', err?.message || err);
+    return res.status(500).json({ error: IS_PROD ? 'Внутрішня помилка сервера' : (err?.message || 'error') });
 });
 
 const server = app.listen(PORT, () => {
