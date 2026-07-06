@@ -26,7 +26,12 @@
     // (API часто пише туди текст на кшталт "Прямий рейс")
     const isDirect = rt => !rt.change_info || !/пересад/i.test(rt.change_info);
     // Рейс дозволяє перевезення тварин (код 'pets' в зручностях перевізника)
-    const allowsPets = rt => Array.isArray(rt.carrier_amenities) && rt.carrier_amenities.includes('pets');
+    // "pet-only-from-eu" - перевізник бере тварин лише на рейсах ІЗ ЄС: враховуємо
+    // напрямок (from_eu проставляє сервер, бо country_code міст фронту не віддається)
+    const allowsPets = rt => Array.isArray(rt.carrier_amenities) && (
+        rt.carrier_amenities.includes('pets') ||
+        (rt.carrier_amenities.includes('pet-only-from-eu') && !!rt.from_eu)
+    );
     const matchesFilters = rt =>
         (!_filters.has('noprepay') || !rt.label_type || isGroupPrepay(rt)) &&
         (!_filters.has('direct') || isDirect(rt)) &&
@@ -447,14 +452,29 @@
         addstop: { i: 'map-pin', t: 'Додаткові зупинки' },
         '16_noaccompany': { i: 'child-reaching', t: 'Діти 16+ без супроводу' },
         noprepayment: { i: 'hand-holding-dollar', t: 'Без передоплати' },
-        norefund: { i: 'ban', t: 'Без повернення квитка' }
+        norefund: { i: 'ban', t: 'Без повернення квитка' },
+        'pet-only-from-eu': { i: 'paw', t: 'Тварини - лише на рейсах з ЄС' }
     };
+    // Невідомі коди від API НЕ показуємо клієнту (сирий англійський код лише плутає),
+    // але один раз за сесію репортимо в лог сервера - щоб ми дізнались і додали переклад.
+    const _unkAmen = new Set();
+    function reportUnknownAmenity(code) {
+        if (_unkAmen.has(code) || _unkAmen.size > 5) return;
+        _unkAmen.add(code);
+        try {
+            fetch(`${PROXY_BASE}/client-error`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ msg: `Невідомий amenity-код від contrabus: "${code}" - додайте переклад у AMENITIES`, page: location.pathname })
+            });
+        } catch (e) { }
+    }
     function amenitiesHtml(codes) {
         if (!Array.isArray(codes) || !codes.length) return '';
         // 'noprepayment' - послуга перевізника загалом і може суперечити умовам
         // конкретного рейсу (label_type) - тип оплати показуємо лише у рядку "Оплата"
         const chips = codes.filter(c => c !== 'noprepayment').map(code => {
-            const a = AMENITIES[code] || { i: 'circle-info', t: code };
+            const a = AMENITIES[code];
+            if (!a) { reportUnknownAmenity(code); return ''; }
             return `<span class="amen"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-${a.i}"></use></svg> ${escTxt(a.t)}</span>`;
         }).join('');
         return `<div class="td-row"><div class="td-label">Зручності</div><div class="td-amens">${chips}</div></div>`;

@@ -282,14 +282,18 @@ app.post('/api/search', async (req, res) => {
         }
 
         const routes = await searchRoutes(from_id, to_id, date);
+        // from_eu: місто відправлення поза Україною (фронту потрібно для умов на кшталт
+        // "pet-only-from-eu" - тварини лише на рейсах З ЄС; country_code фронту не віддаємо)
+        const cs = await getCities().catch(() => []);
+        const fromCity = cs.find(x => String(x.id) === String(from_id));
+        const from_eu = !!fromCity && fromCity.country_code !== 'UA';
         // Позначка bookable — лише підказка для кнопки на фронті;
         // сервер ПЕРЕД бронюванням сам перевіряє рейс ще раз за свіжими даними contrabus
-        res.json(routes.map(r => ({ ...r, bookable: isBookableRoute(r) })));
+        res.json(routes.map(r => ({ ...r, bookable: isBookableRoute(r), from_eu })));
 
         // Лог пошуку для аналітики — ПІСЛЯ відповіді, щоб не затримувати клієнта (рахуємо й кеш-хіти).
         // Власні/тестові заходи не рахуємо (за IP або прапором notrack).
         if (!skipStats(req)) try {
-            const cs = await getCities();
             const nm = id => { const c = cs.find(x => String(x.id) === String(id)); return c ? c.name : ''; };
             db.logSearch(nm(from_id), nm(to_id), date, routes.length);
         } catch (e) { /* аналітика не критична */ }
