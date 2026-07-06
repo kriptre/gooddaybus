@@ -293,7 +293,7 @@
         // Skeleton - лише коли пошук затягується (>450мс). Швидкий/кешований - без мерехтіння.
         // Одразу ховаємо "Як це працює", щоб скелет був на видноті (під формою), а не нижче секції.
         const skelTimer = setTimeout(() => {
-            const how = document.getElementById('how-it-works'); if (how) how.style.display = 'none';
+            const how = document.getElementById('how-it-works'); if (how) how.style.display = 'none'; const pr = document.getElementById('pop-routes'); if (pr) pr.style.display = 'none';
             resultsEl.innerHTML = skeletonHtml();
         }, 450);
         try {
@@ -495,7 +495,7 @@
         const el = document.getElementById('results');
         const dep = document.getElementById('departure').value;
         const arr = document.getElementById('arrival').value;
-        const how = document.getElementById('how-it-works'); if (how) how.style.display = 'none';
+        const how = document.getElementById('how-it-works'); if (how) how.style.display = 'none'; const pr = document.getElementById('pop-routes'); if (pr) pr.style.display = 'none';
 
         if (!Array.isArray(routes) || !routes.length) {
             el.innerHTML = `<div class="no-res">
