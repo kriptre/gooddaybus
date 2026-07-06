@@ -743,6 +743,9 @@ async function createBooking(data_bundle, passengers, skipChecks = false) {
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok || !j.success) {
+        // Повний відгук у лог - щоб діагностувати відмови на кшталт 406 "Unable to create
+        // order on remote server" (збій на боці системи перевізника, а не наш)
+        console.log(`[Booking] create_booking відхилено (${r.status}): ${logStr(JSON.stringify(j), 500)}`);
         return { ok: false, reason: `contrabus ${r.status}: ${cap(j.message || j.error || 'невідома помилка', 200)}` };
     }
     const ids = Array.isArray(j.ticket_ids) ? j.ticket_ids : [];
