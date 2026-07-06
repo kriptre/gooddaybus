@@ -895,7 +895,13 @@ app.post('/api/order', async (req, res) => {
             const doBook = async (skip) => {
                 const b = await createBooking(verdict.route.data_bundle, list, skip).catch(e => ({ ok: false, reason: cap(e.message, 200) }));
                 if (b.ok) { booked = true; tickets = b.tickets; check_warning = ''; }
-                else { check_warning = `Автобронь не вдалася: ${b.reason}. Обробіть вручну.`; console.log(`[Booking] Збій автоброні: ${b.reason}`); }
+                else {
+                    check_warning = `Автобронь не вдалася: ${b.reason}. Обробіть вручну.`;
+                    // Логуємо ще й перевізника/рейс - щоб побачити, чи 406 повторюється саме
+                    // в одного перевізника (тоді збій на його боці, а не наш)
+                    const rt = verdict.route || {};
+                    console.log(`[Booking] Збій автоброні: ${b.reason} · перевізник "${logStr(rt.carrier || rt.company)}" · ${logStr(req.body.route_from)}→${logStr(req.body.route_to)} ${logStr(req.body.route_date)} ${logStr(req.body.route_time)}`);
+                }
             };
             if (!verdict.ok) {
                 check_warning = (check_warning ? check_warning + ' · ' : '') + `Автобронь недоступна: ${verdict.reason}. Обробіть вручну.`;
