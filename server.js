@@ -971,7 +971,10 @@ app.post('/api/discounts', async (req, res) => {
     try {
         const { data_bundle } = req.body;
         if (!data_bundle) return res.json([]);
-        const key = String(data_bundle).slice(0, 60);
+        // Ключ - хеш ПОВНОГО bundle. Перші 60 символів у всіх рейсів однакові (JWT-заголовок
+        // + iat-мітка часу), тож старий ключ .slice(0,60) збивав кеш ВСІХ рейсів в один запис:
+        // клієнти бачили знижки чужого рейсу або "немає знижок" (реальний випадок - заявка #31).
+        const key = require('crypto').createHash('md5').update(String(data_bundle)).digest('hex');
         const hit = discCache.get(key);
         if (hit && Date.now() - hit.t < 6 * 60 * 60 * 1000) return res.json(hit.d);
         if (discountsLimited(req.ip || 'unknown')) return res.json([]); // ліміт — тихо без знижок
