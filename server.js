@@ -938,7 +938,9 @@ app.post('/api/order', async (req, res) => {
             passengers: list, client_name, client_phone, check_warning, booked, tickets,
             pet: !!req.body.pet
         });
-        console.log(`[Order] Нова заявка #${order.id} — ${logStr(client_name, 80)}, ${logStr(client_phone, 24)}, пасажирів: ${list.length}${booked ? ' · ЗАБРОНЬОВАНО' : ''}`);
+        console.log(`[Order] Нова заявка #${order.id} — ${logStr(client_name, 80)}, ${logStr(client_phone, 24)}, пасажирів: ${list.length}`
+            + ` · ${logStr(req.body.route_from, 40)} → ${logStr(req.body.route_to, 40)} ${logStr(req.body.route_date, 16)} ${logStr(req.body.route_time, 8)}`
+            + ` · ${logStr(req.body.route_carrier, 60)} · ${logStr(req.body.route_price, 20)}${booked ? ' · ЗАБРОНЬОВАНО' : ''}`);
 
         notifyTelegram(order); // не чекаємо — відправляється у фоні
         res.status(201).json({ ok: true, id: order.id, booked, tickets: booked ? tickets : undefined });
