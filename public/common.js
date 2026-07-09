@@ -5,6 +5,14 @@
 (function () {
     'use strict';
 
+    // Сторінка ВХОДУ на сайт (перша за сесію, з utm-мітками реклами) - потрапляє
+    // в заявку менеджеру, щоб бачити, з якої реклами/сторінки прийшов клієнт.
+    try {
+        if (!sessionStorage.getItem('gdb_landing')) {
+            sessionStorage.setItem('gdb_landing', (location.pathname + location.search).slice(0, 300));
+        }
+    } catch (e) { }
+
     // Звіт про JS-збої на сервер: інакше помилка в браузері клієнта - невидима зона
     // ("не можу забронювати", а в логах порожньо). Максимум 3 звіти за візит.
     var errSent = 0;

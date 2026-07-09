@@ -1112,6 +1112,8 @@
             book: willBook,                    // прохання про автобронь (з твариною - вимкнено)
             pet: petChosen(),                  // їде з твариною → лише менеджер
             from_id: depId, to_id: arrId,      // для серверної перевірки рейсу перед бронюванням
+            page: (location.pathname + location.search).slice(0, 300),                 // сторінка, з якої лишили заявку
+            landing: (() => { try { return sessionStorage.getItem('gdb_landing') || ''; } catch (e) { return ''; } })(), // вхід на сайт (з utm реклами)
             hp: document.getElementById('c-hp').value // honeypot
         };
 

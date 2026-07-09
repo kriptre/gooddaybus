@@ -539,6 +539,16 @@ function orderMessageText(order, footer) {
     }
     if (order.pet) t += `\n\n🐾 <b>Їде з твариною</b> - уточнити розмір і вартість перевезення`;
     if (order.comment) t += `\n\n💬 ${escHtml(order.comment)}`;
+    // Звідки прийшла заявка: сторінка оформлення (клікабельно) + сторінка входу на сайт
+    // (перша за сесію - саме в ній utm-мітки реклами). Посилання будуємо лише для
+    // шляхів від кореня - довільні рядки від клієнта в href не потрапляють.
+    if (order.page) {
+        const link = String(order.page).startsWith('/')
+            ? `<a href="${escHtml('https://gooddaybus.com' + order.page)}">${escHtml(order.page)}</a>`
+            : escHtml(order.page);
+        t += `\n\n🌐 <b>Сторінка заявки:</b> ${link}`;
+        if (order.landing && order.landing !== order.page) t += `\n📣 <b>Вхід на сайт:</b> ${escHtml(order.landing)}`;
+    }
     if (order.check_warning) t += `\n\n⚠️ <b>Увага:</b> ${escHtml(order.check_warning)}`;
     if (footer) t += `\n<i>${escHtml(footer)}</i>`;
     t += `\n\n<a href="${PUBLIC_BASE_URL}/admin.html">🔧 Панель менеджера</a>`;
@@ -935,6 +945,7 @@ app.post('/api/order', async (req, res) => {
             route_from_station: cap(req.body.route_from_station, 200), route_to_station: cap(req.body.route_to_station, 200),
             route_date: cap(req.body.route_date, 40), route_time: cap(req.body.route_time, 40),
             route_price: cap(req.body.route_price, 40), route_carrier: cap(req.body.route_carrier, 120),
+            page: cap(req.body.page, 300), landing: cap(req.body.landing, 300),
             passengers: list, client_name, client_phone, check_warning, booked, tickets,
             pet: !!req.body.pet
         });
