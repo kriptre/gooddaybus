@@ -528,6 +528,10 @@ function orderMessageText(order, footer) {
                 (p.discount_percent > 0
                     ? ` 🏷 <i>${escHtml(p.discount_label || 'знижка')}</i>${basePrice ? ` → <b>${paxPrice(p)} ${escHtml(curSym)}</b>` : ''}`
                     : '')).join('\n');
+        // Обрані клієнтом місця (для менеджера при ручному оформленні; при автоброні -
+        // щоб бачити побажання, якщо довелось відкотитись на автоместа)
+        const seats = pax.filter(p => p.seat_name).map(p => p.seat_name);
+        if (seats.length) t += `\n🪑 <b>Обрані місця:</b> ${escHtml(seats.join(', '))}`;
         // Підсумок зі знижками: разом до/після
         if (hasDisc) {
             const full = r2(basePrice * pax.length);
@@ -746,7 +750,7 @@ async function createBooking(data_bundle, passengers, skipChecks = false) {
                 ticket_type: +p.ticket_type || 0,   // id знижки з get_route_discounts (0 = повний квиток)
                 discount: 0,
                 prepayment: 0,
-                seat: 0,                            // 0 = місце призначається автоматично
+                seat: +p.seat || 0,                 // id обраного місця з get_free_seats; 0 = автоматично
                 booking_type: 'free'                // резерв без оплати - як бронює диспетчер (оплата водієві)
             }))
         })
@@ -837,7 +841,9 @@ app.post('/api/order', async (req, res) => {
             .map(p => ({
                 name: cap(String(p.name || '').trim(), 80), surname: cap(String(p.surname || '').trim(), 80),
                 phone: normalizePhone(cap(String(p.phone || '').trim(), 32)),
-                ticket_type: cap(p.ticket_type || '', 40), discount_label: cap(String(p.discount_label || '').trim(), 80), discount_percent: +p.discount_percent || 0
+                ticket_type: cap(p.ticket_type || '', 40), discount_label: cap(String(p.discount_label || '').trim(), 80), discount_percent: +p.discount_percent || 0,
+                // Обране місце (id для create_booking + номер для людей); 0 = автоматично
+                seat: Math.max(0, parseInt(p.seat, 10) || 0), seat_name: cap(String(p.seat_name || '').trim(), 8)
             }))
             .filter(p => p.name || p.surname || p.phone);
 
@@ -897,14 +903,26 @@ app.post('/api/order', async (req, res) => {
         // 7) Автобронювання (Фаза 2а). Будь-яка відмова - НЕ помилка: заявка просто
         //    зберігається звичайною, менеджер бачить причину в check_warning,
         //    а клієнт отримує стандартне "менеджер зв'яжеться" (причину не розкриваємо).
-        let booked = false, tickets = [];
+        let booked = false, tickets = [], seat_note = '';
         if (wantBook) {
             // Кілька пасажирів з одним номером (мама+дитина) - законно; contrabus може
             // вважати дублем, тож бронюємо з skip_checks, щоб і він не відбив.
             const repeatedPhone = new Set(list.map(p => digitsOf(p.phone))).size < list.length;
             const doBook = async (skip) => {
-                const b = await createBooking(verdict.route.data_bundle, list, skip).catch(e => ({ ok: false, reason: cap(e.message, 200) }));
-                if (b.ok) { booked = true; tickets = b.tickets; check_warning = ''; }
+                let b = await createBooking(verdict.route.data_bundle, list, skip).catch(e => ({ ok: false, reason: cap(e.message, 200) }));
+                // Обрані місця могли зайняти, поки клієнт заповнював форму: повторюємо
+                // з автоматичними місцями (краще бронь без бажаного місця, ніж без броні)
+                const wantedSeats = list.filter(p => +p.seat > 0).map(p => p.seat_name || p.seat);
+                if (!b.ok && wantedSeats.length) {
+                    console.log(`[Booking] Відмова з обраними місцями (${wantedSeats.join(', ')}) - повтор з автоместами`);
+                    const autoList = list.map(p => ({ ...p, seat: 0 }));
+                    b = await createBooking(verdict.route.data_bundle, autoList, skip).catch(e => ({ ok: false, reason: cap(e.message, 200) }));
+                    if (b.ok) {
+                        seat_note = 'Обрані місця виявились недоступні - місця призначено автоматично.';
+                        check_warning = `⚠️ Клієнт обирав місця (${wantedSeats.join(', ')}), але вони вже зайняті - бронь пройшла з автоматичними місцями. За можливості пересадіть.`;
+                    }
+                }
+                if (b.ok) { booked = true; tickets = b.tickets; if (!seat_note) check_warning = ''; }
                 else {
                     check_warning = `Автобронь не вдалася: ${b.reason}. Обробіть вручну.`;
                     // Логуємо ще й перевізника/рейс - щоб побачити, чи 406 повторюється саме
@@ -930,7 +948,8 @@ app.post('/api/order', async (req, res) => {
                     : '[Booking] Дубль іншого маршруту/зворотний - бронюємо (skip_checks)');
                 await doBook(true);
                 if (booked && sameRoute) {
-                    check_warning = '⚠️ Можливий ПОВТОР тієї самої броні (той самий напрямок нещодавно вже бронювався цим телефоном). Звірте із попередніми замовленнями - якщо це помилковий дубль, скасуйте зайву бронь у Contrabus.';
+                    check_warning = '⚠️ Можливий ПОВТОР тієї самої броні (той самий напрямок нещодавно вже бронювався цим телефоном). Звірте із попередніми замовленнями - якщо це помилковий дубль, скасуйте зайву бронь у Contrabus.'
+                        + (check_warning ? ' · ' + check_warning : '');
                 }
             } else {
                 // Без попереджень: якщо в заявці однаковий номер у кількох - skip_checks
@@ -954,7 +973,7 @@ app.post('/api/order', async (req, res) => {
             + ` · ${logStr(req.body.route_carrier, 60)} · ${logStr(req.body.route_price, 20)}${booked ? ' · ЗАБРОНЬОВАНО' : ''}`);
 
         notifyTelegram(order); // не чекаємо — відправляється у фоні
-        res.status(201).json({ ok: true, id: order.id, booked, tickets: booked ? tickets : undefined });
+        res.status(201).json({ ok: true, id: order.id, booked, tickets: booked ? tickets : undefined, seat_note: seat_note || undefined });
     } catch (err) {
         serverError(res, err, 'Order');
     }
@@ -1002,6 +1021,34 @@ app.post('/api/discounts', async (req, res) => {
         discCache.set(key, { d, t: Date.now() });
         res.json(d);
     } catch (e) { res.json([]); }
+});
+
+// POST /api/seats — схема салону та вільні місця рейсу (get_free_seats за data_bundle).
+// Кеш дуже короткий (20 с): місця займаються в реальному часі, застаріла схема шкідлива.
+// Перед бронню contrabus однаково перевіряє місце ще раз - схема лише для вибору.
+const seatsCache = new Map();
+app.post('/api/seats', async (req, res) => {
+    try {
+        const { data_bundle } = req.body;
+        const empty = { select_possible: false, scheme: null };
+        if (!data_bundle) return res.json(empty);
+        const key = require('crypto').createHash('md5').update(String(data_bundle)).digest('hex');
+        const hit = seatsCache.get(key);
+        if (hit && Date.now() - hit.t < 20 * 1000) return res.json(hit.d);
+        if (discountsLimited(req.ip || 'unknown')) return res.json(empty); // спільний ліміт зі знижками: 30/хв
+        const token = await getToken();
+        const r = await fetch(`${API_BASE_URL}/info/get_free_seats`, {
+            method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data_bundle })
+        });
+        const j = await r.json().catch(() => ({}));
+        const d = (j && j.success && j.select_possible && Array.isArray(j.seat_scheme))
+            ? { select_possible: true, scheme: j.seat_scheme }
+            : empty;
+        if (seatsCache.size > 300) seatsCache.clear();
+        seatsCache.set(key, { d, t: Date.now() });
+        res.json(d);
+    } catch (e) { res.json({ select_possible: false, scheme: null }); }
 });
 
 // --- Захист панелі менеджера простим ключем ---

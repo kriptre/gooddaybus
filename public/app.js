@@ -905,11 +905,12 @@
             const idx = [...list.children].indexOf(row);
             row.remove();
             if (idx >= 0) _paxDiscSel.splice(idx, 1);
-            renumberPax(); renderDiscBlock(); applyBookUI();
+            renumberPax(); renderDiscBlock(); applyBookUI(); seatSyncPax();
         });
         renumberPax();
         renderDiscBlock();
         applyBookUI();
+        seatSyncPax(); // кількість пасажирів = кількість доступних до вибору місць
         return row;
     }
     // Нормалізація телефону при виході з поля: 067... → +38067..., 380... → +380...
@@ -937,6 +938,92 @@
         _modalDiscounts = await fetchDiscounts(rt && rt.data_bundle);
         if (selRoute === rt) renderDiscBlock(); // оновлюємо, лише якщо модалка ще на цьому рейсі
     }
+
+    // ---------- Вибір місця (схема салону з get_free_seats) ----------
+    let _seatScheme = null;  // масив поверхів; кожен - рядки клітинок seat/driver/table/empty
+    let _seatSel = [];       // обрані місця [{id, name}] у порядку вибору → пасажир 1, 2, ...
+    let _seatDeck = 0;       // активний поверх (для двоповерхових)
+
+    async function loadModalSeats(rt) {
+        if (!rt || !rt.data_bundle) return;
+        // Запитуємо схему лише там, де перевізник взагалі дозволяє вибір місця
+        if (!Array.isArray(rt.carrier_amenities) || !rt.carrier_amenities.includes('seatselect')) return;
+        try {
+            const r = await fetch(`${PROXY_BASE}/seats`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data_bundle: rt.data_bundle })
+            });
+            const d = await r.json();
+            if (selRoute !== rt) return; // модалку вже відкрили іншим рейсом
+            if (d && d.select_possible && Array.isArray(d.scheme) && d.scheme.length) {
+                _seatScheme = d.scheme; _seatDeck = 0;
+                renderSeatBlock();
+            }
+        } catch (e) { /* вибір місця - опційна зручність, збій мовчки ігноруємо */ }
+    }
+
+    function seatCellHtml(c) {
+        if (!c || c.type === 'empty') return '<span class="st st-gap"></span>';
+        if (c.type === 'driver') return '<span class="st st-driver" title="Водій"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-user"></use></svg></span>';
+        if (c.type === 'table') return '<span class="st st-table" title="Столик"></span>';
+        if (c.type === 'seat') {
+            const sel = _seatSel.some(s => String(s.id) === String(c.id));
+            if (!c.available && !sel) return `<span class="st st-taken" title="Зайнято">${escTxt(c.number)}</span>`;
+            return `<button type="button" class="st st-free${sel ? ' st-sel' : ''}" data-id="${escTxt(c.id)}" data-name="${escTxt(c.number)}">${escTxt(c.number)}</button>`;
+        }
+        return '<span class="st st-gap"></span>';
+    }
+
+    function renderSeatBlock() {
+        const box = document.getElementById('seat-block');
+        if (!box || !_seatScheme) return;
+        const decks = _seatScheme;
+        const tabs = decks.length > 1
+            ? `<div class="sb-decks">${decks.map((_, i) => `<button type="button" class="sb-deck${i === _seatDeck ? ' active' : ''}" data-d="${i}">Поверх ${i + 1}</button>`).join('')}</div>`
+            : '';
+        const rows = (decks[_seatDeck] || []).map(row => `<div class="sb-row">${row.map(seatCellHtml).join('')}</div>`).join('');
+        box.innerHTML =
+            `<div class="sb-head"><span class="sb-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chair"></use></svg> Вибір місця</span><span class="sb-opt">необовʼязково</span></div>` +
+            `<div class="sb-hint" id="sb-hint"></div>` +
+            tabs +
+            `<div class="sb-bus">${rows}</div>` +
+            `<div class="sb-legend"><span><i class="lg lg-free"></i> вільне</span><span><i class="lg lg-sel"></i> ваше</span><span><i class="lg lg-taken"></i> зайняте</span></div>`;
+        box.style.display = 'block';
+        updateSeatHint();
+    }
+
+    function updateSeatHint() {
+        const h = document.getElementById('sb-hint');
+        if (!h) return;
+        const need = paxCount();
+        h.innerHTML = _seatSel.length
+            ? `Обрано: <b>${escTxt(_seatSel.map(s => s.name).join(', '))}</b> (${_seatSel.length} з ${need}) <button type="button" class="sb-clear" id="sb-clear">скинути</button>`
+            : `Торкніться вільних місць на схемі${need > 1 ? ` (потрібно ${need})` : ''} - або залиште як є, і місця призначаться автоматично.`;
+    }
+
+    // Пасажирів стало менше, ніж обраних місць - зайві вибори прибираємо
+    function seatSyncPax() {
+        const need = paxCount();
+        if (_seatSel.length > need) { _seatSel = _seatSel.slice(0, need); renderSeatBlock(); }
+        else updateSeatHint();
+    }
+
+    const _sbEl = document.getElementById('seat-block');
+    if (_sbEl) _sbEl.addEventListener('click', e => {
+        const deck = e.target.closest('.sb-deck');
+        if (deck) { _seatDeck = +deck.dataset.d || 0; renderSeatBlock(); return; }
+        if (e.target.closest('#sb-clear')) { _seatSel = []; renderSeatBlock(); return; }
+        const st = e.target.closest('.st-free');
+        if (!st) return;
+        const id = st.dataset.id, name = st.dataset.name;
+        const i = _seatSel.findIndex(s => String(s.id) === String(id));
+        if (i >= 0) _seatSel.splice(i, 1);                        // повторний клік - зняти вибір
+        else {
+            if (_seatSel.length >= paxCount()) _seatSel.shift();  // ліміт досягнуто - звільняємо найперше
+            _seatSel.push({ id, name });
+        }
+        renderSeatBlock();
+    });
 
     let _bookMode = false; // true = рейс без передоплати, бронюємо одразу
     let _isGroup = false, _groupThr = 0; // груповий рейс і поріг передоплати (з умови перевізника)
@@ -1016,6 +1103,10 @@
         document.getElementById('c-hp').value = '';
         document.getElementById('disc-block').innerHTML = '';
         document.getElementById('m-disc-note').style.display = 'none';
+        // Вибір місця: скидаємо стан і ховаємо блок (зʼявиться, коли прийде схема цього рейсу)
+        _seatScheme = null; _seatSel = []; _seatDeck = 0;
+        const sb = document.getElementById('seat-block');
+        if (sb) { sb.style.display = 'none'; sb.innerHTML = ''; }
         // "Додатково" згорнуто; поле тварини - лише якщо рейс дозволяє тварин
         document.getElementById('more-body').style.display = 'none';
         document.getElementById('more-chev').classList.remove('rot');
@@ -1034,6 +1125,7 @@
         document.getElementById('modal-bg').classList.add('open');
         lockScroll(); // блокуємо фон, щоб не "просвічував" скрол головної
         loadModalDiscounts(rt); // підвантажуємо знижки асинхронно
+        loadModalSeats(rt);     // схема салону, якщо рейс підтримує вибір місця
     }
 
     // Розгортання розділу "Додатково"
@@ -1087,7 +1179,12 @@
                 discount_label = sel.selectedOptions[0].textContent;
                 discount_percent = +sel.selectedOptions[0].dataset.pct || 0;
             }
-            passengers.push({ name, surname, phone, ticket_type, discount_label, discount_percent });
+            // Обране місце: i-те обране → i-й пасажир (0 = автоматично)
+            passengers.push({
+                name, surname, phone, ticket_type, discount_label, discount_percent,
+                seat: (_seatSel[i] && _seatSel[i].id) || 0,
+                seat_name: (_seatSel[i] && _seatSel[i].name) || ''
+            });
         });
         if (firstError) { alert(firstError); return; }
 
@@ -1130,10 +1227,14 @@
             try { localStorage.setItem('gdb_paxn', String(payload.passengers.length)); } catch (e) { }
             const tks = (j.booked && Array.isArray(j.tickets)) ? j.tickets.filter(t => t.pdf) : [];
             if (j.booked) {
+                // Місця: якщо обирали і все пройшло - підтверджуємо; якщо не вийшло - чесно кажемо
+                const seatLine = j.seat_note
+                    ? `<br><span class="ok-seatnote">${escTxt(j.seat_note)}</span>`
+                    : (_seatSel.length ? `<br>Ваші місця: <b>${escTxt(_seatSel.map(s => s.name).join(', '))}</b>` : '');
                 document.getElementById('m-ok-title').textContent = 'Місця заброньовано!';
-                document.getElementById('m-ok-text').innerHTML = tks.length
+                document.getElementById('m-ok-text').innerHTML = (tks.length
                     ? 'Оплата - водієві при посадці.<br>Збережіть свої квитки:'
-                    : 'Оплата - водієві при посадці.<br>Квитки надішле менеджер найближчим часом.';
+                    : 'Оплата - водієві при посадці.<br>Квитки надішле менеджер найближчим часом.') + seatLine;
                 document.getElementById('m-ok-tickets').innerHTML = tks.map((tk, i) =>
                     `<a class="tk-link" href="${escTxt(tk.pdf)}" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-file-pdf"></use></svg> Завантажити квиток${tks.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('');
             } else {
