@@ -957,7 +957,7 @@
             if (selRoute !== rt) return; // модалку вже відкрили іншим рейсом
             if (d && d.select_possible && Array.isArray(d.scheme) && d.scheme.length) {
                 _seatScheme = d.scheme; _seatDeck = 0;
-                renderSeatBlock();
+                renderSeatLaunch(); // компактний рядок у формі; схема - окремим аркушем поверх
             }
         } catch (e) { /* вибір місця - опційна зручність, збій мовчки ігноруємо */ }
     }
@@ -974,21 +974,55 @@
         return '<span class="st st-gap"></span>';
     }
 
-    function renderSeatBlock() {
+    // Компактний рядок у формі: назва + поточний вибір ("Автоматично" / "60, 63"), клік відкриває аркуш
+    function renderSeatLaunch() {
         const box = document.getElementById('seat-block');
         if (!box || !_seatScheme) return;
+        const val = _seatSel.length ? _seatSel.map(s => s.name).join(', ') : 'Автоматично';
+        box.innerHTML =
+            `<button type="button" class="seat-launch" id="seat-launch">
+                <span class="sl-l"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chair"></use></svg> Вибір місця <span class="sl-opt">необовʼязково</span></span>
+                <span class="sl-r"><b>${escTxt(val)}</b> <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-right"></use></svg></span>
+            </button>`;
+        box.style.display = 'block';
+        box.querySelector('#seat-launch').addEventListener('click', openSeatSheet);
+    }
+
+    function seatSheetOpen() {
+        const bg = document.getElementById('seat-sheet-bg');
+        return !!bg && bg.classList.contains('open');
+    }
+
+    function openSeatSheet() {
+        if (!_seatScheme) return;
+        renderSeatSheetBody();
+        document.getElementById('seat-sheet-bg').classList.add('open');
+    }
+
+    function closeSeatSheet() {
+        const bg = document.getElementById('seat-sheet-bg');
+        if (bg) bg.classList.remove('open');
+        renderSeatLaunch(); // оновлюємо значення в рядку форми
+    }
+
+    function renderSeatSheetBody() {
+        const body = document.getElementById('ss-body');
+        if (!body || !_seatScheme) return;
         const decks = _seatScheme;
         const tabs = decks.length > 1
             ? `<div class="sb-decks">${decks.map((_, i) => `<button type="button" class="sb-deck${i === _seatDeck ? ' active' : ''}" data-d="${i}">Поверх ${i + 1}</button>`).join('')}</div>`
             : '';
-        const rows = (decks[_seatDeck] || []).map(row => `<div class="sb-row">${row.map(seatCellHtml).join('')}</div>`).join('');
-        box.innerHTML =
-            `<div class="sb-head"><span class="sb-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chair"></use></svg> Вибір місця</span><span class="sb-opt">необовʼязково</span></div>` +
-            `<div class="sb-hint" id="sb-hint"></div>` +
-            tabs +
+        // Повністю порожні ряди схеми (без сидінь/водія/столиків): хвостові відрізаємо зовсім,
+        // а всередині схлопуємо в маленький зазор - інакше салон розтягується "дірками"
+        const isEmptyRow = row => row.every(c => !c || c.type === 'empty');
+        const deckRows = (decks[_seatDeck] || []).slice();
+        while (deckRows.length && isEmptyRow(deckRows[deckRows.length - 1])) deckRows.pop();
+        const rows = deckRows.map(row => isEmptyRow(row)
+            ? '<div class="sb-row sb-row-gap"></div>'
+            : `<div class="sb-row">${row.map(seatCellHtml).join('')}</div>`).join('');
+        body.innerHTML = tabs +
             `<div class="sb-bus">${rows}</div>` +
             `<div class="sb-legend"><span><i class="lg lg-free"></i> вільне</span><span><i class="lg lg-sel"></i> ваше</span><span><i class="lg lg-taken"></i> зайняте</span></div>`;
-        box.style.display = 'block';
         updateSeatHint();
     }
 
@@ -997,33 +1031,41 @@
         if (!h) return;
         const need = paxCount();
         h.innerHTML = _seatSel.length
-            ? `Обрано: <b>${escTxt(_seatSel.map(s => s.name).join(', '))}</b> (${_seatSel.length} з ${need}) <button type="button" class="sb-clear" id="sb-clear">скинути</button>`
+            ? `Обрано: <b>${escTxt(_seatSel.map(s => s.name).join(', '))}</b> (${_seatSel.length} з ${need})`
             : `Торкніться вільних місць на схемі${need > 1 ? ` (потрібно ${need})` : ''} - або залиште як є, і місця призначаться автоматично.`;
+        const clr = document.getElementById('sb-clear');
+        if (clr) clr.style.visibility = _seatSel.length ? 'visible' : 'hidden';
     }
 
     // Пасажирів стало менше, ніж обраних місць - зайві вибори прибираємо
     function seatSyncPax() {
         const need = paxCount();
-        if (_seatSel.length > need) { _seatSel = _seatSel.slice(0, need); renderSeatBlock(); }
-        else updateSeatHint();
+        if (_seatSel.length > need) _seatSel = _seatSel.slice(0, need);
+        if (seatSheetOpen()) renderSeatSheetBody();
+        if (_seatScheme) renderSeatLaunch();
     }
 
-    const _sbEl = document.getElementById('seat-block');
-    if (_sbEl) _sbEl.addEventListener('click', e => {
-        const deck = e.target.closest('.sb-deck');
-        if (deck) { _seatDeck = +deck.dataset.d || 0; renderSeatBlock(); return; }
-        if (e.target.closest('#sb-clear')) { _seatSel = []; renderSeatBlock(); return; }
-        const st = e.target.closest('.st-free');
-        if (!st) return;
-        const id = st.dataset.id, name = st.dataset.name;
-        const i = _seatSel.findIndex(s => String(s.id) === String(id));
-        if (i >= 0) _seatSel.splice(i, 1);                        // повторний клік - зняти вибір
-        else {
-            if (_seatSel.length >= paxCount()) _seatSel.shift();  // ліміт досягнуто - звільняємо найперше
-            _seatSel.push({ id, name });
-        }
-        renderSeatBlock();
-    });
+    // Аркуш статичний у розмітці модалки - обробники навішуємо один раз
+    const _ssBg = document.getElementById('seat-sheet-bg');
+    if (_ssBg) {
+        _ssBg.addEventListener('click', e => {
+            if (e.target === _ssBg) { closeSeatSheet(); return; }           // клік по затемненню
+            if (e.target.closest('#ss-x') || e.target.closest('#ss-done')) { closeSeatSheet(); return; }
+            if (e.target.closest('#sb-clear')) { _seatSel = []; renderSeatSheetBody(); return; }
+            const deck = e.target.closest('.sb-deck');
+            if (deck) { _seatDeck = +deck.dataset.d || 0; renderSeatSheetBody(); return; }
+            const st = e.target.closest('.st-free');
+            if (!st) return;
+            const id = st.dataset.id, name = st.dataset.name;
+            const i = _seatSel.findIndex(s => String(s.id) === String(id));
+            if (i >= 0) _seatSel.splice(i, 1);                        // повторний клік - зняти вибір
+            else {
+                if (_seatSel.length >= paxCount()) _seatSel.shift();  // ліміт досягнуто - звільняємо найперше
+                _seatSel.push({ id, name });
+            }
+            renderSeatSheetBody();
+        });
+    }
 
     let _bookMode = false; // true = рейс без передоплати, бронюємо одразу
     let _isGroup = false, _groupThr = 0; // груповий рейс і поріг передоплати (з умови перевізника)
@@ -1103,10 +1145,12 @@
         document.getElementById('c-hp').value = '';
         document.getElementById('disc-block').innerHTML = '';
         document.getElementById('m-disc-note').style.display = 'none';
-        // Вибір місця: скидаємо стан і ховаємо блок (зʼявиться, коли прийде схема цього рейсу)
+        // Вибір місця: скидаємо стан, ховаємо рядок і закриваємо аркуш (зʼявиться для нового рейсу)
         _seatScheme = null; _seatSel = []; _seatDeck = 0;
         const sb = document.getElementById('seat-block');
         if (sb) { sb.style.display = 'none'; sb.innerHTML = ''; }
+        const sbg = document.getElementById('seat-sheet-bg');
+        if (sbg) sbg.classList.remove('open');
         // "Додатково" згорнуто; поле тварини - лише якщо рейс дозволяє тварин
         document.getElementById('more-body').style.display = 'none';
         document.getElementById('more-chev').classList.remove('rot');
@@ -1262,7 +1306,8 @@
     // Доступність модалки: Escape закриває, Tab циклить фокус усередині (focus-trap)
     document.addEventListener('keydown', e => {
         if (!modalBg.classList.contains('open')) return;
-        if (e.key === 'Escape') { closeBooking(); return; }
+        // Escape: спершу закриваємо аркуш вибору місця (якщо відкритий), потім - усю модалку
+        if (e.key === 'Escape') { if (seatSheetOpen()) closeSeatSheet(); else closeBooking(); return; }
         // Мобільний баг: Enter ховає клавіатуру, але поле лишається у фокусі
         // і блокує прокрутку модалки - тому знімаємо фокус самі.
         // У textarea коментаря preventDefault також прибирає зайвий новий рядок.

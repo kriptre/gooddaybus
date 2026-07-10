@@ -346,14 +346,31 @@
         .faq-item[open] summary::after { transform: rotate(225deg) translateY(-2px); }
         .faq-item summary:hover { color: var(--orange); }
         .faq-item .faq-a { padding: 0 18px 16px; font-size: 14px; color: var(--text-2); line-height: 1.65; }
-        /* ---------- Вибір місця: схема салону в модалці бронювання ---------- */
-        .seat-block { margin-top: 18px; border-top: 1px dashed var(--border); padding-top: 16px; }
-        .sb-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
-        .sb-title { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; color: var(--text); }
-        .sb-title .ic { color: var(--orange); }
-        .sb-opt { font-size: 12px; color: var(--text-3); }
-        .sb-hint { font-size: 13px; color: var(--text-2); line-height: 1.5; margin-bottom: 10px; }
-        .sb-clear { background: none; border: none; color: var(--orange); font-family: 'Nunito', sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; padding: 2px 4px; }
+        /* ---------- Вибір місця: рядок у формі + аркуш зі схемою ПОВЕРХ модалки ---------- */
+        .seat-block { margin-top: 16px; }
+        .seat-launch { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 14px; background: var(--bg); border: 2px solid var(--border); border-radius: var(--r); font-family: 'Nunito', sans-serif; font-size: 14px; cursor: pointer; transition: var(--tr); }
+        .seat-launch:hover { border-color: var(--orange-brd); background: var(--white); }
+        .sl-l { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: var(--text); }
+        .sl-l .ic { color: var(--orange); }
+        .sl-opt { font-size: 11.5px; color: var(--text-3); font-weight: 600; }
+        .sl-r { display: inline-flex; align-items: center; gap: 7px; color: var(--text-3); font-size: 12px; min-width: 0; }
+        .sl-r b { color: var(--orange); font-weight: 800; font-size: 13.5px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* Аркуш вибору місця: власне затемнення поверх модалки */
+        .seat-sheet-bg { position: fixed; inset: 0; background: rgba(26,35,50,0.5); z-index: 130; display: none; align-items: center; justify-content: center; padding: 14px; }
+        .seat-sheet-bg.open { display: flex; }
+        .seat-sheet { background: var(--white); border-radius: var(--r-xl); box-shadow: var(--sh-lg); width: min(400px, 100%); max-height: min(88vh, 680px); display: flex; flex-direction: column; overflow: hidden; }
+        .ss-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 8px; }
+        .ss-title { display: inline-flex; align-items: center; gap: 9px; font-size: 16px; font-weight: 800; color: var(--text); }
+        .ss-title .ic { color: var(--orange); }
+        .ss-x { background: none; border: none; color: var(--text-3); font-size: 20px; cursor: pointer; padding: 4px; line-height: 1; transition: var(--tr); }
+        .ss-x:hover { color: var(--red); }
+        .ss-hint { padding: 0 18px 10px; font-size: 13px; color: var(--text-2); line-height: 1.5; }
+        .ss-body { overflow-y: auto; padding: 4px 18px 12px; display: flex; flex-direction: column; align-items: center; -webkit-overflow-scrolling: touch; }
+        .ss-foot { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--border); }
+        .ss-clear { background: none; border: 1px solid var(--border); border-radius: 50px; padding: 10px 18px; font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-2); cursor: pointer; transition: var(--tr); }
+        .ss-clear:hover { border-color: var(--red); color: var(--red); }
+        .ss-done { margin-left: auto; background: var(--orange); color: #fff; border: none; border-radius: 50px; padding: 11px 28px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; cursor: pointer; transition: var(--tr); }
+        .ss-done:hover { background: var(--orange-2); }
         .sb-decks { display: flex; gap: 6px; margin-bottom: 10px; }
         .sb-deck { font-family: 'Nunito', sans-serif; font-size: 12.5px; font-weight: 700; border: 1px solid var(--border); background: var(--white); color: var(--text-2); border-radius: 50px; padding: 6px 14px; cursor: pointer; transition: var(--tr); }
         .sb-deck:hover { border-color: var(--orange-brd); }
@@ -361,6 +378,7 @@
         /* "Кузов" автобуса: округлений перед, сидіння всередині */
         .sb-bus { display: inline-flex; flex-direction: column; gap: 5px; background: var(--bg); border: 2px solid var(--border); border-radius: 26px 26px 14px 14px; padding: 14px 12px; }
         .sb-row { display: flex; gap: 5px; }
+        .sb-row-gap { height: 7px; } /* схлопнутий порожній ряд схеми */
         .st { width: 36px; height: 36px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; font-family: 'Nunito', sans-serif; font-size: 12px; font-weight: 800; box-sizing: border-box; padding: 0; }
         .st-gap { visibility: hidden; }
         .st-free { background: var(--white); border: 1.5px solid rgba(26,158,94,0.55); color: var(--text); cursor: pointer; transition: background .15s, border-color .15s, transform .1s; }

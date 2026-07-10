@@ -121,7 +121,7 @@
     <noscript>
         <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     </noscript>
-    <link rel="stylesheet" href="/styles.min.css?v=f0729e3851">
+    <link rel="stylesheet" href="/styles.min.css?v=18fc32cca5">
 </head>
 <body>
 <!-- GTM-BODY START -->
@@ -380,11 +380,27 @@
         </div>
 
     </div>
+
+    <!-- Аркуш вибору місця: відкривається ПОВЕРХ вікна бронювання, щоб не розтягувати форму -->
+    <div class="seat-sheet-bg" id="seat-sheet-bg">
+        <div class="seat-sheet" role="dialog" aria-label="Вибір місця">
+            <div class="ss-head">
+                <span class="ss-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chair"></use></svg> Вибір місця</span>
+                <button type="button" class="ss-x" id="ss-x" aria-label="Закрити"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-xmark"></use></svg></button>
+            </div>
+            <div class="ss-hint" id="sb-hint"></div>
+            <div class="ss-body" id="ss-body"></div>
+            <div class="ss-foot">
+                <button type="button" class="ss-clear" id="sb-clear">Скинути</button>
+                <button type="button" class="ss-done" id="ss-done">Готово</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 
 <script>window.__ROUTE__ = {"fromId":287,"toId":33,"fromName":"Краків","toName":"Львів","slug":"krakiv-lviv"};</script>
-<script src="/common.min.js?v=f0729e3851"></script>
-<script src="/app.min.js?v=f0729e3851"></script>
+<script src="/common.min.js?v=18fc32cca5"></script>
+<script src="/app.min.js?v=18fc32cca5"></script>
 </body>
 </html>
