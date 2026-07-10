@@ -716,13 +716,13 @@
             });
             ticket.querySelectorAll('.btn-ticket').forEach(b => {
                 b.addEventListener('click', () => openModal(_view[b.dataset.i], _dep, _arr, _date));
-                const pf = () => prefetchDiscounts(_view[b.dataset.i]); // предзавантаження знижок ще до кліку
+                const pf = () => { prefetchDiscounts(_view[b.dataset.i]); prefetchSeats(_view[b.dataset.i]); }; // предзавантаження знижок ще до кліку
                 b.addEventListener('pointerenter', pf);
                 b.addEventListener('touchstart', pf, { passive: true });
             });
             const tg = ticket.querySelector('.t-toggle');
             if (tg) {
-                const pf = () => prefetchDiscounts(_view[tg.dataset.i]);
+                const pf = () => { prefetchDiscounts(_view[tg.dataset.i]); prefetchSeats(_view[tg.dataset.i]); };
                 tg.addEventListener('pointerenter', pf);
                 tg.addEventListener('touchstart', pf, { passive: true });
                 tg.addEventListener('click', () => {
@@ -944,22 +944,39 @@
     let _seatSel = [];       // обрані місця [{id, name}] у порядку вибору → пасажир 1, 2, ...
     let _seatDeck = 0;       // активний поверх (для двоповерхових)
 
+    // Кеш схем за bundle (TTL 60 с - місця займаються в реальному часі, довше тримати шкідливо).
+    // Дає префетч на наведення і миттєву появу рядка в модалці.
+    const _seatsByBundle = new Map();
+    function fetchSeats(bundle) {
+        if (!bundle) return Promise.resolve(null);
+        const hit = _seatsByBundle.get(bundle);
+        if (hit && (hit.p || Date.now() - hit.t < 60 * 1000)) return hit.p || Promise.resolve(hit.d);
+        const p = fetch(`${PROXY_BASE}/seats`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data_bundle: bundle })
+        }).then(r => r.json()).then(d => {
+            _seatsByBundle.set(bundle, { d, t: Date.now() });
+            return d;
+        }).catch(() => { _seatsByBundle.delete(bundle); return null; });
+        _seatsByBundle.set(bundle, { p });
+        return p;
+    }
+    const hasSeatSelect = rt => !!rt && Array.isArray(rt.carrier_amenities) && rt.carrier_amenities.includes('seatselect');
+    function prefetchSeats(rt) { if (hasSeatSelect(rt) && rt.data_bundle) fetchSeats(rt.data_bundle); }
+
     async function loadModalSeats(rt) {
-        if (!rt || !rt.data_bundle) return;
-        // Запитуємо схему лише там, де перевізник взагалі дозволяє вибір місця
-        if (!Array.isArray(rt.carrier_amenities) || !rt.carrier_amenities.includes('seatselect')) return;
-        try {
-            const r = await fetch(`${PROXY_BASE}/seats`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data_bundle: rt.data_bundle })
-            });
-            const d = await r.json();
-            if (selRoute !== rt) return; // модалку вже відкрили іншим рейсом
-            if (d && d.select_possible && Array.isArray(d.scheme) && d.scheme.length) {
-                _seatScheme = d.scheme; _seatDeck = 0;
-                renderSeatLaunch(); // компактний рядок у формі; схема - окремим аркушем поверх
-            }
-        } catch (e) { /* вибір місця - опційна зручність, збій мовчки ігноруємо */ }
+        if (!hasSeatSelect(rt) || !rt.data_bundle) return;
+        renderSeatLaunch(true); // рядок зʼявляється ОДРАЗУ (стан завантаження), без стрибка форми
+        const d = await fetchSeats(rt.data_bundle);
+        if (selRoute !== rt) return; // модалку вже відкрили іншим рейсом
+        if (d && d.select_possible && Array.isArray(d.scheme) && d.scheme.length) {
+            _seatScheme = d.scheme; _seatDeck = 0;
+            renderSeatLaunch(); // активний стан
+        } else {
+            // перевізник насправді не дає обирати місце на цьому рейсі - прибираємо рядок
+            const box = document.getElementById('seat-block');
+            if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+        }
     }
 
     function seatCellHtml(c) {
@@ -974,18 +991,19 @@
         return '<span class="st st-gap"></span>';
     }
 
-    // Компактний рядок у формі: назва + поточний вибір ("Автоматично" / "60, 63"), клік відкриває аркуш
-    function renderSeatLaunch() {
+    // Компактний рядок у формі: назва + поточний вибір ("Автоматично" / "60, 63"), клік відкриває аркуш.
+    // Значення і підпис "необовʼязково" - колонкою, щоб не обрізались на вузьких екранах.
+    function renderSeatLaunch(loading) {
         const box = document.getElementById('seat-block');
-        if (!box || !_seatScheme) return;
-        const val = _seatSel.length ? _seatSel.map(s => s.name).join(', ') : 'Автоматично';
+        if (!box) return;
+        const val = loading ? '…' : (_seatSel.length ? _seatSel.map(s => s.name).join(', ') : 'Автоматично');
         box.innerHTML =
-            `<button type="button" class="seat-launch" id="seat-launch">
-                <span class="sl-l"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chair"></use></svg> Вибір місця <span class="sl-opt">необовʼязково</span></span>
-                <span class="sl-r"><b>${escTxt(val)}</b> <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-right"></use></svg></span>
+            `<button type="button" class="seat-launch" id="seat-launch"${loading ? ' disabled' : ''}>
+                <span class="sl-l"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chair"></use></svg> Вибір місця</span>
+                <span class="sl-r"><span class="sl-col"><b title="${escTxt(val)}">${escTxt(val)}</b><span class="sl-opt">необовʼязково</span></span> <svg class="ic sl-chev" aria-hidden="true"><use href="/_sprite.svg#i-chevron-right"></use></svg></span>
             </button>`;
         box.style.display = 'block';
-        box.querySelector('#seat-launch').addEventListener('click', openSeatSheet);
+        if (!loading) box.querySelector('#seat-launch').addEventListener('click', openSeatSheet);
     }
 
     function seatSheetOpen() {
@@ -1114,7 +1132,13 @@
         document.body.style.left = '';
         document.body.style.right = '';
         document.body.style.width = '';
+        // Повертаємо позицію МИТТЄВО: глобальний html{scroll-behavior:smooth} інакше
+        // анімує scrollTo зверху вниз - виглядало як "проїзд якорем" при закритті модалки
+        const html = document.documentElement;
+        const prev = html.style.scrollBehavior;
+        html.style.scrollBehavior = 'auto';
         window.scrollTo(0, _scrollY);
+        html.style.scrollBehavior = prev;
     }
     function closeBooking() {
         document.getElementById('modal-bg').classList.remove('open');

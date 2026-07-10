@@ -348,13 +348,17 @@
         .faq-item .faq-a { padding: 0 18px 16px; font-size: 14px; color: var(--text-2); line-height: 1.65; }
         /* ---------- Вибір місця: рядок у формі + аркуш зі схемою ПОВЕРХ модалки ---------- */
         .seat-block { margin-top: 16px; }
-        .seat-launch { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 14px; background: var(--bg); border: 2px solid var(--border); border-radius: var(--r); font-family: 'Nunito', sans-serif; font-size: 14px; cursor: pointer; transition: var(--tr); }
-        .seat-launch:hover { border-color: var(--orange-brd); background: var(--white); }
-        .sl-l { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: var(--text); }
+        .seat-launch { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; background: var(--bg); border: 2px solid var(--border); border-radius: var(--r); font-family: 'Nunito', sans-serif; font-size: 14px; cursor: pointer; transition: var(--tr); }
+        .seat-launch:hover:not(:disabled) { border-color: var(--orange-brd); background: var(--white); }
+        .seat-launch:disabled { cursor: default; opacity: .7; }
+        .sl-l { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: var(--text); white-space: nowrap; flex-shrink: 0; }
         .sl-l .ic { color: var(--orange); }
-        .sl-opt { font-size: 11.5px; color: var(--text-3); font-weight: 600; }
-        .sl-r { display: inline-flex; align-items: center; gap: 7px; color: var(--text-3); font-size: 12px; min-width: 0; }
-        .sl-r b { color: var(--orange); font-weight: 800; font-size: 13.5px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* Праворуч - колонкою: зверху значення, під ним дрібне "необовʼязково" (не обрізається на вузьких екранах) */
+        .sl-r { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+        .sl-col { display: flex; flex-direction: column; align-items: flex-end; min-width: 0; }
+        .sl-col b { color: var(--orange); font-weight: 800; font-size: 13.5px; line-height: 1.25; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sl-opt { font-size: 11px; color: var(--text-3); font-weight: 600; line-height: 1.2; }
+        .sl-chev { color: var(--text-3); font-size: 12px; flex-shrink: 0; }
         /* Аркуш вибору місця: власне затемнення поверх модалки */
         .seat-sheet-bg { position: fixed; inset: 0; background: rgba(26,35,50,0.5); z-index: 130; display: none; align-items: center; justify-content: center; padding: 14px; }
         .seat-sheet-bg.open { display: flex; }
