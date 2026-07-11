@@ -1369,6 +1369,15 @@
         b.textContent = 'Скопійовано!'; setTimeout(() => { b.textContent = 'Копіювати'; }, 2000);
         _okGuardArmed = false;
     });
+    document.getElementById('m-ok-return').addEventListener('click', () => {
+        const dep = document.getElementById('departure'), arr = document.getElementById('arrival');
+        [dep.value, arr.value] = [arr.value, dep.value];
+        closeBooking();
+        if (!document.getElementById('modal-bg').classList.contains('open')) {
+            document.querySelector('.search-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            document.getElementById('date-input').focus();
+        }
+    });
     // Клік по посиланню на квиток (делеговано - лінки перестворюються через innerHTML) - знімає запобіжник
     document.getElementById('m-ok-tickets').addEventListener('click', e => {
         if (e.target.closest('.tk-link')) _okGuardArmed = false;

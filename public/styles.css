@@ -535,6 +535,9 @@
         .ok-msgr-vb:hover { background: color-mix(in srgb, #7360F2 18%, transparent); }
         .ok-msgr-wa { background: color-mix(in srgb, #25D366 10%, transparent); color: #1fa952; }
         .ok-msgr-wa:hover { background: color-mix(in srgb, #25D366 18%, transparent); }
+        .ok-return { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 44px; border: 2px solid var(--orange); background: #fff; color: var(--orange); border-radius: var(--r); font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: var(--tr); margin-bottom: 18px; }
+        .ok-return .ic { font-size: 16px; flex-shrink: 0; }
+        .ok-return:hover { background: var(--orange); color: #fff; }
         /* Запобіжник закриття: жовта плашка-попередження, коли квитки ще не завантажено */
         #m-ok-guard { margin-top: 16px; background: var(--amber-bg, #FFF6E5); border: 1px solid #F3D89A; border-radius: var(--r); padding: 14px 16px; text-align: left; }
         #m-ok-guard p { font-size: 13px; color: #8A5A00; line-height: 1.55; margin-bottom: 12px; }
