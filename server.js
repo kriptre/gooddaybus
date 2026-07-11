@@ -16,8 +16,9 @@ const PORT = process.env.PORT || 3000;
 app.set('trust proxy', 1);
 
 // Глобальні запобіжники: одна необроблена помилка в проміс-ланцюжку не повинна ронити сервіс.
-process.on('unhandledRejection', err => console.error('[unhandledRejection]', err?.message || err));
-process.on('uncaughtException', err => console.error('[uncaughtException]', err?.message || err));
+// Лише логуємо й алертимо в приватний чат - процес НЕ вбиваємо (process.exit не викликаємо).
+process.on('unhandledRejection', err => { console.error('[unhandledRejection]', err?.message || err); alertAdmin('unhandledRejection', err?.message || err); });
+process.on('uncaughtException', err => { console.error('[uncaughtException]', err?.message || err); alertAdmin('uncaughtException', err?.message || err); });
 
 // Локальна IP-адреса машини (Telegram не робить клікабельним "localhost",
 // а ось http://192.168.x.x:PORT — робить, і відкривається з телефону в тій же Wi-Fi).
@@ -134,6 +135,7 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 // (щоб не світити стек/внутрішні повідомлення). Локально віддаємо реальну помилку — зручніше дебажити.
 function serverError(res, err, tag = 'API') {
     console.error(`[${tag}]`, err?.message || err);
+    alertAdmin('5xx: ' + tag, err?.message || err);
     return res.status(500).json({ error: IS_PROD ? 'Внутрішня помилка сервера' : (err?.message || 'error') });
 }
 // ==========================================
@@ -151,22 +153,27 @@ function getToken() {
 
     tokenPromise = (async () => {
         console.log('[Auth] Отримуємо новий токен...');
-        const res = await fetch(`${API_BASE_URL}/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ login: API_LOGIN, password: API_PASSWORD })
-        });
+        try {
+            const res = await fetch(`${API_BASE_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ login: API_LOGIN, password: API_PASSWORD })
+            });
 
-        if (!res.ok) {
-            const text = await res.text();
-            throw new Error(`Авторизація не вдалась (${res.status}): ${text}`);
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Авторизація не вдалась (${res.status}): ${text}`);
+            }
+
+            const data = await res.json();
+            authToken = data.token;
+            tokenExpiry = Date.now() + 50 * 60 * 1000; // 50 хвилин
+            console.log('[Auth] Токен отримано успішно');
+            return authToken;
+        } catch (e) {
+            alertAdmin('Логін contrabus', e.message);
+            throw e; // не ковтаємо - виклик, що чекав токен, теж має впасти
         }
-
-        const data = await res.json();
-        authToken = data.token;
-        tokenExpiry = Date.now() + 50 * 60 * 1000; // 50 хвилин
-        console.log('[Auth] Токен отримано успішно');
-        return authToken;
     })().finally(() => { tokenPromise = null; });
     return tokenPromise;
 }
@@ -470,6 +477,26 @@ async function sendBackupToTelegram(file) {
 // Лапки теж екрануємо - значення підставляються й у href="..." (Telegram розуміє &quot;).
 function escHtml(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Алерти про критичні збої в окремий приватний чат: дізнаємось про проблему раніше за пасажира.
+// Якщо TELEGRAM_ALERT_CHAT_ID не задано - падаємо назад на бекап-чат (якщо є); нема жодного - мовчимо.
+// Анти-спам: не частіше 1 повідомлення на тег за 10 хв (щоб шторм однакових помилок не завалив чат).
+const TELEGRAM_ALERT_CHAT_ID = process.env.TELEGRAM_ALERT_CHAT_ID || TELEGRAM_BACKUP_CHAT_ID;
+const _alertLast = new Map();
+function alertAdmin(tag, text) {
+    try {
+        if (!TG_API || !TELEGRAM_ALERT_CHAT_ID) return;
+        if (Date.now() - (_alertLast.get(tag) || 0) < 10 * 60 * 1000) return;
+        _alertLast.set(tag, Date.now());
+        // tg() кидає при мережевій помилці/невалідному JSON у відповіді - .catch(), щоб
+        // збій самого алерта не впав у консоль як unhandledRejection.
+        tg('sendMessage', {
+            chat_id: TELEGRAM_ALERT_CHAT_ID,
+            text: `🚨 <b>${escHtml(tag)}</b>\n<code>${escHtml(String(text == null ? '' : text).slice(0, 800))}</code>`,
+            parse_mode: 'HTML'
+        }).catch(() => {});
+    } catch { /* алерт не має валити основний потік */ }
 }
 
 // Прибираємо дублювання назви міста на початку адреси станції ("Запоріжжя, Автовокзал…" → "Автовокзал…")
@@ -909,6 +936,7 @@ app.post('/api/order', async (req, res) => {
         //    зберігається звичайною, менеджер бачить причину в check_warning,
         //    а клієнт отримує стандартне "менеджер зв'яжеться" (причину не розкриваємо).
         let booked = false, tickets = [], seat_note = '';
+        let bookFail = null; // деталі провалу автоброні - для алерта адміну (шлемо ПІСЛЯ створення заявки, коли є order.id)
         if (wantBook) {
             // Кілька пасажирів з одним номером (мама+дитина) - законно; contrabus може
             // вважати дублем, тож бронюємо з skip_checks, щоб і він не відбив.
@@ -934,6 +962,7 @@ app.post('/api/order', async (req, res) => {
                     // в одного перевізника (тоді збій на його боці, а не наш)
                     const rt = verdict.route || {};
                     console.log(`[Booking] Збій автоброні: ${b.reason} · перевізник "${logStr(rt.carrier || rt.company)}" · ${logStr(req.body.route_from)}→${logStr(req.body.route_to)} ${logStr(req.body.route_date)} ${logStr(req.body.route_time)}`);
+                    bookFail = `${rt.carrier || rt.company || '?'}: ${b.reason}`;
                 }
             };
             if (!verdict.ok) {
@@ -980,6 +1009,7 @@ app.post('/api/order', async (req, res) => {
 
         // смоук-тести: заявку створюємо, але менеджерів не турбуємо
         if (order.route_carrier !== 'SMOKE-TEST') notifyTelegram(order); // не чекаємо — відправляється у фоні
+        if (bookFail) alertAdmin('Автобронь не вдалася', `#${order.id} ${bookFail}`);
         res.status(201).json({ ok: true, id: order.id, booked, tickets: booked ? tickets : undefined, seat_note: seat_note || undefined, token: bookToken });
     } catch (err) {
         serverError(res, err, 'Order');
