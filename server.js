@@ -3,6 +3,7 @@ const cors = require('cors');
 const compression = require('compression');
 const helmet = require('helmet');
 const os = require('os');
+const crypto = require('node:crypto');
 const db = require('./db');
 
 // Завантажуємо секрети з файлу .env (якщо є). Node 22+ має вбудований loadEnvFile.
@@ -957,6 +958,7 @@ app.post('/api/order', async (req, res) => {
             }
         }
 
+        const bookToken = crypto.randomBytes(16).toString('hex'); // 32 hex - не підбирається перебором
         const order = db.createOrder({
             ...req.body,
             comment: cap(req.body.comment, 1000),
@@ -966,14 +968,15 @@ app.post('/api/order', async (req, res) => {
             route_price: cap(req.body.route_price, 40), route_carrier: cap(req.body.route_carrier, 120),
             page: cap(req.body.page, 300), landing: cap(req.body.landing, 300),
             passengers: list, client_name, client_phone, check_warning, booked, tickets,
-            pet: !!req.body.pet
+            pet: !!req.body.pet, token: bookToken
         });
         console.log(`[Order] Нова заявка #${order.id} — ${logStr(client_name, 80)}, ${logStr(client_phone, 24)}, пасажирів: ${list.length}`
             + ` · ${logStr(req.body.route_from, 40)} → ${logStr(req.body.route_to, 40)} ${logStr(req.body.route_date, 16)} ${logStr(req.body.route_time, 8)}`
             + ` · ${logStr(req.body.route_carrier, 60)} · ${logStr(req.body.route_price, 20)}${booked ? ' · ЗАБРОНЬОВАНО' : ''}`);
 
-        notifyTelegram(order); // не чекаємо — відправляється у фоні
-        res.status(201).json({ ok: true, id: order.id, booked, tickets: booked ? tickets : undefined, seat_note: seat_note || undefined });
+        // смоук-тести: заявку створюємо, але менеджерів не турбуємо
+        if (order.route_carrier !== 'SMOKE-TEST') notifyTelegram(order); // не чекаємо — відправляється у фоні
+        res.status(201).json({ ok: true, id: order.id, booked, tickets: booked ? tickets : undefined, seat_note: seat_note || undefined, token: bookToken });
     } catch (err) {
         serverError(res, err, 'Order');
     }

@@ -41,3 +41,28 @@ test('GET /api/orders без пароля - 401', async () => {
     const r = await get('/api/orders');
     assert.equal(r.status, 401);
 });
+
+// Мемоізація: наступні задачі (3-6) переюзають ту саму тестову заявку, щоб не витрачати
+// orderLimited (5 заявок / 10 хв з IP) на кожен прогін тестів.
+// ПРИМІТКА: тіло запиту приведене до реальної схеми POST /api/order (server.js: passengers
+// з полями name/surname/phone, route_from/route_to тощо пласкими полями) - не до вкладеного
+// { route: {...} } з ТЗ, бо з таким тілом сервер валідатором відкидає заявку (400, порожній
+// список пасажирів) і 201 з токеном ніколи не настане.
+let _orderP = null;
+function createSmokeOrder() {
+    _orderP = _orderP || get('/api/order', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            passengers: [{ name: 'Смоук', surname: 'Тест', phone: '+380000000000' }],
+            route_from: 'Тест', route_to: 'Тест', route_date: '2099-01-01', route_time: '10:00',
+            route_price: '1', route_carrier: 'SMOKE-TEST'
+        })
+    });
+    return _orderP;
+}
+
+test('201 на заявку містить token (32 hex)', async () => {
+    const r = await createSmokeOrder();
+    assert.equal(r.status, 201);
+    assert.match(String(r.body.token), /^[a-f0-9]{32}$/);
+});

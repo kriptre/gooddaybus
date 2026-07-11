@@ -80,6 +80,7 @@ if (!_cols.includes('tickets')) db.exec('ALTER TABLE orders ADD COLUMN tickets T
 if (!_cols.includes('pet')) db.exec('ALTER TABLE orders ADD COLUMN pet INTEGER DEFAULT 0');
 if (!_cols.includes('page')) db.exec('ALTER TABLE orders ADD COLUMN page TEXT');       // сторінка, з якої лишили заявку
 if (!_cols.includes('landing')) db.exec('ALTER TABLE orders ADD COLUMN landing TEXT'); // сторінка входу на сайт (utm)
+if (!_cols.includes('token')) db.exec('ALTER TABLE orders ADD COLUMN token TEXT'); // публічний токен сторінки броні
 
 // Таблиці для аналітики
 db.exec(`
@@ -104,9 +105,9 @@ function createOrder(data) {
         INSERT INTO orders
             (created_at, updated_at, status, client_name, client_phone, comment,
              route_from, route_to, route_date, route_time, route_price, route_carrier, manager_note, seats, passengers,
-             route_from_station, route_to_station, check_warning, booked, tickets, pet, page, landing)
+             route_from_station, route_to_station, check_warning, booked, tickets, pet, page, landing, token)
         VALUES
-            (?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const passengers = Array.isArray(data.passengers) ? data.passengers : [];
     const seats = passengers.length || Math.min(99, Math.max(1, parseInt(data.seats, 10) || 1));
@@ -118,7 +119,7 @@ function createOrder(data) {
         passengers.length ? JSON.stringify(passengers) : null,
         data.route_from_station || '', data.route_to_station || '', data.check_warning || '',
         data.booked ? 1 : 0, Array.isArray(data.tickets) && data.tickets.length ? JSON.stringify(data.tickets) : null,
-        data.pet ? 1 : 0, data.page || '', data.landing || ''
+        data.pet ? 1 : 0, data.page || '', data.landing || '', data.token || null
     );
     return getOrder(info.lastInsertRowid);
 }
