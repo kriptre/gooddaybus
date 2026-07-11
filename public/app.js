@@ -1145,7 +1145,9 @@
     function closeBooking() {
         if (_okGuardArmed) {
             _okGuardArmed = false; // друге натискання закриє
-            document.getElementById('m-ok-guard').style.display = 'block';
+            const g = document.getElementById('m-ok-guard');
+            g.style.display = 'block';
+            g.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             return;
         }
         document.getElementById('modal-bg').classList.remove('open');
