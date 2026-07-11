@@ -1087,6 +1087,7 @@
 
     let _bookMode = false; // true = рейс без передоплати, бронюємо одразу
     let _isGroup = false, _groupThr = 0; // груповий рейс і поріг передоплати (з умови перевізника)
+    let _okToken = ''; // токен броні з відповіді /order - для посилання на сторінку броні на екрані успіху
     const petChosen = () => document.getElementById('pet-select').value === 'yes';
     const paxCount = () => document.querySelectorAll('#pax-list .pax-row').length;
     // Група досягла порогу передоплати перевізника (від _groupThr осіб - потрібна передоплата)
@@ -1165,6 +1166,8 @@
             ((fromSt || toSt) ? `<div class="mt-stations">${fromSt ? `<span><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${escTxt(fromSt)}</span>` : ''}${toSt ? `<span><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-flag-checkered"></use></svg> ${escTxt(toSt)}</span>` : ''}</div>` : '');
         document.getElementById('m-form').style.display = 'block';
         document.getElementById('m-ok').style.display = 'none';
+        _okToken = '';
+        document.getElementById('m-ok-link').style.display = 'none';
         document.getElementById('c-comment').value = '';
         document.getElementById('c-hp').value = '';
         document.getElementById('disc-block').innerHTML = '';
@@ -1310,6 +1313,13 @@
                 document.getElementById('m-ok-text').innerHTML = "Менеджер зв'яжеться з вами, узгодить деталі<br>та за потреби надасть реквізити для оплати.";
                 document.getElementById('m-ok-tickets').innerHTML = '';
             }
+            _okToken = j.token || '';
+            const linkBox = document.getElementById('m-ok-link');
+            if (_okToken) {
+                const url = `${location.origin}/t/${_okToken}`;
+                document.getElementById('m-ok-url').value = url;
+                linkBox.style.display = 'block';
+            } else linkBox.style.display = 'none';
             document.getElementById('m-form').style.display = 'none';
             document.getElementById('m-ok').style.display = 'block';
         } catch (e) {
@@ -1322,6 +1332,14 @@
         }
     });
     document.getElementById('m-close').addEventListener('click', closeBooking);
+    // Копіювання посилання на сторінку броні (екран успіху)
+    document.getElementById('m-ok-copy').addEventListener('click', async () => {
+        const inp = document.getElementById('m-ok-url');
+        inp.select();
+        try { await navigator.clipboard.writeText(inp.value); } catch { document.execCommand('copy'); }
+        const b = document.getElementById('m-ok-copy');
+        b.textContent = 'Скопійовано!'; setTimeout(() => { b.textContent = 'Копіювати'; }, 2000);
+    });
     const modalBg = document.getElementById('modal-bg');
     document.addEventListener('keydown', e => {
         // Enter запускає пошук лише коли модалка закрита (інакше заважає заповнювати форму)

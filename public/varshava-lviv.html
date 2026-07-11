@@ -121,7 +121,7 @@
     <noscript>
         <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     </noscript>
-    <link rel="stylesheet" href="/styles.min.css?v=8386d84667">
+    <link rel="stylesheet" href="/styles.min.css?v=d9e0e1b9cc">
 </head>
 <body>
 <!-- GTM-BODY START -->
@@ -376,6 +376,13 @@
             <h3 id="m-ok-title">Заявку прийнято!</h3>
             <p id="m-ok-text">Наш менеджер зв'яжеться<br>з вами найближчим часом.</p>
             <div id="m-ok-tickets"></div>
+            <div id="m-ok-link" style="display:none">
+                <div class="ok-link-lbl">Посилання на вашу бронь - тут завжди квитки й деталі:</div>
+                <div class="ok-link-row">
+                    <input id="m-ok-url" type="text" readonly>
+                    <button type="button" id="m-ok-copy" class="ok-copy">Копіювати</button>
+                </div>
+            </div>
             <button class="btn-submit" id="m-close" style="display:block;width:100%;">Закрити</button>
         </div>
 
@@ -400,7 +407,7 @@
 
 
 <script>window.__ROUTE__ = {"fromId":97,"toId":33,"fromName":"Варшава","toName":"Львів","slug":"varshava-lviv"};</script>
-<script src="/common.min.js?v=8386d84667"></script>
-<script src="/app.min.js?v=8386d84667"></script>
+<script src="/common.min.js?v=d9e0e1b9cc"></script>
+<script src="/app.min.js?v=d9e0e1b9cc"></script>
 </body>
 </html>

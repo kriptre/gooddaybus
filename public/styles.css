@@ -519,6 +519,11 @@
         .tk-link { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--orange-bg); color: var(--orange); border: 1px solid var(--orange-brd); border-radius: var(--r-sm); padding: 11px; font-weight: 800; font-size: 14px; margin-bottom: 8px; text-decoration: none; }
         .tk-link:hover { background: var(--orange); color: #fff; }
         #m-ok-tickets { margin-bottom: 18px; }
+        .ok-link-lbl { font-size: 12px; color: var(--text-2); text-align: left; margin-bottom: 8px; }
+        .ok-link-row { display: flex; gap: 8px; margin-bottom: 18px; }
+        #m-ok-url { flex: 1; min-width: 0; font-family: Consolas, 'SFMono-Regular', monospace; font-size: 13px; color: var(--text); background: var(--bg); border: 2px solid var(--border); border-radius: var(--r-sm); padding: 9px 10px; }
+        .ok-copy { flex-shrink: 0; background: var(--orange); color: #fff; border: none; border-radius: var(--r-sm); padding: 9px 14px; font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; transition: var(--tr); white-space: nowrap; }
+        .ok-copy:hover { background: var(--orange-2); }
         .modal-ok { padding: 48px 26px; text-align: center; display: none; }
         .ok-circle { width: 68px; height: 68px; border-radius: 50%; background: var(--green-bg); display: flex; align-items: center; justify-content: center; color: var(--green); font-size: 28px; margin: 0 auto 20px; animation: okPop 0.42s cubic-bezier(0.34,1.56,0.64,1) both; }
         .modal-ok h3 { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
