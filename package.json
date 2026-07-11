@@ -4,7 +4,8 @@
   "description": "Proxy server for contrabus API",
   "main": "server.js",
   "scripts": {
-    "start": "node --disable-warning=ExperimentalWarning server.js"
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "test": "node --test tests/**/*.js"
   },
   "engines": {
     "node": ">=22"
