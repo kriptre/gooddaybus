@@ -90,3 +90,10 @@ test('GET /t/<токен> віддає сторінку броні', async () =>
     assert.equal(r.status, 200);
     assert.match(String(r.body), /Ваша бронь/);
 });
+
+test('GET /api/health - ok:true і db:true', async () => {
+    const r = await get('/api/health');
+    assert.equal(r.status, 200);
+    assert.equal(r.body.ok, true);
+    assert.equal(r.body.db, true);
+});

@@ -225,6 +225,16 @@ function deleteOrder(id) {
     return db.prepare('DELETE FROM orders WHERE id = ?').run(id).changes;
 }
 
+// --- Проверка здоровья БД для uptime-монітора ---
+function ping() {
+    try {
+        db.prepare('SELECT 1').get();
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 // --- Видалення клієнта (конкретної людини за телефоном+ім'ям) ---
 // Прибираємо саме цю людину зі списку пасажирів. Якщо вона була єдиним
 // пасажиром заявки — видаляємо заявку; інакше лишаємо співпасажирів.
@@ -351,4 +361,4 @@ function getStats(from, to) {
     };
 }
 
-module.exports = { createOrder, getOrder, getOrderByToken, listOrders, statusCounts, listClients, clientsCount, updateOrder, deleteOrder, deleteClient, backupDb, logSearch, logVisit, resetAnalytics, getStats, STATUSES };
+module.exports = { createOrder, getOrder, getOrderByToken, listOrders, statusCounts, listClients, clientsCount, updateOrder, deleteOrder, deleteClient, backupDb, logSearch, logVisit, resetAnalytics, getStats, ping, STATUSES };

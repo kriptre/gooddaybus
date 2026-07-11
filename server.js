@@ -1034,6 +1034,12 @@ app.post('/api/client-error', (req, res) => {
     res.status(204).end();
 });
 
+// GET /api/health — здоров'я для зовнішнього монітора (UptimeRobot тощо): дешево, без звернень до contrabus
+app.get('/api/health', (req, res) => {
+    const dbOk = db.ping();
+    res.status(dbOk ? 200 : 500).json({ ok: dbOk, db: dbOk, up: Math.round(process.uptime()) });
+});
+
 // POST /api/discounts — знижки конкретного рейсу (за data_bundle з пошуку). Кеш 6 год.
 const discCache = new Map();
 app.post('/api/discounts', async (req, res) => {
