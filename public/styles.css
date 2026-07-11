@@ -524,6 +524,17 @@
         #m-ok-url { flex: 1; min-width: 0; font-family: Consolas, 'SFMono-Regular', monospace; font-size: 13px; color: var(--text); background: var(--bg); border: 2px solid var(--border); border-radius: var(--r-sm); padding: 9px 10px; }
         .ok-copy { flex-shrink: 0; background: var(--orange); color: #fff; border: none; border-radius: var(--r-sm); padding: 9px 14px; font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; transition: var(--tr); white-space: nowrap; }
         .ok-copy:hover { background: var(--orange-2); }
+        .ok-msgrs { margin-top: 18px; }
+        .ok-msgrs-lbl { font-size: 12px; color: var(--text-2); text-align: left; margin-bottom: 8px; }
+        .ok-msgrs-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+        .ok-msgr { display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 10px 14px; border: none; border-radius: var(--r); font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; text-decoration: none; cursor: pointer; transition: var(--tr); }
+        .ok-msgr .ic { flex-shrink: 0; font-size: 16px; }
+        .ok-msgr-tg { background: color-mix(in srgb, #2AABEE 10%, transparent); color: #1a7eba; }
+        .ok-msgr-tg:hover { background: color-mix(in srgb, #2AABEE 18%, transparent); }
+        .ok-msgr-vb { background: color-mix(in srgb, #7360F2 10%, transparent); color: #5745c5; }
+        .ok-msgr-vb:hover { background: color-mix(in srgb, #7360F2 18%, transparent); }
+        .ok-msgr-wa { background: color-mix(in srgb, #25D366 10%, transparent); color: #1fa952; }
+        .ok-msgr-wa:hover { background: color-mix(in srgb, #25D366 18%, transparent); }
         .modal-ok { padding: 48px 26px; text-align: center; display: none; }
         .ok-circle { width: 68px; height: 68px; border-radius: 50%; background: var(--green-bg); display: flex; align-items: center; justify-content: center; color: var(--green); font-size: 28px; margin: 0 auto 20px; animation: okPop 0.42s cubic-bezier(0.34,1.56,0.64,1) both; }
         .modal-ok h3 { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
