@@ -535,6 +535,15 @@
         .ok-msgr-vb:hover { background: color-mix(in srgb, #7360F2 18%, transparent); }
         .ok-msgr-wa { background: color-mix(in srgb, #25D366 10%, transparent); color: #1fa952; }
         .ok-msgr-wa:hover { background: color-mix(in srgb, #25D366 18%, transparent); }
+        /* Запобіжник закриття: жовта плашка-попередження, коли квитки ще не завантажено */
+        #m-ok-guard { margin-top: 16px; background: var(--amber-bg, #FFF6E5); border: 1px solid #F3D89A; border-radius: var(--r); padding: 14px 16px; text-align: left; }
+        #m-ok-guard p { font-size: 13px; color: #8A5A00; line-height: 1.55; margin-bottom: 12px; }
+        .ok-guard-btns { display: flex; gap: 8px; }
+        .ok-guard-btns button { min-height: 42px; border-radius: var(--r-sm); font-family: 'Nunito', sans-serif; font-size: 13.5px; font-weight: 800; cursor: pointer; transition: var(--tr); padding: 8px 12px; }
+        #m-ok-guard-back { flex: 3; background: var(--orange); border: none; color: #fff; }
+        #m-ok-guard-back:hover { background: var(--orange-2); }
+        #m-ok-guard-close { flex: 2; background: var(--white); border: 2px solid var(--border); color: var(--text-2); }
+        #m-ok-guard-close:hover { border-color: var(--text-3); color: var(--text); }
         .modal-ok { padding: 48px 26px; text-align: center; display: none; }
         .ok-circle { width: 68px; height: 68px; border-radius: 50%; background: var(--green-bg); display: flex; align-items: center; justify-content: center; color: var(--green); font-size: 28px; margin: 0 auto 20px; animation: okPop 0.42s cubic-bezier(0.34,1.56,0.64,1) both; }
         .modal-ok h3 { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 8px; }

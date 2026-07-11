@@ -1088,6 +1088,7 @@
     let _bookMode = false; // true = рейс без передоплати, бронюємо одразу
     let _isGroup = false, _groupThr = 0; // груповий рейс і поріг передоплати (з умови перевізника)
     let _okToken = ''; // токен броні з відповіді /order - для посилання на сторінку броні на екрані успіху
+    let _okGuardArmed = false; // успіх з квитками показано, але жодного не завантажено - запобіжник закриття
     const petChosen = () => document.getElementById('pet-select').value === 'yes';
     const paxCount = () => document.querySelectorAll('#pax-list .pax-row').length;
     // Група досягла порогу передоплати перевізника (від _groupThr осіб - потрібна передоплата)
@@ -1142,6 +1143,11 @@
         html.style.scrollBehavior = prev;
     }
     function closeBooking() {
+        if (_okGuardArmed) {
+            _okGuardArmed = false; // друге натискання закриє
+            document.getElementById('m-ok-guard').style.display = 'block';
+            return;
+        }
         document.getElementById('modal-bg').classList.remove('open');
         unlockScroll();
     }
@@ -1167,6 +1173,8 @@
         document.getElementById('m-form').style.display = 'block';
         document.getElementById('m-ok').style.display = 'none';
         _okToken = '';
+        _okGuardArmed = false;
+        document.getElementById('m-ok-guard').style.display = 'none';
         document.getElementById('m-ok-link').style.display = 'none';
         document.getElementById('c-comment').value = '';
         document.getElementById('c-hp').value = '';
@@ -1308,10 +1316,12 @@
                     : 'Оплата - водієві при посадці.<br>Квитки надішле менеджер найближчим часом.') + seatLine;
                 document.getElementById('m-ok-tickets').innerHTML = tks.map((tk, i) =>
                     `<a class="tk-link" href="${escTxt(tk.pdf)}" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-file-pdf"></use></svg> Завантажити квиток${tks.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('');
+                _okGuardArmed = tks.length > 0;
             } else {
                 document.getElementById('m-ok-title').textContent = 'Заявку прийнято!';
                 document.getElementById('m-ok-text').innerHTML = "Менеджер зв'яжеться з вами, узгодить деталі<br>та за потреби надасть реквізити для оплати.";
                 document.getElementById('m-ok-tickets').innerHTML = '';
+                _okGuardArmed = false;
             }
             _okToken = j.token || '';
             const linkBox = document.getElementById('m-ok-link');
@@ -1332,14 +1342,25 @@
         }
     });
     document.getElementById('m-close').addEventListener('click', closeBooking);
-    // Копіювання посилання на сторінку броні (екран успіху)
+    // Копіювання посилання на сторінку броні (екран успіху) - знімає запобіжник закриття
     document.getElementById('m-ok-copy').addEventListener('click', async () => {
         const inp = document.getElementById('m-ok-url');
         inp.select();
         try { await navigator.clipboard.writeText(inp.value); } catch { document.execCommand('copy'); }
         const b = document.getElementById('m-ok-copy');
         b.textContent = 'Скопійовано!'; setTimeout(() => { b.textContent = 'Копіювати'; }, 2000);
+        _okGuardArmed = false;
     });
+    // Клік по посиланню на квиток (делеговано - лінки перестворюються через innerHTML) - знімає запобіжник
+    document.getElementById('m-ok-tickets').addEventListener('click', e => {
+        if (e.target.closest('.tk-link')) _okGuardArmed = false;
+    });
+    // Запобіжник закриття успіх-екрана без завантажених квитків
+    document.getElementById('m-ok-guard-back').addEventListener('click', () => {
+        document.getElementById('m-ok-guard').style.display = 'none';
+        _okGuardArmed = true; // повертаємось на екран успіху - запобіжник знову взведено
+    });
+    document.getElementById('m-ok-guard-close').addEventListener('click', closeBooking);
     const modalBg = document.getElementById('modal-bg');
     document.addEventListener('keydown', e => {
         // Enter запускає пошук лише коли модалка закрита (інакше заважає заповнювати форму)
