@@ -75,6 +75,9 @@ app.use((req, res, next) => {
     next();
 });
 
+// Сторінка броні: /t/<токен>. Токен читає клієнтський JS сторінки - сервер просто віддає html
+app.get('/t/:token', (req, res) => res.sendFile(require('path').join(__dirname, 'public', 'booking.html')));
+
 // Роздаємо ЛИШЕ публічну папку (index.html, admin.html, stats.html).
 // Завдяки цьому .env, orders.db, server.js та інші файли НЕ доступні через URL.
 // no-cache для HTML: браузер щоразу звіряє версію з сервером (ETag → дешеве 304),

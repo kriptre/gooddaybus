@@ -84,3 +84,9 @@ test('PDF-проксі: чужий/неіснуючий квиток - 404', asy
     const r = await get('/api/booking/' + 'a'.repeat(32) + '/ticket/123');
     assert.equal(r.status, 404);
 });
+
+test('GET /t/<токен> віддає сторінку броні', async () => {
+    const r = await get('/t/' + 'a'.repeat(32));
+    assert.equal(r.status, 200);
+    assert.match(String(r.body), /Ваша бронь/);
+});
