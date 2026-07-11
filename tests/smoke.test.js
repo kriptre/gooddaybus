@@ -79,3 +79,8 @@ test('GET /api/booking/<токен щойно створеної заявки> -
     assert.equal(r.body.order.route_carrier, 'SMOKE-TEST');
     assert.ok(!JSON.stringify(r.body).includes('380000000000'), 'телефон не має витікати');
 });
+
+test('PDF-проксі: чужий/неіснуючий квиток - 404', async () => {
+    const r = await get('/api/booking/' + 'a'.repeat(32) + '/ticket/123');
+    assert.equal(r.status, 404);
+});

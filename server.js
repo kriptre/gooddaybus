@@ -1078,6 +1078,40 @@ app.get('/api/booking/:token', (req, res) => {
     });
 });
 
+// GET /api/booking/:token/ticket/:tid — PDF квитка через наш сервер: посилання живе вічно,
+// навіть якщо лінк contrabus протух - перекачуємо заново через get_ticket_info
+app.get('/api/booking/:token/ticket/:tid', async (req, res) => {
+    if (bookingPageLimited(req.ip || 'unknown')) return res.status(429).json({ error: 'Забагато запитів' });
+    try {
+        const o = /^[a-f0-9]{32}$/.test(req.params.token) ? db.getOrderByToken(req.params.token) : null;
+        let list = []; try { list = JSON.parse(o?.tickets) || []; } catch { }
+        const tk = list.find(x => String(x.id) === String(req.params.tid));
+        if (!tk) return res.status(404).json({ error: 'Квиток не знайдено' });
+
+        const fetchPdf = async url => {
+            const r = await fetch(url);
+            if (!r.ok) throw new Error(`PDF HTTP ${r.status}`);
+            const buf = Buffer.from(await r.arrayBuffer());
+            if (buf.length < 1000 || buf.subarray(0, 4).toString() !== '%PDF') throw new Error('не PDF');
+            return buf;
+        };
+        let buf;
+        try { buf = await fetchPdf(tk.pdf); }
+        catch {
+            // протухло - беремо свіже посилання у contrabus
+            const token = await getToken();
+            const ti = await (await fetch(`${API_BASE_URL}/bookings/get_ticket_info`, {
+                method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ticket_id: tk.id })
+            })).json();
+            const info = Array.isArray(ti) ? ti[0] : ti;
+            buf = await fetchPdf(info?.link_to_pdf || ticketPdfLink(tk.id));
+        }
+        res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="kvytok-${tk.id}.pdf"` });
+        res.send(buf);
+    } catch (err) { serverError(res, err, 'TicketPdf'); }
+});
+
 // --- Захист панелі менеджера простим ключем ---
 // Порівняння за постійний час (timingSafeEqual): звичайне !== відповідає швидше на
 // перший неправильний символ, що теоретично дозволяє підбирати ключ за таймінгом.
