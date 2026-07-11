@@ -54,7 +54,7 @@ function createSmokeOrder() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             passengers: [{ name: 'Смоук', surname: 'Тест', phone: '+380000000000' }],
-            route_from: 'Тест', route_to: 'Тест', route_date: '2099-01-01', route_time: '10:00',
+            route_from: 'Тест', route_to: 'Тест', route_date: '01.01.2099', route_time: '10:00',
             route_price: '1', route_carrier: 'SMOKE-TEST'
         })
     });
