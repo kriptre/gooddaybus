@@ -129,6 +129,11 @@ function getOrder(id) {
     return db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
 }
 
+// --- Заявка за публічним токеном (сторінка броні) ---
+function getOrderByToken(token) {
+    return db.prepare('SELECT * FROM orders WHERE token = ?').get(String(token || ''));
+}
+
 // --- Список заявок (опційні фільтри: статус та пошук за ім'ям/телефоном) ---
 function listOrders(status, q) {
     const where = [], params = [];
@@ -346,4 +351,4 @@ function getStats(from, to) {
     };
 }
 
-module.exports = { createOrder, getOrder, listOrders, statusCounts, listClients, clientsCount, updateOrder, deleteOrder, deleteClient, backupDb, logSearch, logVisit, resetAnalytics, getStats, STATUSES };
+module.exports = { createOrder, getOrder, getOrderByToken, listOrders, statusCounts, listClients, clientsCount, updateOrder, deleteOrder, deleteClient, backupDb, logSearch, logVisit, resetAnalytics, getStats, STATUSES };

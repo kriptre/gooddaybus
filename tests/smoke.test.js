@@ -66,3 +66,16 @@ test('201 на заявку містить token (32 hex)', async () => {
     assert.equal(r.status, 201);
     assert.match(String(r.body.token), /^[a-f0-9]{32}$/);
 });
+
+test('GET /api/booking/<фейковий токен> - 404', async () => {
+    const r = await get('/api/booking/' + 'a'.repeat(32));
+    assert.equal(r.status, 404);
+});
+
+test('GET /api/booking/<токен щойно створеної заявки> - 200 без телефону', async () => {
+    const created = await createSmokeOrder();
+    const r = await get('/api/booking/' + created.body.token);
+    assert.equal(r.status, 200);
+    assert.equal(r.body.order.route_carrier, 'SMOKE-TEST');
+    assert.ok(!JSON.stringify(r.body).includes('380000000000'), 'телефон не має витікати');
+});

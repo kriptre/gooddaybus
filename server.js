@@ -198,6 +198,7 @@ const orderLimited     = makeRateLimiter(10 * 60 * 1000, 5); // заявки: 5 
 const citiesLimited    = makeRateLimiter(60 * 1000, 20);     // список міст (важкий JSON): 20/хв
 const visitLimited     = makeRateLimiter(60 * 1000, 10);     // лічильник візитів (пише в БД): 10/хв
 const cliErrLimited    = makeRateLimiter(60 * 1000, 5);      // звіти про JS-збої: 5/хв
+const bookingPageLimited = makeRateLimiter(60 * 1000, 30);   // публічна сторінка броні: 30/хв
 
 // GET /api/cities — список міст (через 30-хв кеш getCities, щоб не бити
 // contrabus на кожне відкриття сайту)
@@ -1052,6 +1053,29 @@ app.post('/api/seats', async (req, res) => {
         seatsCache.set(key, { d, t: Date.now() });
         res.json(d);
     } catch (e) { res.json({ select_possible: false, scheme: null }); }
+});
+
+// GET /api/booking/:token — публічна сторінка броні: віддаємо все, що треба пасажиру,
+// БЕЗ телефону та без прямих pdf-лінків (посилання на квитки видає окремий ендпоінт).
+app.get('/api/booking/:token', (req, res) => {
+    if (bookingPageLimited(req.ip || 'unknown')) return res.status(429).json({ error: 'Забагато запитів' });
+    const t = String(req.params.token || '');
+    if (!/^[a-f0-9]{32}$/.test(t)) return res.status(404).json({ error: 'Бронь не знайдено' });
+    const o = db.getOrderByToken(t);
+    if (!o) return res.status(404).json({ error: 'Бронь не знайдено' });
+    let passengers = [];
+    try { passengers = (JSON.parse(o.passengers) || []).map(p => ({ first_name: p.name || '', last_name: p.surname || '', seat_name: p.seat_name || '' })); } catch { }
+    let tickets = [];
+    try { tickets = (JSON.parse(o.tickets) || []).map(tk => ({ id: tk.id })); } catch { }
+    res.json({
+        ok: true, order: {
+            id: o.id, created_at: o.created_at, booked: !!o.booked,
+            route_from: o.route_from, route_to: o.route_to, route_date: o.route_date, route_time: o.route_time,
+            route_carrier: o.route_carrier, route_price: o.route_price,
+            route_from_station: o.route_from_station, route_to_station: o.route_to_station,
+            seats: o.seats, passengers, tickets
+        }
+    });
 });
 
 // --- Захист панелі менеджера простим ключем ---
