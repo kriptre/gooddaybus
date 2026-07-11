@@ -1200,6 +1200,19 @@
         let paxN = 1;
         try { paxN = Math.min(5, Math.max(1, parseInt(localStorage.getItem('gdb_paxn'), 10) || 1)); } catch (e) { }
         for (let i = 0; i < paxN; i++) addPax();
+        // Автопідстановка збережених даних першого пасажира (лише цей пристрій, на сервер не йде)
+        try {
+            const saved = JSON.parse(localStorage.getItem('gdb_pax1') || 'null');
+            if (saved) {
+                const row = document.querySelector('#pax-list .pax-row');
+                if (row) {
+                    const nameEl = row.querySelector('.pax-name'), surEl = row.querySelector('.pax-surname'), phEl = row.querySelector('.pax-phone');
+                    if (nameEl && !nameEl.value) nameEl.value = saved.fn || '';
+                    if (surEl && !surEl.value) surEl.value = saved.ln || '';
+                    if (phEl && !phEl.value) phEl.value = saved.ph || '';
+                }
+            }
+        } catch (e) { }
         applyBookUI();
         document.getElementById('modal-bg').classList.add('open');
         lockScroll(); // блокуємо фон, щоб не "просвічував" скрол головної
@@ -1304,6 +1317,11 @@
             }
             const j = await r.json().catch(() => ({}));
             try { localStorage.setItem('gdb_paxn', String(payload.passengers.length)); } catch (e) { }
+            // Памʼять даних першого пасажира для наступної броні (лише пристрій, на сервер не йде)
+            try {
+                const p0 = payload.passengers[0] || {};
+                localStorage.setItem('gdb_pax1', JSON.stringify({ fn: p0.name || '', ln: p0.surname || '', ph: p0.phone || '' }));
+            } catch (e) { }
             const tks = (j.booked && Array.isArray(j.tickets)) ? j.tickets.filter(t => t.pdf) : [];
             if (j.booked) {
                 // Місця: якщо обирали і все пройшло - підтверджуємо; якщо не вийшло - чесно кажемо
