@@ -529,12 +529,12 @@
         .ok-msgrs-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
         .ok-msgr { display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 10px 14px; border: none; border-radius: var(--r); font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; text-decoration: none; cursor: pointer; transition: var(--tr); }
         .ok-msgr .ic { flex-shrink: 0; font-size: 16px; }
-        .ok-msgr-tg { background: color-mix(in srgb, #2AABEE 10%, transparent); color: #1a7eba; }
-        .ok-msgr-tg:hover { background: color-mix(in srgb, #2AABEE 18%, transparent); }
-        .ok-msgr-vb { background: color-mix(in srgb, #7360F2 10%, transparent); color: #5745c5; }
-        .ok-msgr-vb:hover { background: color-mix(in srgb, #7360F2 18%, transparent); }
-        .ok-msgr-wa { background: color-mix(in srgb, #25D366 10%, transparent); color: #1fa952; }
-        .ok-msgr-wa:hover { background: color-mix(in srgb, #25D366 18%, transparent); }
+        .ok-msgr-tg { background: rgba(42,171,238,.1); background: color-mix(in srgb, #2AABEE 10%, transparent); color: #1a7eba; }
+        .ok-msgr-tg:hover { background: rgba(42,171,238,.18); background: color-mix(in srgb, #2AABEE 18%, transparent); }
+        .ok-msgr-vb { background: rgba(115,96,242,.1); background: color-mix(in srgb, #7360F2 10%, transparent); color: #5745c5; }
+        .ok-msgr-vb:hover { background: rgba(115,96,242,.18); background: color-mix(in srgb, #7360F2 18%, transparent); }
+        .ok-msgr-wa { background: rgba(37,211,102,.1); background: color-mix(in srgb, #25D366 10%, transparent); color: #1fa952; }
+        .ok-msgr-wa:hover { background: rgba(37,211,102,.18); background: color-mix(in srgb, #25D366 18%, transparent); }
         .ok-return { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 44px; border: 2px solid var(--orange); background: #fff; color: var(--orange); border-radius: var(--r); font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: var(--tr); margin-bottom: 18px; }
         .ok-return .ic { font-size: 16px; flex-shrink: 0; }
         .ok-return:hover { background: var(--orange); color: #fff; }
