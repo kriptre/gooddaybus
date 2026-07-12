@@ -1095,7 +1095,7 @@ app.post('/api/seats', async (req, res) => {
 });
 
 // GET /api/booking/:token — публічна сторінка броні: віддаємо все, що треба пасажиру,
-// БЕЗ телефону та без прямих pdf-лінків (посилання на квитки видає окремий ендпоінт).
+// без прямих pdf-лінків (телефони пасажирів віддаємо - рішення власника).
 app.get('/api/booking/:token', (req, res) => {
     if (bookingPageLimited(req.ip || 'unknown')) return res.status(429).json({ error: 'Забагато запитів' });
     const t = String(req.params.token || '');

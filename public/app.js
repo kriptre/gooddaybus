@@ -41,7 +41,7 @@
     // stripPct: видаляємо процент з кінця (напр. "Діти - 25%" → "Діти")
     // cleanDiscName: беремо тільки українську частину (до ' / ') і видаляємо процент
     const stripPct = s => String(s || '').replace(/\(?\s*[-−]?\s*\d+\s*%\s*\)?\s*$/, '').replace(/[-–|·,\s]+$/, '').trim();
-    const cleanDiscName = s => stripPct(String(s || '').split(' / ')[0]);
+    const cleanDiscName = s => stripPct(String(s || '').split('|')[0]).split(' / ')[0].trim();
 
     function setStatus(txt, type = '') {
         document.getElementById('status-row').className = `status-row ${type}`;
@@ -808,11 +808,9 @@
         const real = (Array.isArray(d) ? d : []).filter(x => x.percent > 0);
         // Чіп ґаючиз на API опис знижки: показуємо тільки українську частину + процент
         const chip = x => {
-            const parts = String(x.description || '').split('|');
-            const name = escTxt(cleanDiscName(parts[0]));
-            const price = escTxt((parts[1] || '').replace(/\(.*?\)/, '').trim());
+            const name = escTxt(cleanDiscName(x.description));
             const pct = `<b class="dc-pct">-${escTxt(x.percent)}%</b>`;
-            return `<span class="disc-chip"><span class="dc-name">${name}</span>${price ? `<span class="dc-price">${price}</span>` : ''}${pct}</span>`;
+            return `<span class="disc-chip"><span class="dc-name">${name}</span>${pct}</span>`;
         };
         el.innerHTML = real.length
             ? `<div class="disc-chips">${real.map(chip).join('')}</div>`
