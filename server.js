@@ -1103,7 +1103,7 @@ app.get('/api/booking/:token', (req, res) => {
     const o = db.getOrderByToken(t);
     if (!o) return res.status(404).json({ error: 'Бронь не знайдено' });
     let passengers = [];
-    try { passengers = (JSON.parse(o.passengers) || []).filter(p => p && typeof p === 'object').map(p => ({ first_name: p.name || '', last_name: p.surname || '', seat_name: p.seat_name || '' })); } catch { }
+    try { passengers = (JSON.parse(o.passengers) || []).filter(p => p && typeof p === 'object').map(p => ({ first_name: p.name || '', last_name: p.surname || '', phone: p.phone || '', seat_name: p.seat_name || '' })); } catch { }
     let tickets = [];
     try { tickets = (JSON.parse(o.tickets) || []).filter(tk => tk && typeof tk === 'object' && tk.id != null).map(tk => ({ id: tk.id })); } catch { }
     res.json({

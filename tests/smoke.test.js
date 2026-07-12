@@ -72,12 +72,12 @@ test('GET /api/booking/<фейковий токен> - 404', async () => {
     assert.equal(r.status, 404);
 });
 
-test('GET /api/booking/<токен щойно створеної заявки> - 200 без телефону', async () => {
+test('GET /api/booking/<токен щойно створеної заявки> - 200 з телефоном пасажира', async () => {
     const created = await createSmokeOrder();
     const r = await get('/api/booking/' + created.body.token);
     assert.equal(r.status, 200);
     assert.equal(r.body.order.route_carrier, 'SMOKE-TEST');
-    assert.ok(!JSON.stringify(r.body).includes('380000000000'), 'телефон не має витікати');
+    assert.ok(r.body.order.passengers[0].phone, 'телефон пасажира має віддаватись');
 });
 
 test('PDF-проксі: чужий/неіснуючий квиток - 404', async () => {
