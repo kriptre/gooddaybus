@@ -37,6 +37,12 @@
         (!_filters.has('direct') || isDirect(rt)) &&
         (!_filters.has('pets') || allowsPets(rt));
 
+    // Обробка назв знижок від API: "Назва укр / Nazva deutsch | 108 eur (-10%)"
+    // stripPct: видаляємо процент з кінця (напр. "Діти - 25%" → "Діти")
+    // cleanDiscName: беремо тільки українську частину (до ' / ') і видаляємо процент
+    const stripPct = s => String(s || '').replace(/\(?\s*[-−]?\s*\d+\s*%\s*\)?\s*$/, '').replace(/[-–|·,\s]+$/, '').trim();
+    const cleanDiscName = s => stripPct(String(s || '').split(' / ')[0]);
+
     function setStatus(txt, type = '') {
         document.getElementById('status-row').className = `status-row ${type}`;
         document.getElementById('status-txt').textContent = txt;
@@ -800,13 +806,10 @@
         if (!Array.isArray(cached)) el.textContent = 'Завантаження…'; // показуємо лише якщо реально чекаємо мережу
         const d = await fetchDiscounts(rt.data_bundle);
         const real = (Array.isArray(d) ? d : []).filter(x => x.percent > 0);
-        // Опис із API: "Назва | ціна (-N%)". Розбираємо, щоб ВІДСОТОК був помітним акцентом,
-        // а решта - нейтральною (раніше все зливалось у суцільне зелене).
-        // Відсоток у назві дублюється ("Діти - 25%") - зрізаємо хвіст, бо відсоток уже в бейджі
-        const stripPct = s => String(s || '').replace(/\(?\s*[-−]?\s*\d+\s*%\s*\)?\s*$/, '').replace(/[-–|·,\s]+$/, '').trim();
+        // Чіп ґаючиз на API опис знижки: показуємо тільки українську частину + процент
         const chip = x => {
             const parts = String(x.description || '').split('|');
-            const name = escTxt(stripPct(parts[0]));
+            const name = escTxt(cleanDiscName(parts[0]));
             const price = escTxt((parts[1] || '').replace(/\(.*?\)/, '').trim());
             const pct = `<b class="dc-pct">-${escTxt(x.percent)}%</b>`;
             return `<span class="disc-chip"><span class="dc-name">${name}</span>${price ? `<span class="dc-price">${price}</span>` : ''}${pct}</span>`;
@@ -851,8 +854,8 @@
         if (!real.length || !rows.length) { block.style.display = 'none'; block.innerHTML = ''; document.getElementById('m-disc-note').style.display = 'none'; _discOpen = false; updateTotal(); return; }
         block.style.display = '';
         _discOpen = true; // знижки доступні - selectи активні (за замовчуванням "Повний квиток")
-        // опції: "Повний квиток" (за замовчуванням) + реальні знижки
-        const opts = [{ id: '', percent: 0, label: 'Повний квиток' }].concat(real.map(d => ({ id: d.id, percent: d.percent, label: d.description })));
+        // опції: "Повний квиток" (за замовчуванням) + реальні знижки (тільки українська назва)
+        const opts = [{ id: '', percent: 0, label: 'Повний квиток' }].concat(real.map(d => ({ id: d.id, percent: d.percent, label: cleanDiscName(d.description) })));
         block.innerHTML = `
             <div class="disc-head"><span class="disc-title"><svg class="ic" style="color:var(--orange);margin-right:6px" aria-hidden="true"><use href="/_sprite.svg#i-tag"></use></svg>Знижка для пасажирів</span></div>
             <div class="disc-body">
