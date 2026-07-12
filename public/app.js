@@ -1069,8 +1069,9 @@
     // Аркуш статичний у розмітці модалки - обробники навішуємо один раз
     const _ssBg = document.getElementById('seat-sheet-bg');
     if (_ssBg) {
+        _ssBg.addEventListener('pointerdown', e => { _ssBgPointerDown = (e.target === _ssBg); });
         _ssBg.addEventListener('click', e => {
-            if (e.target === _ssBg) { closeSeatSheet(); return; }           // клік по затемненню
+            if (e.target === _ssBg) { if (_ssBgPointerDown) closeSeatSheet(); _ssBgPointerDown = false; return; }           // клік по затемненню
             if (e.target.closest('#ss-x') || e.target.closest('#ss-done')) { closeSeatSheet(); return; }
             if (e.target.closest('#sb-clear')) { _seatSel = []; renderSeatSheetBody(); return; }
             const deck = e.target.closest('.sb-deck');
@@ -1092,6 +1093,8 @@
     let _isGroup = false, _groupThr = 0; // груповий рейс і поріг передоплати (з умови перевізника)
     let _okToken = ''; // токен броні з відповіді /order - для посилання на сторінку броні на екрані успіху
     let _okGuardArmed = false; // успіх з квитками показано, але жодного не завантажено - запобіжник закриття
+    let _modalBgPointerDown = false; // pointerdown трапив на #modal-bg - закривати тільки якщо click теж на фоні
+    let _ssBgPointerDown = false; // pointerdown трапив на #seat-sheet-bg - закривати тільки якщо click теж на фоні
     const petChosen = () => document.getElementById('pet-select').value === 'yes';
     const paxCount = () => document.querySelectorAll('#pax-list .pax-row').length;
     // Група досягла порогу передоплати перевізника (від _groupThr осіб - потрібна передоплата)
@@ -1239,7 +1242,8 @@
     });
 
     document.getElementById('m-cancel').addEventListener('click', closeBooking);
-    document.getElementById('modal-bg').addEventListener('click', e => { if (e.target === document.getElementById('modal-bg')) closeBooking(); });
+    document.getElementById('modal-bg').addEventListener('pointerdown', e => { _modalBgPointerDown = (e.target === document.getElementById('modal-bg')); });
+    document.getElementById('modal-bg').addEventListener('click', e => { if (e.target === document.getElementById('modal-bg') && _modalBgPointerDown) closeBooking(); _modalBgPointerDown = false; });
     document.getElementById('m-consent').addEventListener('change', e => {
         const wrap = document.getElementById('m-consent-wrap');
         wrap.classList.toggle('checked', e.target.checked);
