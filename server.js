@@ -1049,7 +1049,7 @@ app.post('/api/discounts', async (req, res) => {
         // Ключ - хеш ПОВНОГО bundle. Перші 60 символів у всіх рейсів однакові (JWT-заголовок
         // + iat-мітка часу), тож старий ключ .slice(0,60) збивав кеш ВСІХ рейсів в один запис:
         // клієнти бачили знижки чужого рейсу або "немає знижок" (реальний випадок - заявка #31).
-        const key = require('crypto').createHash('md5').update(String(data_bundle)).digest('hex');
+        const key = crypto.createHash('md5').update(String(data_bundle)).digest('hex');
         const hit = discCache.get(key);
         if (hit && Date.now() - hit.t < 6 * 60 * 60 * 1000) return res.json(hit.d);
         if (discountsLimited(req.ip || 'unknown')) return res.json([]); // ліміт — тихо без знижок
@@ -1075,7 +1075,7 @@ app.post('/api/seats', async (req, res) => {
         const { data_bundle } = req.body;
         const empty = { select_possible: false, scheme: null };
         if (!data_bundle) return res.json(empty);
-        const key = require('crypto').createHash('md5').update(String(data_bundle)).digest('hex');
+        const key = crypto.createHash('md5').update(String(data_bundle)).digest('hex');
         const hit = seatsCache.get(key);
         if (hit && Date.now() - hit.t < 20 * 1000) return res.json(hit.d);
         if (discountsLimited(req.ip || 'unknown')) return res.json(empty); // спільний ліміт зі знижками: 30/хв
@@ -1103,9 +1103,9 @@ app.get('/api/booking/:token', (req, res) => {
     const o = db.getOrderByToken(t);
     if (!o) return res.status(404).json({ error: 'Бронь не знайдено' });
     let passengers = [];
-    try { passengers = (JSON.parse(o.passengers) || []).map(p => ({ first_name: p.name || '', last_name: p.surname || '', seat_name: p.seat_name || '' })); } catch { }
+    try { passengers = (JSON.parse(o.passengers) || []).filter(p => p && typeof p === 'object').map(p => ({ first_name: p.name || '', last_name: p.surname || '', seat_name: p.seat_name || '' })); } catch { }
     let tickets = [];
-    try { tickets = (JSON.parse(o.tickets) || []).map(tk => ({ id: tk.id })); } catch { }
+    try { tickets = (JSON.parse(o.tickets) || []).filter(tk => tk && typeof tk === 'object' && tk.id != null).map(tk => ({ id: tk.id })); } catch { }
     res.json({
         ok: true, order: {
             id: o.id, created_at: o.created_at, booked: !!o.booked,
@@ -1128,7 +1128,7 @@ app.get('/api/booking/:token/ticket/:tid', async (req, res) => {
         if (!tk) return res.status(404).json({ error: 'Квиток не знайдено' });
 
         const fetchPdf = async url => {
-            const r = await fetch(url);
+            const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
             if (!r.ok) throw new Error(`PDF HTTP ${r.status}`);
             const buf = Buffer.from(await r.arrayBuffer());
             if (buf.length < 1000 || buf.subarray(0, 4).toString() !== '%PDF') throw new Error('не PDF');
@@ -1141,7 +1141,8 @@ app.get('/api/booking/:token/ticket/:tid', async (req, res) => {
             const token = await getToken();
             const ti = await (await fetch(`${API_BASE_URL}/bookings/get_ticket_info`, {
                 method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ticket_id: tk.id })
+                body: JSON.stringify({ ticket_id: tk.id }),
+                signal: AbortSignal.timeout(15000)
             })).json();
             const info = Array.isArray(ti) ? ti[0] : ti;
             buf = await fetchPdf(info?.link_to_pdf || ticketPdfLink(tk.id));
@@ -1156,7 +1157,7 @@ app.get('/api/booking/:token/ticket/:tid', async (req, res) => {
 // перший неправильний символ, що теоретично дозволяє підбирати ключ за таймінгом.
 const timingSafeEq = (a, b) => {
     const ba = Buffer.from(String(a || '')), bb = Buffer.from(String(b || ''));
-    return ba.length === bb.length && require('crypto').timingSafeEqual(ba, bb);
+    return ba.length === bb.length && crypto.timingSafeEqual(ba, bb);
 };
 // Анти-брутфорс: після 20 невдалих спроб з одного IP за 10 хв — блокування на час вікна.
 const adminFails = new Map(); // ip -> [мітки часу невдалих спроб]
