@@ -1101,6 +1101,10 @@
         });
     }
 
+    // Cloudflare Turnstile (антибот): плейсхолдер до появи реального site key у Cloudflare -
+    // поки значення не змінено, рендер віджета пропускається (все "спить", як і раніше).
+    const TURNSTILE_SITE_KEY = 'TURNSTILE_SITE_KEY_PLACEHOLDER';
+    let _tsWidgetId = null; // id відрендереного (explicit-режим) віджета Turnstile - для remove()/reset()/getResponse()
     let _bookMode = false; // true = рейс без передоплати, бронюємо одразу
     let _isGroup = false, _groupThr = 0; // груповий рейс і поріг передоплати (з умови перевізника)
     let _okToken = ''; // токен броні з відповіді /order - для посилання на сторінку броні на екрані успіху
@@ -1134,6 +1138,23 @@
             const show = _isGroup && _groupThr > 0;
             gn.style.display = show ? 'flex' : 'none';
             if (show) gn.innerHTML = `<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-info"></use></svg> Від ${_groupThr} пасажирів перевізник бере передоплату за 1 квиток. До ${_groupThr - 1} включно - без передоплати, оплата водієві.`;
+        }
+        updateTurnstile(book);
+    }
+    // Показує/ховає віджет Turnstile залежно від того, чи це зараз реальна автобронь (canBookNow()):
+    // звичайну заявку менеджеру Turnstile не потребує і не повинен турбувати відвідувача.
+    // Рендер - лише коли є справжній site key (не плейсхолдер) і скрипт api.js вже завантажився.
+    function updateTurnstile(book) {
+        const holder = document.getElementById('ts-holder');
+        if (!holder) return;
+        if (book && TURNSTILE_SITE_KEY !== 'TURNSTILE_SITE_KEY_PLACEHOLDER' && window.turnstile) {
+            if (_tsWidgetId === null) {
+                _tsWidgetId = window.turnstile.render(holder, { sitekey: TURNSTILE_SITE_KEY });
+            }
+        } else if (_tsWidgetId !== null) {
+            if (window.turnstile) { try { window.turnstile.remove(_tsWidgetId); } catch (e) { } }
+            _tsWidgetId = null;
+            holder.innerHTML = '';
         }
     }
     // Блокування прокрутки фону, поки відкрита модалка (надійно для iOS - через position:fixed)
@@ -1170,6 +1191,14 @@
         }
         document.getElementById('modal-bg').classList.remove('open');
         unlockScroll();
+        // Модалка закрилась - прибираємо віджет, щоб не лишався зі старим (вже неактуальним) токеном
+        // і щоб наступне відкриття рендерило його заново для нового рейсу.
+        if (_tsWidgetId !== null) {
+            if (window.turnstile) { try { window.turnstile.remove(_tsWidgetId); } catch (e) { } }
+            _tsWidgetId = null;
+            const holder = document.getElementById('ts-holder');
+            if (holder) holder.innerHTML = '';
+        }
     }
     function openModal(rt, dep, arr, date) {
         selRoute = rt;
@@ -1325,7 +1354,9 @@
             page: (location.pathname + location.search).slice(0, 300),                 // сторінка, з якої лишили заявку
             landing: (() => { try { return sessionStorage.getItem('gdb_landing') || ''; } catch (e) { return ''; } })(), // вхід на сайт (з utm реклами)
             hp: document.getElementById('c-hp').value, // honeypot
-            ts: (document.querySelector('[name="cf-turnstile-response"]') || {}).value || '' // Cloudflare Turnstile токен (антибот)
+            // Cloudflare Turnstile токен (антибот) - лише при реальній автоброні (willBook);
+            // звичайна заявка менеджеру Turnstile не потребує і токен не шле.
+            ts: (willBook && _tsWidgetId !== null && window.turnstile) ? (window.turnstile.getResponse(_tsWidgetId) || '') : ''
         };
 
         try {
@@ -1375,7 +1406,7 @@
         } catch (e) {
             alert('Не вдалося надіслати заявку: ' + e.message + '\n\nСпробуйте ще раз або зателефонуйте менеджеру.');
             // Токен Turnstile одноразовий - без reset() повторна спроба відправки завжди провалиться.
-            if (window.turnstile) { try { window.turnstile.reset(); } catch (e2) { } }
+            if (window.turnstile && _tsWidgetId !== null) { try { window.turnstile.reset(_tsWidgetId); } catch (e2) { } }
         } finally {
             btn.disabled = false;
             btn.innerHTML = canBookNow()

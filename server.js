@@ -896,31 +896,6 @@ app.post('/api/order', async (req, res) => {
         const hpFlag = !!hp;
         if (hpFlag) console.log('[Order] ⚠️ Honeypot заповнено - заявку створюємо з позначкою, без автоброні');
 
-        // 1б) Cloudflare Turnstile: якщо секрет задано - звіряємо токен клієнта з Cloudflare.
-        //    Мережевий збій до Cloudflare НЕ повинен губити легітимну заявку - краще пропустити
-        //    її менеджеру (з рештою анти-бот шарів - honeypot, rate-limit), ніж відмовити клієнту.
-        if (TURNSTILE_SECRET) {
-            try {
-                const tv = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({
-                        secret: TURNSTILE_SECRET,
-                        response: String(req.body.ts || ''),
-                        remoteip: req.ip || ''
-                    })
-                });
-                const tj = await tv.json();
-                if (!tj.success) {
-                    console.log(`[Order] ✋ Turnstile-перевірка не пройшла: ${logStr(JSON.stringify(tj['error-codes'] || []))}`);
-                    return res.status(400).json({ error: 'Підтвердіть, що ви не робот, і спробуйте ще раз' });
-                }
-            } catch (e) {
-                // Мережа до Cloudflare недоступна - не блокуємо клієнта, лише лишаємо слід у логах.
-                console.error('[Order] Turnstile siteverify - мережева помилка, заявку пропущено без перевірки:', e?.message || e);
-            }
-        }
-
         // 2) Готуємо й перевіряємо список пасажирів (з обмеженням довжин і кількості — захист від сміття/DoS)
         // Кожна відмова логуються з деталями: "тиха" відмова без сліду в логах уже коштувала
         // нам клієнта, який не зміг оформити заявку (див. reject400 нижче).
@@ -979,13 +954,45 @@ app.post('/api/order', async (req, res) => {
         // йде тим самим шляхом, що і при вимкненій автоброні (BOOKING_ENABLED=0), лише з поясненням у check_warning.
         const autobookCapped = wantBook && !autobookAllowed();
         if (autobookCapped) wantBook = false;
+
+        // 5б) Cloudflare Turnstile: перевіряємо ТІЛЬКИ намір автоброні (реальна бронь у
+        //    перевізника) - звичайна заявка менеджеру Turnstile не потребує. Якщо секрет
+        //    не задано - код "спить" (як і раніше). Провал перевірки чи мережевий збій до
+        //    Cloudflare НЕ відхиляє клієнта - лише знижує запит до звичайної заявки менеджеру
+        //    (з рештою анти-бот шарів - honeypot, rate-limit, денний ліміт автоброней).
+        let turnstileFailed = false;
+        if (wantBook && TURNSTILE_SECRET) {
+            try {
+                const tv = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        secret: TURNSTILE_SECRET,
+                        response: String(req.body.ts || ''),
+                        remoteip: req.ip || ''
+                    })
+                });
+                const tj = await tv.json();
+                if (!tj.success) {
+                    console.log(`[Order] ✋ Turnstile-перевірка не пройшла - автобронь знижено до заявки менеджеру: ${logStr(JSON.stringify(tj['error-codes'] || []))}`);
+                    turnstileFailed = true;
+                }
+            } catch (e) {
+                // Мережа до Cloudflare недоступна - не блокуємо клієнта, лише знижуємо автобронь до звичайної заявки.
+                console.error('[Order] Turnstile siteverify - мережева помилка, автобронь знижено до заявки менеджеру:', e?.message || e);
+                turnstileFailed = true;
+            }
+            if (turnstileFailed) wantBook = false;
+        }
+
         let verdict = null;
         if (wantBook) verdict = await verifyBookable(req.body, list.length);
 
         // 6) Перевірка телефонів на чорний список / дублі (ДО створення - щоб зберегти позначку).
         //    Заявку НЕ блокуємо: вона приходить, але з позначкою. Для автоброні беремо свіжий бандл.
         let check_warning = hpFlag ? 'Спрацював анти-бот (honeypot) - можливо, автозаповнення браузера. Звʼяжіться з клієнтом і оформіть вручну.'
-            : autobookCapped ? 'Досягнуто денний ліміт автоброней - заявка передана менеджеру для ручної обробки.' : '';
+            : autobookCapped ? 'Досягнуто денний ліміт автоброней - заявка передана менеджеру для ручної обробки.'
+            : turnstileFailed ? 'Автобронювання не виконано (не пройдено перевірку) - заявку передано менеджеру.' : '';
         const checkBundle = (verdict && verdict.ok) ? verdict.route.data_bundle : req.body.data_bundle;
         if (checkBundle) {
             try {
