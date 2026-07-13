@@ -231,6 +231,16 @@ async function cbFetch(url, opts) {
     return fetch(url, opts);
 }
 
+// Стеля автоброней на добу: навіть якщо бот пройде інші бар'єри, масового booking-bombing не буде.
+const AUTOBOOK_MAX_PER_DAY = +process.env.AUTOBOOK_MAX_PER_DAY || 50;
+let _abDay = '', _abCount = 0;
+function autobookAllowed() {
+    const d = new Date().toISOString().slice(0, 10);
+    if (d !== _abDay) { _abDay = d; _abCount = 0; }
+    if (_abCount >= AUTOBOOK_MAX_PER_DAY) { alertAdmin('autobook denně limit', `Досягнуто ${AUTOBOOK_MAX_PER_DAY} автоброней/добу - подальші йдуть як заявки менеджеру`); return false; }
+    _abCount++; return true;
+}
+
 // GET /api/cities — список міст (через 30-хв кеш getCities, щоб не бити
 // contrabus на кожне відкриття сайту)
 app.get('/api/cities', async (req, res) => {
@@ -934,13 +944,19 @@ app.post('/api/order', async (req, res) => {
         //    і перестає збігатися після перевипуску кешу пошуку).
         // З твариною автобронь неможлива (ціна за тварину залежить від перевізника) - лише менеджер.
         // З honeypot-позначкою теж не бронюємо автоматично - лише через менеджера.
-        const wantBook = !!(req.body.book && BOOKING_ENABLED) && !req.body.pet && !hpFlag;
+        let wantBook = !!(req.body.book && BOOKING_ENABLED) && !req.body.pet && !hpFlag;
+        // Денний ліміт автоброней (запобіжник booking-bombing): якщо стеля вичерпана - НЕ
+        // намагаємось бронювати (і не гаємо зайвий виклик contrabus на verifyBookable), заявка
+        // йде тим самим шляхом, що і при вимкненій автоброні (BOOKING_ENABLED=0), лише з поясненням у check_warning.
+        const autobookCapped = wantBook && !autobookAllowed();
+        if (autobookCapped) wantBook = false;
         let verdict = null;
         if (wantBook) verdict = await verifyBookable(req.body, list.length);
 
         // 6) Перевірка телефонів на чорний список / дублі (ДО створення - щоб зберегти позначку).
         //    Заявку НЕ блокуємо: вона приходить, але з позначкою. Для автоброні беремо свіжий бандл.
-        let check_warning = hpFlag ? 'Спрацював анти-бот (honeypot) - можливо, автозаповнення браузера. Звʼяжіться з клієнтом і оформіть вручну.' : '';
+        let check_warning = hpFlag ? 'Спрацював анти-бот (honeypot) - можливо, автозаповнення браузера. Звʼяжіться з клієнтом і оформіть вручну.'
+            : autobookCapped ? 'Досягнуто денний ліміт автоброней - заявка передана менеджеру для ручної обробки.' : '';
         const checkBundle = (verdict && verdict.ok) ? verdict.route.data_bundle : req.body.data_bundle;
         if (checkBundle) {
             try {
