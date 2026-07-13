@@ -1103,8 +1103,9 @@
 
     // Cloudflare Turnstile (антибот): плейсхолдер до появи реального site key у Cloudflare -
     // поки значення не змінено, рендер віджета пропускається (все "спить", як і раніше).
-    const TURNSTILE_SITE_KEY = 'TURNSTILE_SITE_KEY_PLACEHOLDER';
+    const TURNSTILE_SITE_KEY = '0x4AAAAAAD1TSUyza-Kud8la';
     let _tsWidgetId = null; // id відрендереного (explicit-режим) віджета Turnstile - для remove()/reset()/getResponse()
+    let _tsTries = 0;       // спроби рендеру, поки api.js ще вантажиться (не проґавити віджет)
     let _bookMode = false; // true = рейс без передоплати, бронюємо одразу
     let _isGroup = false, _groupThr = 0; // груповий рейс і поріг передоплати (з умови перевізника)
     let _okToken = ''; // токен броні з відповіді /order - для посилання на сторінку броні на екрані успіху
@@ -1147,9 +1148,16 @@
     function updateTurnstile(book) {
         const holder = document.getElementById('ts-holder');
         if (!holder) return;
-        if (book && TURNSTILE_SITE_KEY !== 'TURNSTILE_SITE_KEY_PLACEHOLDER' && window.turnstile) {
+        if (book && TURNSTILE_SITE_KEY !== 'TURNSTILE_SITE_KEY_PLACEHOLDER') {
+            if (!window.turnstile) {
+                // api.js ще не завантажився - повторимо за мить (до ~4с), поки модалка відкрита
+                if (_tsTries < 20) { _tsTries++; setTimeout(() => { if (document.getElementById('modal-bg').classList.contains('open')) updateTurnstile(canBookNow()); }, 200); }
+                return;
+            }
+            _tsTries = 0;
             if (_tsWidgetId === null) {
-                _tsWidgetId = window.turnstile.render(holder, { sitekey: TURNSTILE_SITE_KEY });
+                // size:'flexible' - віджет тягнеться по ширині модалки, не вилазить на мобільному
+                _tsWidgetId = window.turnstile.render(holder, { sitekey: TURNSTILE_SITE_KEY, size: 'flexible' });
             }
         } else if (_tsWidgetId !== null) {
             if (window.turnstile) { try { window.turnstile.remove(_tsWidgetId); } catch (e) { } }
