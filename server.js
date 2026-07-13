@@ -210,6 +210,27 @@ const visitLimited     = makeRateLimiter(60 * 1000, 10);     // лічильни
 const cliErrLimited    = makeRateLimiter(60 * 1000, 5);      // звіти про JS-збої: 5/хв
 const bookingPageLimited = makeRateLimiter(60 * 1000, 30);   // публічна сторінка броні: 30/хв
 
+// Глобальний стеля на вихідні запити до contrabus: боти не мають вибити квоту.
+// Ковзне вікно 1 хв; при перевищенні - circuit open на 60с (деградуємо, не б'ємо API).
+const CB_MAX_PER_MIN = +process.env.CB_MAX_PER_MIN || 600;
+let _cbWin = { t: 0, n: 0 }, _cbOpenUntil = 0;
+function cbAllowed() {
+    const now = Date.now();
+    if (now < _cbOpenUntil) return false;
+    if (now - _cbWin.t > 60000) _cbWin = { t: now, n: 0 };
+    if (_cbWin.n >= CB_MAX_PER_MIN) {
+        _cbOpenUntil = now + 60000;
+        alertAdmin('contrabus rate cap', `>${CB_MAX_PER_MIN} вих. запитів/хв - circuit open на 60с (можлива бот-атака)`);
+        return false;
+    }
+    _cbWin.n++; return true;
+}
+class CbBusy extends Error { constructor() { super('contrabus busy'); this.code = 'CB_BUSY'; } }
+async function cbFetch(url, opts) {
+    if (!cbAllowed()) throw new CbBusy();
+    return fetch(url, opts);
+}
+
 // GET /api/cities — список міст (через 30-хв кеш getCities, щоб не бити
 // contrabus на кожне відкриття сайту)
 app.get('/api/cities', async (req, res) => {
@@ -242,7 +263,7 @@ async function searchRoutes(from_id, to_id, date) {
     }
     const token = await getToken();
     console.log(`[Search] ${from_id} → ${to_id} на ${date}`);
-    const response = await fetch(`${API_BASE_URL}/info/search`, {
+    const response = await cbFetch(`${API_BASE_URL}/info/search`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ from_id, to_id, date })
@@ -310,6 +331,9 @@ app.post('/api/search', async (req, res) => {
             db.logSearch(nm(from_id), nm(to_id), date, routes.length);
         } catch (e) { /* аналітика не критична */ }
     } catch (err) {
+        if (err instanceof CbBusy) {
+            return res.status(503).json({ error: 'Сервіс тимчасово перевантажений, спробуйте за хвилину' });
+        }
         serverError(res, err, 'Search');
     }
 });
@@ -323,7 +347,7 @@ let citiesCache = null, citiesCacheTime = 0;
 async function getCities() {
     if (citiesCache && Date.now() - citiesCacheTime < 30 * 60 * 1000) return citiesCache;
     const token = await getToken();
-    const r = await fetch(`${API_BASE_URL}/info/get_cities`, {
+    const r = await cbFetch(`${API_BASE_URL}/info/get_cities`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
     });
     if (!r.ok) throw new Error(`get_cities ${r.status}`);
@@ -338,7 +362,7 @@ async function searchCount(token, from, to, date) {
     const key = `${from}|${to}|${date}`;
     const hit = scCache.get(key);
     if (hit && Date.now() - hit.t < 30 * 60 * 1000) return hit.n;
-    const r = await fetch(`${API_BASE_URL}/info/search`, {
+    const r = await cbFetch(`${API_BASE_URL}/info/search`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ from_id: from, to_id: to, date })
@@ -400,7 +424,7 @@ app.post('/api/suggest', async (req, res) => {
 
         // 2) Найближчі міста до пункту призначення, куди є рейси на цю дату.
         //    Перебір з обмеженням за часом (CITY_BUDGET) — щоб не зависнути на повільному API.
-        const CITY_BUDGET = 9000, CHUNK = 12;
+        const CITY_BUDGET = 5000, CHUNK = 12;
         const cities = await getCities();
         const target = cities.find(c => String(c.id) === String(to_id));
         if (target && target.lat_lon) {
@@ -409,7 +433,7 @@ app.post('/api/suggest', async (req, res) => {
                 .filter(c => c.lat_lon && String(c.id) !== String(to_id) && String(c.id) !== String(from_id))
                 .map(c => { const [la, lo] = c.lat_lon.split(',').map(Number); return { id: c.id, name: c.name, country_code: c.country_code, distance_km: haversineKm([tlat, tlon], [la, lo]) }; })
                 .sort((a, b) => a.distance_km - b.distance_km)
-                .slice(0, 200);
+                .slice(0, 100);
 
             const found = [];
             for (let i = 0; i < pool.length && found.length < 3 && (Date.now() - tStart) < CITY_BUDGET; i += CHUNK) {
@@ -424,7 +448,8 @@ app.post('/api/suggest', async (req, res) => {
         }
         return sendAndCache({ type: 'none' });
     } catch (err) {
-        console.error('[Suggest]', err.message);
+        // CbBusy - очікуваний стан під навантаженням (перериває перебір searchCount), не помилка - без логу
+        if (!(err instanceof CbBusy)) console.error('[Suggest]', err.message);
         res.json({ type: 'none' }); // підказка необов'язкова — не ламаємо UX (помилки не кешуємо)
     }
 });
@@ -1054,7 +1079,7 @@ app.post('/api/discounts', async (req, res) => {
         if (hit && Date.now() - hit.t < 6 * 60 * 60 * 1000) return res.json(hit.d);
         if (discountsLimited(req.ip || 'unknown')) return res.json([]); // ліміт — тихо без знижок
         const token = await getToken();
-        const r = await fetch(`${API_BASE_URL}/info/get_route_discounts`, {
+        const r = await cbFetch(`${API_BASE_URL}/info/get_route_discounts`, {
             method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ data_bundle })
         });
@@ -1080,7 +1105,7 @@ app.post('/api/seats', async (req, res) => {
         if (hit && Date.now() - hit.t < 20 * 1000) return res.json(hit.d);
         if (discountsLimited(req.ip || 'unknown')) return res.json(empty); // спільний ліміт зі знижками: 30/хв
         const token = await getToken();
-        const r = await fetch(`${API_BASE_URL}/info/get_free_seats`, {
+        const r = await cbFetch(`${API_BASE_URL}/info/get_free_seats`, {
             method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ data_bundle })
         });
