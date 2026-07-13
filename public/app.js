@@ -46,6 +46,8 @@
     function setStatus(txt, type = '') {
         document.getElementById('status-row').className = `status-row ${type}`;
         document.getElementById('status-txt').textContent = txt;
+        const old = document.getElementById('cities-retry-btn'); // прибираємо кнопку ретраю з попередньої спроби, якщо була
+        if (old) old.remove();
     }
 
     // Кеш списку міст у localStorage (доба): повторні заходи стартують миттєво без запиту.
@@ -81,7 +83,19 @@
             cities = await r.json();
             try { localStorage.setItem(CITIES_LS, JSON.stringify({ t: Date.now(), data: cities })); } catch (e) { }
             citiesReady();
-        } catch (e) { setStatus(`Помилка: ${e.message}`, 'error'); }
+        } catch (e) {
+            // Кешу немає (інакше вище був би ранній return) - без міст пошук неможливий,
+            // тож даємо кнопку ретраю замість того, щоб лишати користувача з мертвим станом.
+            // Кнопку пошуку НЕ розблоковуємо - лишається disabled до успішного citiesReady().
+            setStatus('Не вдалося завантажити міста - перевірте зʼєднання', 'error');
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.id = 'cities-retry-btn';
+            btn.className = 'ck-link';
+            btn.textContent = 'Спробувати ще раз';
+            btn.addEventListener('click', () => { btn.disabled = true; loadCities(); });
+            document.getElementById('status-row').appendChild(btn);
+        }
     }
 
     // === Сторінка маршруту (route page) ===

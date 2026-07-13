@@ -1459,10 +1459,16 @@ const server = app.listen(PORT, () => {
     console.log(`   Панель: ${PUBLIC_BASE_URL}/admin.html`);
     // Локальний запуск (без PUBLIC_BASE_URL у .env) - підказуємо адресу й для цього ПК
     if (!process.env.PUBLIC_BASE_URL) console.log(`   Цей ПК: http://localhost:${PORT}/ (адреса вище - для телефону в тій же Wi-Fi)`);
+    console.log(`   БД:     ${process.env.DATA_DIR || '(default __dirname)'}`);
     if (!API_LOGIN || !API_PASSWORD) console.log('   ⚠️  Не задано API_LOGIN/API_PASSWORD у .env — пошук рейсів не працюватиме!');
     if (!TELEGRAM_BOT_TOKEN) console.log('   ℹ️  Telegram вимкнено (не задано TELEGRAM_BOT_TOKEN у .env)');
     if (!process.env.ADMIN_KEY || ADMIN_KEY === 'change-me' || ADMIN_KEY.length < 12) {
         console.log('   ⚠️  ADMIN_KEY відсутній або заслабкий — задай довгий випадковий ключ (≥16 символів)!');
+    }
+    // У проді слабкий ключ - це не просто підказка, а діра в адмінці: кричимо через console.error,
+    // але не падаємо (сайт має продовжувати працювати навіть з дефолтним ключем).
+    if (IS_PROD && (!process.env.ADMIN_KEY || ADMIN_KEY === 'change-me' || ADMIN_KEY.length < 16)) {
+        console.error('   ❌ НЕБЕЗПЕКА: у production задано слабкий/дефолтний/відсутній ADMIN_KEY — негайно задай довгий випадковий ключ (≥16 символів) у Railway!');
     }
     if (!TURNSTILE_SECRET) console.log('   ℹ️  Turnstile вимкнено (не задано TURNSTILE_SECRET у .env) — антибот-перевірка форми броні пропускається');
     console.log(BOOKING_ENABLED
