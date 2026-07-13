@@ -1310,7 +1310,8 @@
             from_id: depId, to_id: arrId,      // для серверної перевірки рейсу перед бронюванням
             page: (location.pathname + location.search).slice(0, 300),                 // сторінка, з якої лишили заявку
             landing: (() => { try { return sessionStorage.getItem('gdb_landing') || ''; } catch (e) { return ''; } })(), // вхід на сайт (з utm реклами)
-            hp: document.getElementById('c-hp').value // honeypot
+            hp: document.getElementById('c-hp').value, // honeypot
+            ts: (document.querySelector('[name="cf-turnstile-response"]') || {}).value || '' // Cloudflare Turnstile токен (антибот)
         };
 
         try {
@@ -1359,6 +1360,8 @@
             document.getElementById('m-ok').style.display = 'block';
         } catch (e) {
             alert('Не вдалося надіслати заявку: ' + e.message + '\n\nСпробуйте ще раз або зателефонуйте менеджеру.');
+            // Токен Turnstile одноразовий - без reset() повторна спроба відправки завжди провалиться.
+            if (window.turnstile) { try { window.turnstile.reset(); } catch (e2) { } }
         } finally {
             btn.disabled = false;
             btn.innerHTML = canBookNow()

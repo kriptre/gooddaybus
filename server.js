@@ -36,12 +36,12 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com'],
+            scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com', 'https://challenges.cloudflare.com'],
             styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
             fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
             imgSrc: ["'self'", 'data:', 'https://www.googletagmanager.com', 'https://*.google-analytics.com'],
             connectSrc: ["'self'", 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://*.analytics.google.com', 'https://www.googletagmanager.com'],
-            frameSrc: ["'self'", 'https://www.googletagmanager.com'],
+            frameSrc: ["'self'", 'https://www.googletagmanager.com', 'https://challenges.cloudflare.com'],
             objectSrc: ["'none'"],
             frameAncestors: ["'none'"]
         }
@@ -112,6 +112,10 @@ const ADMIN_KEY = process.env.ADMIN_KEY || 'change-me';
 // Telegram-сповіщення та кнопки керування заявками
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
+
+// Cloudflare Turnstile (антибот на формі броні). Поки секрет не задано - верифікація
+// пропускається (сайт працює як раніше); site key у розмітці - плейсхолдер до появи ключів.
+const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET || '';
 
 // Публічна адреса сайту (для посилання на панель у Telegram).
 // Локально — IP машини; після викладки на домен задай PUBLIC_BASE_URL у .env.
@@ -892,6 +896,31 @@ app.post('/api/order', async (req, res) => {
         const hpFlag = !!hp;
         if (hpFlag) console.log('[Order] ⚠️ Honeypot заповнено - заявку створюємо з позначкою, без автоброні');
 
+        // 1б) Cloudflare Turnstile: якщо секрет задано - звіряємо токен клієнта з Cloudflare.
+        //    Мережевий збій до Cloudflare НЕ повинен губити легітимну заявку - краще пропустити
+        //    її менеджеру (з рештою анти-бот шарів - honeypot, rate-limit), ніж відмовити клієнту.
+        if (TURNSTILE_SECRET) {
+            try {
+                const tv = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        secret: TURNSTILE_SECRET,
+                        response: String(req.body.ts || ''),
+                        remoteip: req.ip || ''
+                    })
+                });
+                const tj = await tv.json();
+                if (!tj.success) {
+                    console.log(`[Order] ✋ Turnstile-перевірка не пройшла: ${logStr(JSON.stringify(tj['error-codes'] || []))}`);
+                    return res.status(400).json({ error: 'Підтвердіть, що ви не робот, і спробуйте ще раз' });
+                }
+            } catch (e) {
+                // Мережа до Cloudflare недоступна - не блокуємо клієнта, лише лишаємо слід у логах.
+                console.error('[Order] Turnstile siteverify - мережева помилка, заявку пропущено без перевірки:', e?.message || e);
+            }
+        }
+
         // 2) Готуємо й перевіряємо список пасажирів (з обмеженням довжин і кількості — захист від сміття/DoS)
         // Кожна відмова логуються з деталями: "тиха" відмова без сліду в логах уже коштувала
         // нам клієнта, який не зміг оформити заявку (див. reject400 нижче).
@@ -1435,6 +1464,7 @@ const server = app.listen(PORT, () => {
     if (!process.env.ADMIN_KEY || ADMIN_KEY === 'change-me' || ADMIN_KEY.length < 12) {
         console.log('   ⚠️  ADMIN_KEY відсутній або заслабкий — задай довгий випадковий ключ (≥16 символів)!');
     }
+    if (!TURNSTILE_SECRET) console.log('   ℹ️  Turnstile вимкнено (не задано TURNSTILE_SECRET у .env) — антибот-перевірка форми броні пропускається');
     console.log(BOOKING_ENABLED
         ? `   🎫 Автобронювання УВІМКНЕНО: рейси без передоплати, до ${BOOKING_MAX_PAX} пас.${BOOKING_DRY_RUN ? ' · ⚠️ DRY RUN (брони не створюються)' : ''}`
         : '   ℹ️  Автобронювання вимкнено (BOOKING_ENABLED=1 щоб увімкнути)');

@@ -121,7 +121,7 @@
     <noscript>
         <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     </noscript>
-    <link rel="stylesheet" href="/styles.min.css?v=cbabb9ba50">
+    <link rel="stylesheet" href="/styles.min.css?v=ac18372fb7">
 </head>
 <body>
 <!-- GTM-BODY START -->
@@ -363,6 +363,10 @@
                 <span class="ck-box" aria-hidden="true"></span>
                 <span class="ck-label">Я погоджуюся з <a href="/terms" target="_blank" rel="noopener">Умовами користування</a> та <a href="/privacy" target="_blank" rel="noopener">Політикою конфіденційності</a> і даю згоду на передачу вказаних даних перевізнику для оформлення поїздки.<span class="ck-err-note">Поставте галочку, щоб надіслати заявку</span></span>
             </label>
+            <!-- Cloudflare Turnstile (антибот): TURNSTILE_SITE_KEY_PLACEHOLDER замінити на реальний site key,
+                 коли він буде створений у Cloudflare (і пересобрати). Токен кладеться Turnstile у приховане
+                 поле name="cf-turnstile-response" всередині цього контейнера. -->
+            <div class="cf-turnstile" data-sitekey="TURNSTILE_SITE_KEY_PLACEHOLDER" data-size="flexible"></div>
             <div class="modal-foot">
                 <button class="btn-cancel" id="m-cancel">Скасувати</button>
                 <button class="btn-submit" id="m-submit">
@@ -421,9 +425,11 @@
     </div>
 </div>
 
+<!-- Cloudflare Turnstile: асинхронно, не блокує рендер -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
 <script>window.__ROUTE__ = {"fromId":4,"toId":287,"fromName":"Київ","toName":"Краків","slug":"kyiv-krakiv"};</script>
-<script src="/common.min.js?v=cbabb9ba50"></script>
-<script src="/app.min.js?v=cbabb9ba50"></script>
+<script src="/common.min.js?v=ac18372fb7"></script>
+<script src="/app.min.js?v=ac18372fb7"></script>
 </body>
 </html>
