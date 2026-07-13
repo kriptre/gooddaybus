@@ -402,14 +402,14 @@
             const box = document.getElementById('suggest-box');
             if (!box) return;
             if (s.type === 'date') {
-                box.innerHTML = `<div class="sg-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-lightbulb"></use></svg> На обрану дату рейсів немає, але є на ${s.date}:</div>
-                    <button class="sg-btn sg-primary" id="sg-date">Показати рейси на ${s.date} <span class="sg-dist">${s.count} ${routeWord(s.count)}</span> <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-right"></use></svg></button>`;
+                box.innerHTML = `<div class="sg-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-lightbulb"></use></svg> На обрану дату рейсів немає, але є на ${escTxt(s.date)}:</div>
+                    <button class="sg-btn sg-primary" id="sg-date">Показати рейси на ${escTxt(s.date)} <span class="sg-dist">${escTxt(s.count)} ${routeWord(s.count)}</span> <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-right"></use></svg></button>`;
                 document.getElementById('sg-date').addEventListener('click', () => setDateAndSearch(s.date));
             } else if (s.type === 'cities') {
                 window._alts = s.alternatives;
                 box.innerHTML = `<div class="sg-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-lightbulb"></use></svg> Прямих рейсів немає. Натисніть місто поряд, щоб переглянути рейси:</div>
                     <div class="sg-cities">${s.alternatives.map((a, i) =>
-                        `<button class="sg-btn sg-city" data-ai="${i}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${a.name} <span class="sg-dist">~${a.distance_km} км · ${a.count} ${routeWord(a.count)}</span></button>`
+                        `<button class="sg-btn sg-city" data-ai="${i}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${escTxt(a.name)} <span class="sg-dist">~${escTxt(a.distance_km)} км · ${escTxt(a.count)} ${routeWord(a.count)}</span></button>`
                     ).join('')}</div>`;
                 box.querySelectorAll('.sg-city').forEach(b => b.addEventListener('click', () => {
                     const a = window._alts[b.dataset.ai];
@@ -540,7 +540,7 @@
                     <text x="187" y="48" text-anchor="middle" font-family="Nunito, sans-serif" font-size="17" font-weight="800" fill="#F06422">?</text>
                 </svg>
                 <h3>Рейсів не знайдено</h3>
-                <p>На ${date} за напрямком ${dep} → ${arr} рейсів немає.</p>
+                <p>На ${escTxt(date)} за напрямком ${escTxt(dep)} → ${escTxt(arr)} рейсів немає.</p>
                 <div class="suggest-box" id="suggest-box">
                     <div class="sg-loading"><svg class="ic ic-spin" aria-hidden="true"><use href="/_sprite.svg#i-spinner"></use></svg> Шукаємо найближчі дати та міста...</div>
                     <div class="sg-skel">
@@ -563,7 +563,7 @@
 
         el.innerHTML = `
             <div class="res-hdr">
-                <div class="res-title">${dep} → ${arr} · ${date}</div>
+                <div class="res-title">${escTxt(dep)} → ${escTxt(arr)} · ${escTxt(date)}</div>
                 <div class="res-badge">${routes.length} рейсів</div>
             </div>
             <div class="sort-bar">
