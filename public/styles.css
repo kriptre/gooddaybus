@@ -605,10 +605,11 @@
 .ds-day.sel { background: var(--orange); border-color: var(--orange); }
 .ds-day.sel .ds-dow, .ds-day.sel .ds-num, .ds-day.sel .ds-mon { color: #fff; }
 @media (max-width: 600px) {
-    .date-strip { gap: 5px; padding: 0 12px; }
-    .ds-days { gap: 5px; }
-    .ds-day { padding: 7px 1px; }
-    .ds-day .ds-num { font-size: 15px; }
+    .date-strip { gap: 4px; padding: 0 12px; }
+    .ds-days { gap: 4px; }
+    .ds-day { padding: 9px 2px; }
+    .ds-day .ds-num { font-size: 16px; }
+    .ds-arr { width: 30px; }
 }
 /* SEO-текст під віджетом на сторінці маршруту */
 .route-seo { max-width: 820px; margin: 40px auto 0; padding: 0 20px; }

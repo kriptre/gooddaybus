@@ -99,7 +99,9 @@
     }
 
     // === Сторінка маршруту (route page) ===
-    const STRIP_LEN = 7, STRIP_MAX = 90;
+    const STRIP_MAX = 90;
+    // Кількість дат у ряд за шириною екрана: 7 дат у 375px сплющуються, тож на телефоні менше.
+    const stripLen = () => { const w = window.innerWidth; return w <= 480 ? 4 : (w <= 700 ? 5 : 7); };
     const DOW = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
     const MON_SHORT = ['січ', 'лют', 'бер', 'кві', 'тра', 'чер', 'лип', 'сер', 'вер', 'жов', 'лис', 'гру'];
     const ymdLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -108,6 +110,8 @@
     function buildDateStrip(selectedYMD, dir) {
         const box = document.getElementById('date-strip');
         if (!box) return;
+        const STRIP_LEN = stripLen();
+        if (_stripStart > STRIP_MAX - STRIP_LEN + 1) _stripStart = Math.max(0, STRIP_MAX - STRIP_LEN + 1);
         const today = new Date(); today.setHours(0, 0, 0, 0);
         let days = '';
         for (let i = 0; i < STRIP_LEN; i++) {
@@ -117,7 +121,7 @@
         }
         const canPrev = _stripStart > 0, canNext = _stripStart + STRIP_LEN <= STRIP_MAX;
         box.innerHTML = `<button type="button" class="ds-arr" id="ds-prev"${canPrev ? '' : ' disabled'} aria-label="Раніше"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-left"></use></svg></button>`
-            + `<div class="ds-days">${days}</div>`
+            + `<div class="ds-days" style="grid-template-columns:repeat(${STRIP_LEN},1fr)">${days}</div>`
             + `<button type="button" class="ds-arr" id="ds-next"${canNext ? '' : ' disabled'} aria-label="Пізніше"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-right"></use></svg></button>`;
         if (dir) box.querySelector('.ds-days').classList.add('slide-' + dir); // анімація гортання
         box.querySelector('#ds-prev').addEventListener('click', () => { _stripStart = Math.max(0, _stripStart - STRIP_LEN); buildDateStrip(document.getElementById('date-input').value, 'prev'); });
@@ -129,6 +133,17 @@
             search(); // той самий маршрут, нова дата → шукаємо тут же
         }));
     }
+
+    // Поворот екрана / зміна ширини змінює к-сть днів (5⇄7) - перебудовуємо стрічку лише коли це справді сталося
+    let _lastStripN = stripLen();
+    window.addEventListener('resize', () => {
+        const n = stripLen();
+        if (n !== _lastStripN) {
+            _lastStripN = n;
+            const inp = document.getElementById('date-input');
+            if (inp) buildDateStrip(inp.value);
+        }
+    });
 
     function initRoutePage() {
         const R = window.__ROUTE__;
