@@ -489,7 +489,8 @@
         noprepayment: { i: 'hand-holding-dollar', t: 'Без передоплати' },
         norefund: { i: 'ban', t: 'Без повернення квитка' },
         'pet-only-from-eu': { i: 'paw', t: 'Тварини - лише на рейсах з ЄС' },
-        starlink: { i: 'wifi', t: 'Супутниковий інтернет (Starlink)' }
+        starlink: { i: 'wifi', t: 'Супутниковий інтернет (Starlink)' },
+        Drinks: { i: 'cup', t: 'Напої' }
     };
     // Невідомі коди від API НЕ показуємо клієнту (сирий англійський код лише плутає),
     // але один раз за сесію репортимо в лог сервера - щоб ми дізнались і додали переклад.
@@ -508,7 +509,7 @@
         if (!Array.isArray(codes) || !codes.length) return '';
         // 'noprepayment' - послуга перевізника загалом і може суперечити умовам
         // конкретного рейсу (label_type) - тип оплати показуємо лише у рядку "Оплата"
-        const chips = codes.filter(c => c !== 'noprepayment').map(code => {
+        const chips = codes.filter(c => c && String(c).trim() && c !== 'noprepayment').map(code => {
             const a = AMENITIES[code];
             if (!a) { reportUnknownAmenity(code); return ''; }
             return `<span class="amen"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-${a.i}"></use></svg> ${escTxt(a.t)}</span>`;
