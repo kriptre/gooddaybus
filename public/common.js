@@ -28,7 +28,17 @@
             });
         } catch (e) { }
     }
-    window.addEventListener('error', function (e) { reportError(e.message, e.filename, e.lineno); });
+    window.addEventListener('error', function (e) {
+        var src = String(e.filename || '');
+        var msg = String(e.message || '');
+        // Шум від ЧУЖОГО коду не репортимо: вбудовані браузери додатків (Facebook/Telegram
+        // WebView) інжектять свої скрипти зі схемами на кшталт iabjs:// і падають самі по собі
+        // ("Java object is gone"), розширення - зі своїми схемами, а крос-доменні скрипти дають
+        // безлике "Script error.". Це не збої сайту - шлемо лише помилки з наших файлів.
+        if (src && src.indexOf(location.origin) !== 0) return;
+        if (msg === 'Script error.') return;
+        reportError(msg, src, e.lineno);
+    });
     window.addEventListener('unhandledrejection', function (e) {
         reportError('unhandledrejection: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason || '')), '', 0);
     });
