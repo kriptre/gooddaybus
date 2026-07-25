@@ -1,4 +1,18 @@
     const PROXY_BASE = '/api'; // той самий сервер, що віддає сайт (працює і локально, і на домені)
+    // Доступ до storage може бути ЗАБОРОНЕНИЙ (жорсткі налаштування приватності, блокування
+    // cookie, вбудовані браузери) - тоді навіть звернення до window.localStorage кидає
+    // SecurityError. Раніше це валило ініціалізацію: не вантажились міста й не працювала
+    // кнопка пошуку. Тому працюємо ЛИШЕ через ці обгортки - без storage сайт просто не
+    // запамʼятовує вибір, але лишається повністю робочим.
+    const safeStore = kind => {
+        const box = () => { try { return window[kind]; } catch (e) { return null; } };
+        return {
+            get(k) { try { const s = box(); return s ? s.getItem(k) : null; } catch (e) { return null; } },
+            set(k, v) { try { const s = box(); if (s) s.setItem(k, v); } catch (e) { } },
+            del(k) { try { const s = box(); if (s) s.removeItem(k); } catch (e) { } }
+        };
+    };
+    const LS = safeStore('localStorage'), SS = safeStore('sessionStorage');
     let cities = [], depId = null, arrId = null, selRoute = null;
     let _routes = [], _view = [], _dep = '', _arr = '', _date = '', _sortBy = 'departure';
     let _sortDir = 1;    // 1 = за зростанням; повторний клік по активному сортуванню - реверс
@@ -7,8 +21,8 @@
     // Фільтри рейсів: 'noprepay' = без передоплати, 'direct' = без пересадок.
     // Порожній набір = показувати всі. Памʼятаємо вибір між пошуками й візитами (localStorage).
     const FILTERS_KEY = 'gdb_filters';
-    let _filters = new Set((() => { try { return JSON.parse(localStorage.getItem(FILTERS_KEY) || '[]'); } catch (e) { return []; } })());
-    const saveFilters = () => { try { localStorage.setItem(FILTERS_KEY, JSON.stringify([..._filters])); } catch (e) { } };
+    let _filters = new Set((() => { try { return JSON.parse(LS.get(FILTERS_KEY) || '[]'); } catch (e) { return []; } })());
+    const saveFilters = () => { try { LS.set(FILTERS_KEY, JSON.stringify([..._filters])); } catch (e) { } };
     // "Передоплата лише для груп" (текст на кшталт "для груп з трьох і більше осіб"):
     // для 1-2 пасажирів це фактично без передоплати - рахуємо такі рейси у фільтрі
     // "Без передоплати", а умову показуємо в деталях рейсу.
@@ -69,7 +83,7 @@
     }
     async function loadCities() {
         try {
-            const c = JSON.parse(localStorage.getItem(CITIES_LS));
+            const c = JSON.parse(LS.get(CITIES_LS));
             if (c && Array.isArray(c.data) && c.data.length && Date.now() - c.t < CITIES_TTL) {
                 cities = c.data;
                 citiesReady();
@@ -81,7 +95,7 @@
             const r = await fetch(`${PROXY_BASE}/cities`);
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             cities = await r.json();
-            try { localStorage.setItem(CITIES_LS, JSON.stringify({ t: Date.now(), data: cities })); } catch (e) { }
+            try { LS.set(CITIES_LS, JSON.stringify({ t: Date.now(), data: cities })); } catch (e) { }
             citiesReady();
         } catch (e) {
             // Кешу немає (інакше вище був би ранній return) - без міст пошук неможливий,
@@ -183,13 +197,13 @@
         { f: 'Київ', t: 'Берлін', fi: 4, ti: 49 },
         { f: 'Львів', t: 'Прага', fi: 33, ti: 460 }
     ];
-    const getRecent = () => { try { return JSON.parse(localStorage.getItem('gdb_recent') || '[]'); } catch (e) { return []; } };
+    const getRecent = () => { try { return JSON.parse(LS.get('gdb_recent') || '[]'); } catch (e) { return []; } };
     function saveRecent(f, t, fi, ti) {
         if (!f || !t || fi == null || ti == null) return;
         try {
             const l = getRecent().filter(r => !(String(r.fi) === String(fi) && String(r.ti) === String(ti)));
             l.unshift({ f, t, fi, ti });
-            localStorage.setItem('gdb_recent', JSON.stringify(l.slice(0, 4)));
+            LS.set('gdb_recent', JSON.stringify(l.slice(0, 4)));
         } catch (e) { }
     }
     // Підставити маршрут (обидва поля) і запустити пошук - для підказок «нещодавні/популярні»
@@ -1271,11 +1285,11 @@
         // Памʼять кількості пасажирів: скільки їхало минулого разу - стільки рядків і відкриваємо
         // (зайві легко прибрати хрестиком). Ліміт 5 - як у автоброні.
         let paxN = 1;
-        try { paxN = Math.min(5, Math.max(1, parseInt(localStorage.getItem('gdb_paxn'), 10) || 1)); } catch (e) { }
+        try { paxN = Math.min(5, Math.max(1, parseInt(LS.get('gdb_paxn'), 10) || 1)); } catch (e) { }
         for (let i = 0; i < paxN; i++) addPax();
         // Автопідстановка збережених даних першого пасажира (лише цей пристрій, на сервер не йде)
         try {
-            const saved = JSON.parse(localStorage.getItem('gdb_pax1') || 'null');
+            const saved = JSON.parse(LS.get('gdb_pax1') || 'null');
             if (saved) {
                 const row = document.querySelector('#pax-list .pax-row');
                 if (row) {
@@ -1376,7 +1390,7 @@
             pet: petChosen(),                  // їде з твариною → лише менеджер
             from_id: depId, to_id: arrId,      // для серверної перевірки рейсу перед бронюванням
             page: (location.pathname + location.search).slice(0, 300),                 // сторінка, з якої лишили заявку
-            landing: (() => { try { return sessionStorage.getItem('gdb_landing') || ''; } catch (e) { return ''; } })(), // вхід на сайт (з utm реклами)
+            landing: (() => { try { return SS.get('gdb_landing') || ''; } catch (e) { return ''; } })(), // вхід на сайт (з utm реклами)
             hp: document.getElementById('c-hp').value, // honeypot
             // Cloudflare Turnstile токен (антибот) - лише при реальній автоброні (willBook);
             // звичайна заявка менеджеру Turnstile не потребує і токен не шле.
@@ -1393,11 +1407,11 @@
                 throw new Error(err.error || `HTTP ${r.status}`);
             }
             const j = await r.json().catch(() => ({}));
-            try { localStorage.setItem('gdb_paxn', String(payload.passengers.length)); } catch (e) { }
+            try { LS.set('gdb_paxn', String(payload.passengers.length)); } catch (e) { }
             // Памʼять даних першого пасажира для наступної броні (лише пристрій, на сервер не йде)
             try {
                 const p0 = payload.passengers[0] || {};
-                localStorage.setItem('gdb_pax1', JSON.stringify({ fn: p0.name || '', ln: p0.surname || '', ph: p0.phone || '' }));
+                LS.set('gdb_pax1', JSON.stringify({ fn: p0.name || '', ln: p0.surname || '', ph: p0.phone || '' }));
             } catch (e) { }
             const tks = (j.booked && Array.isArray(j.tickets)) ? j.tickets.filter(t => t.pdf) : [];
             if (j.booked) {
@@ -1519,31 +1533,38 @@
     (() => {
         const p = new URLSearchParams(location.search);
         if (p.has('notrack')) {
-            if (p.get('notrack') === '0') { localStorage.removeItem('gdb_notrack'); alert('Облік увімкнено: цей браузер знову рахується у статистиці.'); }
-            else { localStorage.setItem('gdb_notrack', '1'); alert('Готово: заходи й пошуки з цього браузера більше не потраплятимуть у статистику сайту.'); }
+            if (p.get('notrack') === '0') { LS.del('gdb_notrack'); alert('Облік увімкнено: цей браузер знову рахується у статистиці.'); }
+            else { LS.set('gdb_notrack', '1'); alert('Готово: заходи й пошуки з цього браузера більше не потраплятимуть у статистику сайту.'); }
         }
     })();
-    const noTrack = () => localStorage.getItem('gdb_notrack') === '1';
+    const noTrack = () => LS.get('gdb_notrack') === '1';
 
     document.addEventListener('DOMContentLoaded', () => {
+        // Кроки ініціалізації ізольовані: збій одного (напр. заблокований storage чи
+        // відсутній елемент) не має лишати відвідувача з непрацюючою кнопкою пошуку.
+        const step = fn => { try { fn(); } catch (e) { console.error('[init]', e); } };
+
         // Лічильник візитів - один раз на сесію (крім позначених notrack)
-        if (!sessionStorage.getItem('gdb_visited')) {
-            sessionStorage.setItem('gdb_visited', '1');
-            fetch(`${PROXY_BASE}/visit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notrack: noTrack() }) }).catch(() => {});
-        }
-        setTodayDate();
-        const dateInput = document.getElementById('date-input');
-        dateInput.addEventListener('change', updateDateDisplay);
-        // Клік будь-де по полю відкриває календар: на телефоні тап у нативний інпут
-        // робить це сам, на ПК додатково викликаємо showPicker (try/catch - якщо
-        // нативний пікер уже відкрився, повторний виклик просто ігнорується).
-        document.getElementById('date-wrap').addEventListener('click', () => {
-            try { if (typeof dateInput.showPicker === 'function') dateInput.showPicker(); else dateInput.focus(); } catch (err) {}
+        step(() => {
+            if (!SS.get('gdb_visited')) {
+                SS.set('gdb_visited', '1');
+                fetch(`${PROXY_BASE}/visit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notrack: noTrack() }) }).catch(() => {});
+            }
+        });
+        step(setTodayDate);
+        step(() => {
+            const dateInput = document.getElementById('date-input');
+            dateInput.addEventListener('change', updateDateDisplay);
+            // Клік будь-де по полю відкриває календар: на телефоні тап у нативний інпут
+            // робить це сам, на ПК додатково викликаємо showPicker (try/catch - якщо
+            // нативний пікер уже відкрився, повторний виклик просто ігнорується).
+            document.getElementById('date-wrap').addEventListener('click', () => {
+                try { if (typeof dateInput.showPicker === 'function') dateInput.showPicker(); else dateInput.focus(); } catch (err) {}
+            });
         });
         // Автокомпліт навішуємо ДО loadCities: при кеш-хіті loadCities синхронно робить
         // автофокус на «Звідки», і focus-обробник має вже існувати, щоб показати панель.
-        ac('departure', 'departure-list', true);
-        ac('arrival', 'arrival-list', false);
-        loadCities();
-        document.getElementById('search-btn').addEventListener('click', search);
+        step(() => { ac('departure', 'departure-list', true); ac('arrival', 'arrival-list', false); });
+        step(loadCities);
+        step(() => document.getElementById('search-btn').addEventListener('click', search));
     });
