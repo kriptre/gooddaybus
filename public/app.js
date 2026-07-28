@@ -42,10 +42,10 @@
     // Рейс дозволяє перевезення тварин (код 'pets' в зручностях перевізника)
     // "pet-only-from-eu" - перевізник бере тварин лише на рейсах ІЗ ЄС: враховуємо
     // напрямок (from_eu проставляє сервер, бо country_code міст фронту не віддається)
-    const allowsPets = rt => Array.isArray(rt.carrier_amenities) && (
-        rt.carrier_amenities.includes('pets') ||
-        (rt.carrier_amenities.includes('pet-only-from-eu') && !!rt.from_eu)
-    );
+    // hasAmen - пошук коду без залежності від регістру (contrabus присилає різний)
+    const hasAmen = (rt, code) => Array.isArray(rt && rt.carrier_amenities)
+        && rt.carrier_amenities.some(c => String(c || '').trim().toLowerCase() === code);
+    const allowsPets = rt => hasAmen(rt, 'pets') || (hasAmen(rt, 'pet-only-from-eu') && !!rt.from_eu);
     const matchesFilters = rt =>
         (!_filters.has('noprepay') || !rt.label_type || isGroupPrepay(rt)) &&
         (!_filters.has('direct') || isDirect(rt)) &&
@@ -504,8 +504,12 @@
         norefund: { i: 'ban', t: 'Без повернення квитка' },
         'pet-only-from-eu': { i: 'paw', t: 'Тварини - лише на рейсах з ЄС' },
         starlink: { i: 'wifi', t: 'Супутниковий інтернет (Starlink)' },
-        Drinks: { i: 'cup', t: 'Напої' }
+        drinks: { i: 'cup', t: 'Напої' },
+        steward: { i: 'user', t: 'Стюард у салоні' }
     };
+    // Ключі словника - у нижньому регістрі; код від API нормалізуємо перед пошуком
+    // (той самий код приходить і як "Drinks", і як "drinks").
+    const amenKey = c => String(c || '').trim().toLowerCase();
     // Невідомі коди від API НЕ показуємо клієнту (сирий англійський код лише плутає),
     // але один раз за сесію репортимо в лог сервера - щоб ми дізнались і додали переклад.
     const _unkAmen = new Set();
@@ -523,7 +527,8 @@
         if (!Array.isArray(codes) || !codes.length) return '';
         // 'noprepayment' - послуга перевізника загалом і може суперечити умовам
         // конкретного рейсу (label_type) - тип оплати показуємо лише у рядку "Оплата"
-        const chips = codes.filter(c => c && String(c).trim() && c !== 'noprepayment').map(code => {
+        const chips = codes.filter(c => amenKey(c) && amenKey(c) !== 'noprepayment').map(raw => {
+            const code = amenKey(raw);
             const a = AMENITIES[code];
             if (!a) { reportUnknownAmenity(code); return ''; }
             return `<span class="amen"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-${a.i}"></use></svg> ${escTxt(a.t)}</span>`;
@@ -598,6 +603,17 @@
             return;
         }
         setStatus(`Знайдено рейсів: ${routes.length}`, 'success');
+        // contrabus присилає коди зручностей у різному регістрі ("Drinks" і "drinks") та
+        // з порожніми елементами. Нормалізуємо ОДИН раз тут, щоб усі перевірки нижче
+        // (фільтр тварин, вибір місця, чипи) не залежали від регістру - інакше рейс із
+        // кодом "Pets" тихо зникав би з фільтра «З твариною».
+        routes.forEach(rt => {
+            if (Array.isArray(rt.carrier_amenities)) {
+                rt.carrier_amenities = rt.carrier_amenities
+                    .filter(c => c && String(c).trim())
+                    .map(c => String(c).trim().toLowerCase());
+            }
+        });
         _routes = routes; _dep = dep; _arr = arr; _date = date;
         _shown = SHOW_STEP; // новий пошук - знову з першої порції
 
@@ -1006,7 +1022,7 @@
         _seatsByBundle.set(bundle, { p });
         return p;
     }
-    const hasSeatSelect = rt => !!rt && Array.isArray(rt.carrier_amenities) && rt.carrier_amenities.includes('seatselect');
+    const hasSeatSelect = rt => hasAmen(rt, 'seatselect');
     function prefetchSeats(rt) { if (hasSeatSelect(rt) && rt.data_bundle) fetchSeats(rt.data_bundle); }
 
     async function loadModalSeats(rt) {
