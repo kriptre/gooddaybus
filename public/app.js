@@ -499,7 +499,7 @@
         gps: { i: 'location-crosshairs', t: 'GPS-трекінг' },
         seatselect: { i: 'chair', t: 'Вибір місця' },
         addstop: { i: 'map-pin', t: 'Додаткові зупинки' },
-        '16_noaccompany': { i: 'child-reaching', t: 'Діти 16+ без супроводу' },
+        // Вікові пороги для дітей без супроводу - шаблоном нижче (16_noaccompany, 18_noaccompany...)
         noprepayment: { i: 'hand-holding-dollar', t: 'Без передоплати' },
         norefund: { i: 'ban', t: 'Без повернення квитка' },
         'pet-only-from-eu': { i: 'paw', t: 'Тварини - лише на рейсах з ЄС' },
@@ -510,6 +510,16 @@
     // Ключі словника - у нижньому регістрі; код від API нормалізуємо перед пошуком
     // (той самий код приходить і як "Drinks", і як "drinks").
     const amenKey = c => String(c || '').trim().toLowerCase();
+    // Шаблонні коди: той самий сенс приходить із різним числом ("16_noaccompany",
+    // "18_noaccompany"). Обробляємо правилом, щоб не додавати кожен варіант окремо.
+    const AMEN_PATTERNS = [
+        { re: /^(\d{1,2})_noaccompany$/, make: m => ({ i: 'child-reaching', t: `Діти ${m[1]}+ без супроводу` }) }
+    ];
+    function amenInfo(code) {
+        if (AMENITIES[code]) return AMENITIES[code];
+        for (const p of AMEN_PATTERNS) { const m = p.re.exec(code); if (m) return p.make(m); }
+        return null;
+    }
     // Невідомі коди від API НЕ показуємо клієнту (сирий англійський код лише плутає),
     // але один раз за сесію репортимо в лог сервера - щоб ми дізнались і додали переклад.
     const _unkAmen = new Set();
@@ -529,7 +539,7 @@
         // конкретного рейсу (label_type) - тип оплати показуємо лише у рядку "Оплата"
         const chips = codes.filter(c => amenKey(c) && amenKey(c) !== 'noprepayment').map(raw => {
             const code = amenKey(raw);
-            const a = AMENITIES[code];
+            const a = amenInfo(code);
             if (!a) { reportUnknownAmenity(code); return ''; }
             return `<span class="amen"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-${a.i}"></use></svg> ${escTxt(a.t)}</span>`;
         }).join('');
