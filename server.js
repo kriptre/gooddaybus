@@ -817,7 +817,7 @@ async function createBooking(data_bundle, passengers, skipChecks = false) {
                 name: p.name, surname: p.surname, phone: p.phone,
                 viber: p.phone,                     // у бронях диспетчера viber завжди = телефон
                 email: '',
-                comments: '',
+                comments: 'Онлайн-бронь із сайту gooddaybus.com',  // видно диспетчеру - відрізнити від ручних
                 ticket_type: +p.ticket_type || 0,   // id знижки з get_route_discounts (0 = повний квиток)
                 discount: 0,
                 prepayment: 0,
