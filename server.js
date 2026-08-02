@@ -746,12 +746,22 @@ function bundlePayload(b) {
     try { return JSON.parse(Buffer.from(String(b).split('.')[1], 'base64url').toString()).data || null; }
     catch { return null; }
 }
-const sameTrip = (a, b) => !!a && !!b &&
-    String(a.trip_id) === String(b.trip_id) &&
-    String(a.connection_trip_id) === String(b.connection_trip_id) &&
-    String(a.from_stop_id) === String(b.from_stop_id) &&
-    String(a.to_stop_id) === String(b.to_stop_id) &&
-    String(a.date) === String(b.date);
+// Стабільний id рейсу всередині data_bundle. Системи перевізників звуть його по-різному:
+// octobus2/contrabus - rideId, likebus - ride_id. У bussystem/prex стабільного id немає
+// (їхні route_id/interval_id містять час і змінюються між пошуками) - там звіряємо за
+// ознаками, які бачив клієнт (перевізник + час + ціна).
+const rideKey = p => {
+    if (!p) return null;
+    const v = p.rideId != null ? p.rideId : p.ride_id;
+    return v == null || v === '' ? null : String(v);
+};
+const numPrice = s => parseFloat(String(s == null ? '' : s).replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+const normStr = s => String(s || '').trim().toLowerCase();
+// Рейс зі свіжої видачі відповідає тому, що клієнт бачив і підтвердив на сайті
+const matchesShown = (r, body) =>
+    normStr(r.carrier || r.company) === normStr(body.route_carrier) &&
+    normStr(r.departure_time || r.time_from) === normStr(body.route_time) &&
+    Math.abs(numPrice(r.price) - numPrice(body.route_price)) < 1;
 
 // Чи можна бронювати цей рейс - за свіжими даними contrabus, а не зі слів клієнта
 async function verifyBookable(body, paxCount) {
@@ -764,18 +774,19 @@ async function verifyBookable(body, paxCount) {
     } catch (e) {
         return { ok: false, reason: 'пошук рейсу недоступний' };
     }
+    // Пошук того самого рейсу у свіжій видачі. Точний збіг рядка data_bundle майже НІКОЛИ
+    // не спрацьовує: contrabus підписує його JWT-ом із власним iat/exp, тож рядок різний
+    // при кожному пошуку. Тому основний шлях - стабільний rideId, а де його немає -
+    // ознаки, які клієнт бачив на сайті (перевізник + час + ціна).
+    const want = bundlePayload(body.data_bundle);
+    const wantKey = rideKey(want);
     let rt = routes.find(r => r.data_bundle === body.data_bundle);
-    if (!rt) {
-        const want = bundlePayload(body.data_bundle);
-        rt = want ? routes.find(r => sameTrip(bundlePayload(r.data_bundle), want)) : null;
-    }
-    if (!rt) return { ok: false, reason: 'рейс не знайдено у свіжій видачі' };
-    // Захист від підміни рейсу: якщо точний data_bundle не знайшовся і ми взяли рейс за запасним
-    // збігом (trip_id/зупинки), він МУСИТЬ збігатися з обраним клієнтом за ціною/перевізником/часом.
-    // Інакше (кілька рейсів на цей напрямок + прострочений бандл) автобронь могла б створити квиток
-    // ІНШОГО рейсу - тоді НЕ бронюємо автоматично, віддаємо менеджеру.
-    const num = s => parseFloat(String(s == null ? '' : s).replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
-    const norm = s => String(s || '').trim().toLowerCase();
+    if (!rt && wantKey) rt = routes.find(r => rideKey(bundlePayload(r.data_bundle)) === wantKey);
+    if (!rt) rt = routes.find(r => matchesShown(r, body));
+    if (!rt) return { ok: false, reason: 'рейс уже недоступний (немає у свіжій видачі перевізника)' };
+    // Контроль підміни: навіть знайдений рейс МУСИТЬ збігатися з обраним клієнтом за
+    // ціною/перевізником/часом - інакше забронювали б не те, що людина підтвердила.
+    const num = numPrice, norm = normStr;
     const okPrice = !body.route_price || !rt.price || Math.abs(num(rt.price) - num(body.route_price)) < 1;
     const okCarrier = !body.route_carrier || norm(rt.carrier || rt.company) === norm(body.route_carrier);
     const tShown = norm(body.route_time), tFresh = norm(rt.departure_time || rt.time_from);
