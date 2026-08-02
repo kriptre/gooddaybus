@@ -1389,6 +1389,7 @@ app.post('/api/bookings/:ticketId/cancel', requireAdmin, async (req, res) => {
         }
         console.log(`[Booking] ❌ Скасовано бронь ${logStr(id, 64)} (менеджер через адмінку)`);
         alertAdmin('Скасування броні', `Квиток ${id} скасовано менеджером через адмінку`);
+        cbCache = null; // скидаємо кеш списку: інакше ще ~60с бронь показувалась би активною
         res.json({ ok: true });
     } catch (err) { serverError(res, err, 'CancelBooking'); }
 });
