@@ -81,6 +81,8 @@
         .b-cancelled{background:var(--gray-bg);color:var(--gray)}
         .b-booked{background:var(--green-bg);color:var(--green)}
         .b-pet{background:var(--orange-bg);color:var(--orange)}
+        .b-unconf{background:var(--amber-bg);color:var(--amber)}
+        .sales-banner{display:flex;align-items:center;gap:8px;background:var(--amber-bg);color:var(--amber);font-weight:700;font-size:14px;border-radius:12px;padding:14px 18px;margin-bottom:14px}
         .o-tickets{margin:0 22px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
         .o-tickets .act-pdf{margin-left:0;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;border-radius:8px;padding:7px 12px}
 
@@ -412,22 +414,26 @@
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             const d = await r.json();
             const all = d.bookings || [];
-            renderSales(all);
+            renderSales(all, d.unconfirmed || 0);
             document.getElementById('c-sales').textContent = all.filter(b => !CANCELLED_BOOKING.has(String(b.status))).length;
             stampRefresh();
         } catch (e) { console.error(e); }
     }
     const CANCELLED_BOOKING = new Set(['agent_cancel', 'carrier_cancel']);
-    function renderSales(list) {
+    function renderSales(list, unconfirmed) {
         const el = document.getElementById('list');
         if (!list.length) {
             el.innerHTML = `<div class="empty"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-ticket"></use></svg><h3>Бронювань немає</h3><p>Тут - реальні бронювання з вашого акаунту Contrabus</p></div>`;
             return;
         }
-        el.innerHTML = list.map(b => {
+        const banner = unconfirmed > 0
+            ? `<div class="sales-banner">⚠ Не підтверджено в диспетчерській: ${unconfirmed} - ці броні не потраплять у звіт. Підтвердьте їх вручну в диспетчерській contrabus.</div>`
+            : '';
+        el.innerHTML = banner + list.map(b => {
             const initial = (b.name_surname || '?').trim().charAt(0);
             const price = b.price ? `${b.price} ${CUR[b.currency] || b.currency || ''}` : '';
             const cancelled = CANCELLED_BOOKING.has(String(b.status));
+            const unconf = !cancelled && String(b.status) === 'undefined';
             return `<div class="order" style="${cancelled ? 'opacity:.6' : ''}">
                 <div class="o-top">
                     <div class="o-client">
@@ -439,6 +445,7 @@
                     </div>
                     <div class="o-meta">
                         ${cancelled ? `<div class="badge b-cancelled">Скасовано</div>` : `<div class="badge b-done">${esc(price)}</div>`}
+                        ${unconf ? `<div class="badge b-unconf" style="margin-top:4px" title="Не підтверджено в диспетчерській - не потрапляє у звіт">⚠ Не підтверджено</div>` : ''}
                         <div style="margin-top:6px">${esc(b.ticket_type_name || '')}${b.booking_date ? ' · ' + esc(b.booking_date) : ''}</div>
                     </div>
                 </div>

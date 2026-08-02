@@ -1362,7 +1362,10 @@ async function getContrabusBookings() {
 // GET /api/bookings — реальні бронювання з Contrabus (тільки читання)
 app.get('/api/bookings', requireAdmin, async (req, res) => {
     try {
-        res.json({ bookings: await getContrabusBookings() });
+        const list = await getContrabusBookings();
+        // Не підтверджені диспетчерською (status="undefined") - не потрапляють у звіт contrabus.
+        const unconfirmed = list.filter(b => !CANCELLED_BOOKING.has(String(b.status)) && String(b.status) === 'undefined').length;
+        res.json({ bookings: list, unconfirmed });
     } catch (err) {
         serverError(res, err);
     }
