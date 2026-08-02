@@ -97,3 +97,8 @@ test('GET /api/health - ok:true і db:true', async () => {
     assert.equal(r.body.ok, true);
     assert.equal(r.body.db, true);
 });
+
+test('POST /api/bookings/<id>/cancel без пароля - 401', async () => {
+    const r = await get('/api/bookings/TESTID/cancel', { method: 'POST' });
+    assert.equal(r.status, 401);
+});

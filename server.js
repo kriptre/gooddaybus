@@ -1371,6 +1371,28 @@ app.get('/api/bookings', requireAdmin, async (req, res) => {
     }
 });
 
+// POST /api/bookings/:ticketId/cancel — скасування броні в contrabus (лише менеджер).
+// Дія незворотна: місце звільняється у перевізника.
+app.post('/api/bookings/:ticketId/cancel', requireAdmin, async (req, res) => {
+    const id = String(req.params.ticketId || '').trim();
+    if (!id || id.length > 64) return res.status(400).json({ error: 'Некоректний ticket_id' });
+    try {
+        const token = await getToken();
+        const r = await fetch(`${API_BASE_URL}/bookings/cancel_booking`, {
+            method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ticket_id: id })
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!j.success) {
+            console.log(`[Booking] Скасування ${logStr(id, 64)} відхилено: ${logStr(JSON.stringify(j), 200)}`);
+            return res.status(400).json({ error: cap(j.message || 'Не вдалося скасувати', 200) });
+        }
+        console.log(`[Booking] ❌ Скасовано бронь ${logStr(id, 64)} (менеджер через адмінку)`);
+        alertAdmin('Скасування броні', `Квиток ${id} скасовано менеджером через адмінку`);
+        res.json({ ok: true });
+    } catch (err) { serverError(res, err, 'CancelBooking'); }
+});
+
 // GET /api/clients — унікальні клієнти з історією (?q=пошук)
 app.get('/api/clients', requireAdmin, (req, res) => {
     try {
