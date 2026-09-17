@@ -111,6 +111,30 @@
             filters: 'Фільтри:',
             filterDirect: 'Без пересадок',
             filterPets: 'З твариною'
+        },
+        card: {
+            busFallback: 'Автобус',
+            enRoute: 'в дорозі',
+            direct: 'без пересадок',
+            withTransfer: 'з пересадкою',
+            perSeat: 'за місце',
+            free: 'вільних',
+            details: 'Деталі рейсу',
+            book: 'Забронювати',
+            order: 'Замовити',
+            payment: 'Оплата',
+            discLabel: 'Знижки',
+            transfers: 'Пересадки',
+            carrier: 'Перевізник',
+            reliability: n => `надійність ${n}%`,
+            baggage: 'Багаж',
+            collapse: 'Згорнути',
+            moreBtn: (n, total, word) => `Показати ще ${n} · всього ${total} ${word}`
+        },
+        discounts: {
+            unavailable: 'Інформація недоступна',
+            loading: 'Завантаження…',
+            none: 'Спеціальних знижок немає'
         }
     };
 
@@ -812,7 +836,7 @@
             const toCity   = escTxt(rt.to   || _arr);
             const pr    = escTxt(fmtPrice(rt) || '-');
             const st    = escTxt(rt.free_seats !== undefined ? rt.free_seats : '?');
-            const car   = escTxt(rt.carrier || rt.company || 'Автобус');
+            const car   = escTxt(rt.carrier || rt.company || T.card.busFallback);
             const dur   = fmtDuration(rt.travel_time);
             const pay   = payTag(rt);
             return `<div class="ticket ${pay.cls}" style="animation-delay:${Math.min((i % SHOW_STEP) * 0.05, 0.28)}s">
@@ -824,8 +848,8 @@
                         ${rt.departure_station ? `<div class="t-station" title="${escTxt(rt.departure_station)}">${escTxt(stripCityTxt(rt.departure_station, fromCity))}</div>` : ''}
                     </div>
                     <div class="t-route">
-                        ${dur ? `<div class="t-dur"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-clock"></use></svg> ${dur} в дорозі</div>` : ''}
-                        <div class="t-line"><div class="t-dot"></div><div class="t-dash"></div><span class="t-line-chip ${isDirect(rt) ? 'tlc-ok' : ''}">${isDirect(rt) ? 'без пересадок' : 'з пересадкою'}</span><div class="t-dash"></div><div class="t-arrow"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-right"></use></svg></div></div>
+                        ${dur ? `<div class="t-dur"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-clock"></use></svg> ${dur} ${T.card.enRoute}</div>` : ''}
+                        <div class="t-line"><div class="t-dot"></div><div class="t-dash"></div><span class="t-line-chip ${isDirect(rt) ? 'tlc-ok' : ''}">${isDirect(rt) ? T.card.direct : T.card.withTransfer}</span><div class="t-dash"></div><div class="t-arrow"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-right"></use></svg></div></div>
                         <div class="t-carrier" title="${car}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg><span class="t-car-name">${car}</span></div>
                     </div>
                     <div class="t-ep" style="text-align:right">
@@ -838,26 +862,26 @@
                     <div class="t-action">
                         <div class="t-pricebox">
                             <div class="t-price">${pr}</div>
-                            <div class="t-price-sub">за місце</div>
-                            <div class="t-seats"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chair"></use></svg> ${st} вільних</div>
+                            <div class="t-price-sub">${T.card.perSeat}</div>
+                            <div class="t-seats"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chair"></use></svg> ${st} ${T.card.free}</div>
                         </div>
                         <span class="t-pay ${pay.cls}">${pay.txt}</span>
                     </div>
                 </div>
                 <div class="t-foot">
-                    <button class="t-toggle" type="button" data-i="${i}">Деталі рейсу <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-down"></use></svg></button>
-                    <button class="btn-ticket" data-i="${i}">${rt.bookable ? 'Забронювати' : 'Замовити'}</button>
+                    <button class="t-toggle" type="button" data-i="${i}">${T.card.details} <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-down"></use></svg></button>
+                    <button class="btn-ticket" data-i="${i}">${rt.bookable ? T.card.book : T.card.order}</button>
                 </div>
                 <div class="t-details">
                     ${amenitiesHtml(rt.carrier_amenities)}
-                    <div class="td-row"><div class="td-label">Оплата</div><div class="td-text">${paymentHtml(rt)}</div></div>
-                    <div class="td-row"><div class="td-label">Знижки</div><div class="td-text td-disc">-</div></div>
-                    <div class="td-row"><div class="td-label">Пересадки</div><div class="td-text">${transfersHtml(rt.change_info)}</div></div>
-                    <div class="td-row"><div class="td-label">Перевізник</div><div class="td-text td-carrier">${car}${starsHtml(rt.carrier_rating)}${rt.carrier_reliability ? ` <span class="carr-badge cb-rel"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-shield-halved"></use></svg> надійність ${escTxt(rt.carrier_reliability)}%</span>` : ''}</div></div>
-                    ${rt.baggage ? `<div class="td-row"><div class="td-label">Багаж</div><div class="td-text">${escTxt(rt.baggage)}</div></div>` : ''}
+                    <div class="td-row"><div class="td-label">${T.card.payment}</div><div class="td-text">${paymentHtml(rt)}</div></div>
+                    <div class="td-row"><div class="td-label">${T.card.discLabel}</div><div class="td-text td-disc">-</div></div>
+                    <div class="td-row"><div class="td-label">${T.card.transfers}</div><div class="td-text">${transfersHtml(rt.change_info)}</div></div>
+                    <div class="td-row"><div class="td-label">${T.card.carrier}</div><div class="td-text td-carrier">${car}${starsHtml(rt.carrier_rating)}${rt.carrier_reliability ? ` <span class="carr-badge cb-rel"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-shield-halved"></use></svg> ${T.card.reliability(escTxt(rt.carrier_reliability))}</span>` : ''}</div></div>
+                    ${rt.baggage ? `<div class="td-row"><div class="td-label">${T.card.baggage}</div><div class="td-text">${escTxt(rt.baggage)}</div></div>` : ''}
                     <div class="td-foot">
-                        <button class="td-close" type="button"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-up"></use></svg> Згорнути</button>
-                        <button class="btn-ticket" data-i="${i}">${rt.bookable ? 'Забронювати' : 'Замовити'}</button>
+                        <button class="td-close" type="button"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-up"></use></svg> ${T.card.collapse}</button>
+                        <button class="btn-ticket" data-i="${i}">${rt.bookable ? T.card.book : T.card.order}</button>
                     </div>
                 </div>
             </div>`;
@@ -903,7 +927,7 @@
         if (_view.length <= _shown) return;
         const btn = document.createElement('button');
         btn.type = 'button'; btn.className = 'show-more';
-        btn.textContent = `Показати ще ${Math.min(SHOW_STEP, _view.length - _shown)} · всього ${_view.length} ${routeWord(_view.length)}`;
+        btn.textContent = T.card.moreBtn(Math.min(SHOW_STEP, _view.length - _shown), _view.length, routeWord(_view.length));
         btn.addEventListener('click', () => loadMore(btn));
         tickets.appendChild(btn);
     }
@@ -953,9 +977,9 @@
 
     async function loadDiscounts(rt, el) {
         if (!el) return;
-        if (!rt || !rt.data_bundle) { el.textContent = 'Інформація недоступна'; return; }
+        if (!rt || !rt.data_bundle) { el.textContent = T.discounts.unavailable; return; }
         const cached = _discByBundle.get(rt.data_bundle);
-        if (!Array.isArray(cached)) el.textContent = 'Завантаження…'; // показуємо лише якщо реально чекаємо мережу
+        if (!Array.isArray(cached)) el.textContent = T.discounts.loading; // показуємо лише якщо реально чекаємо мережу
         const d = await fetchDiscounts(rt.data_bundle);
         const real = (Array.isArray(d) ? d : []).filter(x => x.percent > 0);
         // Чіп ґаючиз на API опис знижки: показуємо тільки українську частину + процент
@@ -966,7 +990,7 @@
         };
         el.innerHTML = real.length
             ? `<div class="disc-chips">${real.map(chip).join('')}</div>`
-            : 'Спеціальних знижок немає';
+            : T.discounts.none;
     }
 
     // ---------- Пасажири + знижки ----------
