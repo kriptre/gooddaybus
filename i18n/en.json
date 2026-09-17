@@ -76,8 +76,7 @@
     "privacy": "Privacy",
     "refund": "Cancellation & refunds",
     "cookies": "Cookies",
-    "tagline1": "Passenger transportation Ukraine",
-    "tagline2": "Europe"
+    "copy": "© 2026 <span>GoodDayBus</span> - Bus travel Ukraine <svg class=\"ic\" style=\"font-size:10px\" aria-hidden=\"true\"><use href=\"/_sprite.svg#i-arrow-right-arrow-left\"></use></svg> Europe"
   },
   "modal": {
     "cancel": "Cancel",
