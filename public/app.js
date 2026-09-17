@@ -68,8 +68,7 @@
         },
         duration: {
             hour: 'год',
-            dayForms: ['день', 'дні', 'днів'],
-            plusHours: rh => ` ${rh} год`
+            dayForms: ['день', 'дні', 'днів']
         }
     };
 
@@ -469,7 +468,7 @@
         const h = Math.round(sec / 3600);
         if (h < 24) return `${h} ${T.duration.hour}`;
         const days = Math.floor(h / 24), rh = h % 24;
-        return `${days} ${plural(days, T.duration.dayForms)}${rh ? T.duration.plusHours(rh) : ''}`;
+        return `${days} ${plural(days, T.duration.dayForms)}${rh ? ` ${rh} ${T.duration.hour}` : ''}`;
     }
 
     // Стислий опис пересадок: "2 пересадки · Дніпро, Хмельницький" (повний текст - у tooltip)
