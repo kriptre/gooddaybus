@@ -42,10 +42,30 @@
             monFull: ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'],
             earlier: 'Раніше',
             later: 'Пізніше'
+        },
+        ac: {
+            recent: 'Нещодавні',
+            popular: 'Популярні напрямки'
+        },
+        search: {
+            differentCities: 'Вкажіть різні міста',
+            checkCities: 'Перевірте назви міст або оберіть зі списку підказок',
+            searching: 'Шукаємо рейси...',
+            searchingBtn: 'Шукаємо...',
+            findRoute: 'Знайти рейс',
+            error: msg => `Помилка: ${msg}`
+        },
+        suggest: {
+            otherDate: d => `На обрану дату рейсів немає, але є на ${d}:`,
+            showOtherDate: d => `Показати рейси на ${d}`,
+            noDirect: 'Прямих рейсів немає. Натисніть місто поряд, щоб переглянути рейси:',
+            none: 'Спробуйте іншу дату чи напрямок або зверніться до менеджера нижче.',
+            routeForms: ['рейс', 'рейси', 'рейсів']
+        },
+        transfers: {
+            direct: 'Без пересадок, прямий рейс',
+            forms: ['пересадка', 'пересадки', 'пересадок']
         }
-        // ac (autocomplete recent/popular labels) додається в задачі 3 разом
-        // із заміною їх використання на app.js:236-237 - тут вони поки не потрібні,
-        // а невикористаний запис ламає tools/check-ua-strings.js (флагує як "ПОЯВИЛИСЬ").
     };
 
     const T = (window.__I18N__ && window.__I18N__.app) || T_UK;
@@ -270,8 +290,8 @@
         function showSuggest() {
             const recent = getRecent();
             let h = '';
-            if (recent.length) h += '<div class="ac-head">Нещодавні</div>' + recent.map(r => routeItemHtml(r, 'i-clock')).join('');
-            h += '<div class="ac-head">Популярні напрямки</div>' + POPULAR.map(r => routeItemHtml(r, 'i-bolt')).join('');
+            if (recent.length) h += `<div class="ac-head">${T.ac.recent}</div>` + recent.map(r => routeItemHtml(r, 'i-clock')).join('');
+            h += `<div class="ac-head">${T.ac.popular}</div>` + POPULAR.map(r => routeItemHtml(r, 'i-bolt')).join('');
             lst.innerHTML = h; hl = -1; lst.style.display = 'block'; lst.classList.add('sg-wide');
             lst.querySelectorAll('.ac-route').forEach(el => el.addEventListener('click', () => applyRoute(el.dataset)));
         }
@@ -363,8 +383,8 @@
 
     async function search() {
         syncTypedIds();
-        if (!depId || !arrId) { setStatus('Перевірте назви міст або оберіть зі списку підказок', 'error'); setTimeout(() => setStatus('',''), 3500); return; }
-        if (depId === arrId) { setStatus('Вкажіть різні міста', 'error'); return; }
+        if (!depId || !arrId) { setStatus(T.search.checkCities, 'error'); setTimeout(() => setStatus('',''), 3500); return; }
+        if (depId === arrId) { setStatus(T.search.differentCities, 'error'); return; }
         saveRecent(document.getElementById('departure').value, document.getElementById('arrival').value, depId, arrId);
         // На сторінці маршруту: якщо обрали ІНШИЙ напрямок - ведемо на головну з авто-пошуком
         // (URL сторінки завжди = її маршрут). Той самий маршрут (стрічка дат) шукаємо тут же.
@@ -374,11 +394,11 @@
         }
         const [y, m, d] = document.getElementById('date-input').value.split('-');
         const date = `${d}.${m}.${y}`;
-        setStatus('Шукаємо рейси...', 'loading');
+        setStatus(T.search.searching, 'loading');
         const searchBtn = document.getElementById('search-btn');
         searchBtn.disabled = true;
         searchBtn.classList.add('searching');
-        searchBtn.innerHTML = '<svg class="ic ic-spin" aria-hidden="true"><use href="/_sprite.svg#i-spinner"></use></svg> Шукаємо...';
+        searchBtn.innerHTML = `<svg class="ic ic-spin" aria-hidden="true"><use href="/_sprite.svg#i-spinner"></use></svg> ${T.search.searchingBtn}`;
         const resultsEl = document.getElementById('results');
         resultsEl.innerHTML = '';
         // Skeleton - лише коли пошук затягується (>450мс). Швидкий/кешований - без мерехтіння.
@@ -398,18 +418,18 @@
                 throw new Error(err.error || `HTTP ${r.status}`);
             }
             renderResults(await r.json(), date);
-        } catch (e) { clearTimeout(skelTimer); resultsEl.innerHTML = ''; setStatus(`Помилка: ${e.message}`, 'error'); }
+        } catch (e) { clearTimeout(skelTimer); resultsEl.innerHTML = ''; setStatus(T.search.error(e.message), 'error'); }
         finally {
             searchBtn.disabled = false;
             searchBtn.classList.remove('searching');
-            searchBtn.innerHTML = '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-magnifying-glass"></use></svg> Знайти рейс';
+            searchBtn.innerHTML = `<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-magnifying-glass"></use></svg> ${T.search.findRoute}`;
         }
     }
 
     // Пересадки: contrabus дає їх одним рядком ("Пересадка №1...Пересадка №2...").
     // Розбиваємо по "Пересадка №N" у окремі рядки - без круглих плашок, просто з крапкою.
     function transfersHtml(ci) {
-        if (!ci) return 'Без пересадок, прямий рейс';
+        if (!ci) return T.transfers.direct;
         const parts = String(ci).split(/(?=Пересадка\s*№?\s*\d)/).map(s => s.trim()).filter(Boolean);
         if (parts.length <= 1) return escTxt(ci);
         return `<div class="td-transfers">${parts.map(p => `<div class="tr-item"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${escTxt(p)}</div>`).join('')}</div>`;
@@ -431,13 +451,12 @@
     }
     function skeletonHtml() { return skelCardHtml().repeat(4); }
 
-    const UA_MONTHS = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
     // "06.06.2026" -> "6 чер"
     function fmtNiceDate(d) {
         if (!d) return '';
         const [day, m] = d.split('.');
         if (!day || !m) return d;
-        return `${parseInt(day, 10)} ${UA_MONTHS[parseInt(m, 10) - 1] || ''}`;
+        return `${parseInt(day, 10)} ${T.date.monFull[parseInt(m, 10) - 1] || ''}`;
     }
     // travel_time (секунди) -> "49 год" або "2 дні 1 год"
     function fmtDuration(sec) {
@@ -460,16 +479,12 @@
         }
         const n = cities.length;
         if (!n) { const t = text.trim(); return { label: t.length > 36 ? t.slice(0, 36) + '…' : t, full: text }; }
-        const word = n === 1 ? 'пересадка' : (n < 5 ? 'пересадки' : 'пересадок');
+        const word = plural(n, T.transfers.forms);
         return { label: `${n} ${word} · ${cities.join(', ')}`, full: text };
     }
 
     // Узгодження слова "рейс" з числом
-    function routeWord(n) {
-        if (n % 10 === 1 && n % 100 !== 11) return 'рейс';
-        if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'рейси';
-        return 'рейсів';
-    }
+    const routeWord = n => plural(n, T.suggest.routeForms);
 
     // Підказка, коли рейсів немає: найближча дата або найближчі міста
     async function fetchSuggest(date) {
@@ -482,12 +497,12 @@
             const box = document.getElementById('suggest-box');
             if (!box) return;
             if (s.type === 'date') {
-                box.innerHTML = `<div class="sg-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-lightbulb"></use></svg> На обрану дату рейсів немає, але є на ${escTxt(s.date)}:</div>
-                    <button class="sg-btn sg-primary" id="sg-date">Показати рейси на ${escTxt(s.date)} <span class="sg-dist">${escTxt(s.count)} ${routeWord(s.count)}</span> <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-right"></use></svg></button>`;
+                box.innerHTML = `<div class="sg-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-lightbulb"></use></svg> ${T.suggest.otherDate(escTxt(s.date))}</div>
+                    <button class="sg-btn sg-primary" id="sg-date">${T.suggest.showOtherDate(escTxt(s.date))} <span class="sg-dist">${escTxt(s.count)} ${routeWord(s.count)}</span> <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-right"></use></svg></button>`;
                 document.getElementById('sg-date').addEventListener('click', () => setDateAndSearch(s.date));
             } else if (s.type === 'cities') {
                 window._alts = s.alternatives;
-                box.innerHTML = `<div class="sg-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-lightbulb"></use></svg> Прямих рейсів немає. Натисніть місто поряд, щоб переглянути рейси:</div>
+                box.innerHTML = `<div class="sg-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-lightbulb"></use></svg> ${T.suggest.noDirect}</div>
                     <div class="sg-cities">${s.alternatives.map((a, i) =>
                         `<button class="sg-btn sg-city" data-ai="${i}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${escTxt(a.name)} <span class="sg-dist">~${escTxt(a.distance_km)} км · ${escTxt(a.count)} ${routeWord(a.count)}</span></button>`
                     ).join('')}</div>`;
@@ -496,7 +511,7 @@
                     setCityAndSearch(a.id, a.name);
                 }));
             } else {
-                box.innerHTML = `<div class="sg-none">Спробуйте іншу дату чи напрямок або зверніться до менеджера нижче.</div>`;
+                box.innerHTML = `<div class="sg-none">${T.suggest.none}</div>`;
             }
         } catch (e) {
             const box = document.getElementById('suggest-box');
