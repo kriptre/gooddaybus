@@ -13,6 +13,43 @@
         };
     };
     const LS = safeStore('localStorage'), SS = safeStore('sessionStorage');
+
+    // --- Мова інтерфейсу ---------------------------------------------------
+    // Українська - типова: усі рядки лежать тут, у T_UK. Англійські сторінки
+    // підвантажують public/i18n/en.js ПЕРЕД цим файлом, він кладе повний
+    // англійський словник у window.__I18N__ - жодного часткового злиття,
+    // повнота гарантується тестом (немає кирилиці у public/en/*.html).
+    const LANG = document.documentElement.lang === 'en' ? 'en' : 'uk';
+
+    // Форми множини: українська має три, англійська дві.
+    const PLURAL_RULE = {
+        uk: n => (n % 10 === 1 && n % 100 !== 11) ? 0
+            : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? 1 : 2,
+        en: n => n === 1 ? 0 : 1
+    };
+    const plural = (n, forms) => forms[PLURAL_RULE[LANG](n)];
+
+    const T_UK = {
+        status: {
+            loadingCities: 'Завантаження міст...',
+            citiesReady: n => `${n} міст у наявності - оберіть напрямок`,
+            citiesFailed: 'Не вдалося завантажити міста - перевірте зʼєднання',
+            retry: 'Спробувати ще раз'
+        },
+        date: {
+            dow: ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
+            monShort: ['січ', 'лют', 'бер', 'кві', 'тра', 'чер', 'лип', 'сер', 'вер', 'жов', 'лис', 'гру'],
+            monFull: ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'],
+            earlier: 'Раніше',
+            later: 'Пізніше'
+        }
+        // ac (autocomplete recent/popular labels) додається в задачі 3 разом
+        // із заміною їх використання на app.js:236-237 - тут вони поки не потрібні,
+        // а невикористаний запис ламає tools/check-ua-strings.js (флагує як "ПОЯВИЛИСЬ").
+    };
+
+    const T = (window.__I18N__ && window.__I18N__.app) || T_UK;
+
     let cities = [], depId = null, arrId = null, selRoute = null;
     let _routes = [], _view = [], _dep = '', _arr = '', _date = '', _sortBy = 'departure';
     let _sortDir = 1;    // 1 = за зростанням; повторний клік по активному сортуванню - реверс
@@ -68,7 +105,7 @@
     // Список майже не змінюється, тож доба відставання неощутима; протух - тягнемо свіжий.
     const CITIES_LS = 'gdb_cities', CITIES_TTL = 24 * 60 * 60 * 1000;
     function citiesReady() {
-        setStatus(`${cities.length} міст у наявності - оберіть напрямок`, 'success');
+        setStatus(T.status.citiesReady(cities.length), 'success');
         document.getElementById('search-btn').disabled = false;
         if (window.__ROUTE__) { initRoutePage(); return; }  // сторінка маршруту: підставити напрямок, стрічка дат, авто-пошук
         applyQueryParams();                                 // головна: deep-link /?from=&to=&date=
@@ -90,7 +127,7 @@
                 return;
             }
         } catch (e) { /* кеш пошкоджено - тягнемо з сервера */ }
-        setStatus('Завантаження міст...', 'loading');
+        setStatus(T.status.loadingCities, 'loading');
         try {
             const r = await fetch(`${PROXY_BASE}/cities`);
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -101,12 +138,12 @@
             // Кешу немає (інакше вище був би ранній return) - без міст пошук неможливий,
             // тож даємо кнопку ретраю замість того, щоб лишати користувача з мертвим станом.
             // Кнопку пошуку НЕ розблоковуємо - лишається disabled до успішного citiesReady().
-            setStatus('Не вдалося завантажити міста - перевірте зʼєднання', 'error');
+            setStatus(T.status.citiesFailed, 'error');
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.id = 'cities-retry-btn';
             btn.className = 'ck-link';
-            btn.textContent = 'Спробувати ще раз';
+            btn.textContent = T.status.retry;
             btn.addEventListener('click', () => { btn.disabled = true; loadCities(); });
             document.getElementById('status-row').appendChild(btn);
         }
@@ -116,8 +153,8 @@
     const STRIP_MAX = 90;
     // Кількість дат у ряд за шириною екрана: 7 дат у 375px сплющуються, тож на телефоні менше.
     const stripLen = () => { const w = window.innerWidth; return w <= 480 ? 4 : (w <= 700 ? 5 : 7); };
-    const DOW = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-    const MON_SHORT = ['січ', 'лют', 'бер', 'кві', 'тра', 'чер', 'лип', 'сер', 'вер', 'жов', 'лис', 'гру'];
+    const DOW = T.date.dow;
+    const MON_SHORT = T.date.monShort;
     const ymdLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     let _stripStart = 0; // зсув у днях від сьогодні для лівої видимої дати
 
@@ -134,9 +171,9 @@
             days += `<button type="button" class="ds-day${ymd === selectedYMD ? ' sel' : ''}" data-ymd="${ymd}"><span class="ds-dow">${DOW[d.getDay()]}</span><span class="ds-num">${d.getDate()}</span><span class="ds-mon">${MON_SHORT[d.getMonth()]}</span></button>`;
         }
         const canPrev = _stripStart > 0, canNext = _stripStart + STRIP_LEN <= STRIP_MAX;
-        box.innerHTML = `<button type="button" class="ds-arr" id="ds-prev"${canPrev ? '' : ' disabled'} aria-label="Раніше"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-left"></use></svg></button>`
+        box.innerHTML = `<button type="button" class="ds-arr" id="ds-prev"${canPrev ? '' : ' disabled'} aria-label="${T.date.earlier}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-left"></use></svg></button>`
             + `<div class="ds-days" style="grid-template-columns:repeat(${STRIP_LEN},1fr)">${days}</div>`
-            + `<button type="button" class="ds-arr" id="ds-next"${canNext ? '' : ' disabled'} aria-label="Пізніше"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-right"></use></svg></button>`;
+            + `<button type="button" class="ds-arr" id="ds-next"${canNext ? '' : ' disabled'} aria-label="${T.date.later}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-right"></use></svg></button>`;
         if (dir) box.querySelector('.ds-days').classList.add('slide-' + dir); // анімація гортання
         box.querySelector('#ds-prev').addEventListener('click', () => { _stripStart = Math.max(0, _stripStart - STRIP_LEN); buildDateStrip(document.getElementById('date-input').value, 'prev'); });
         box.querySelector('#ds-next').addEventListener('click', () => { _stripStart = Math.min(STRIP_MAX - STRIP_LEN + 1, _stripStart + STRIP_LEN); buildDateStrip(document.getElementById('date-input').value, 'next'); });
