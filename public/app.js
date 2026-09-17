@@ -41,7 +41,8 @@
             monShort: ['січ', 'лют', 'бер', 'кві', 'тра', 'чер', 'лип', 'сер', 'вер', 'жов', 'лис', 'гру'],
             monFull: ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'],
             earlier: 'Раніше',
-            later: 'Пізніше'
+            later: 'Пізніше',
+            placeholder: 'Оберіть дату'
         },
         ac: {
             recent: 'Нещодавні',
@@ -60,7 +61,8 @@
             showOtherDate: d => `Показати рейси на ${d}`,
             noDirect: 'Прямих рейсів немає. Натисніть місто поряд, щоб переглянути рейси:',
             none: 'Спробуйте іншу дату чи напрямок або зверніться до менеджера нижче.',
-            routeForms: ['рейс', 'рейси', 'рейсів']
+            routeForms: ['рейс', 'рейси', 'рейсів'],
+            km: 'км'
         },
         transfers: {
             direct: 'Без пересадок, прямий рейс',
@@ -110,7 +112,9 @@
             sortDeparture: 'За часом виїзду',
             filters: 'Фільтри:',
             filterDirect: 'Без пересадок',
-            filterPets: 'З твариною'
+            filterPets: 'З твариною',
+            filteredNoneTitle: 'Таких рейсів немає',
+            filteredNoneBody: 'На цьому напрямку немає рейсів під обрані фільтри.<br>Вимкніть фільтр, щоб побачити всі варіанти.'
         },
         card: {
             busFallback: 'Автобус',
@@ -127,6 +131,7 @@
             transfers: 'Пересадки',
             carrier: 'Перевізник',
             reliability: n => `надійність ${n}%`,
+            ratingTitle: (raw, max) => `Рейтинг ${raw} з ${max}`,
             baggage: 'Багаж',
             collapse: 'Згорнути',
             moreBtn: (n, total, word) => `Показати ще ${n} · всього ${total} ${word}`
@@ -163,6 +168,33 @@
             legendTaken: 'зайняте',
             chosen: (names, n, need) => `Обрано: <b>${names}</b> (${n} з ${need})`,
             hint: need => `Торкніться вільних місць на схемі${need > 1 ? ` (потрібно ${need})` : ''} - або залиште як є, і місця призначаться автоматично.`
+        },
+        modal: {
+            titleBook: 'Бронювання поїздки',
+            titleOrder: 'Замовити поїздку',
+            groupPrepayBadge: 'Попередня оплата 1 квитка',
+            groupNote: thr => `Від ${thr} пасажирів перевізник бере передоплату за 1 квиток. До ${thr - 1} включно - без передоплати, оплата водієві.`
+        },
+        order: {
+            send: 'Надіслати',
+            booking: 'Бронюємо...',
+            sending: 'Надсилаємо...',
+            phoneIncomplete: 'Перевірте номер телефону - здається, він введений неповністю.',
+            fillAllFields: 'Заповніть дані всіх пасажирів.',
+            yourSeats: 'Ваші місця',
+            bookedTitle: 'Місця заброньовано!',
+            bookedTextWithTickets: 'Оплата - водієві при посадці.<br>Збережіть свої квитки:',
+            bookedTextNoTickets: 'Оплата - водієві при посадці.<br>Квитки надішле менеджер найближчим часом.',
+            downloadTicket: 'Завантажити квиток',
+            acceptedTitle: 'Заявку прийнято!',
+            acceptedText: "Менеджер зв'яжеться з вами, узгодить деталі<br>та за потреби надасть реквізити для оплати.",
+            submitError: msg => `Не вдалося надіслати заявку: ${msg}\n\nСпробуйте ще раз або зателефонуйте менеджеру.`,
+            copyLabel: 'Копіювати',
+            copiedLabel: 'Скопійовано!'
+        },
+        track: {
+            on: 'Облік увімкнено: цей браузер знову рахується у статистиці.',
+            off: 'Готово: заходи й пошуки з цього браузера більше не потраплятимуть у статистику сайту.'
         }
     };
 
@@ -602,7 +634,7 @@
                 window._alts = s.alternatives;
                 box.innerHTML = `<div class="sg-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-lightbulb"></use></svg> ${T.suggest.noDirect}</div>
                     <div class="sg-cities">${s.alternatives.map((a, i) =>
-                        `<button class="sg-btn sg-city" data-ai="${i}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${escTxt(a.name)} <span class="sg-dist">~${escTxt(a.distance_km)} км · ${escTxt(a.count)} ${routeWord(a.count)}</span></button>`
+                        `<button class="sg-btn sg-city" data-ai="${i}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${escTxt(a.name)} <span class="sg-dist">~${escTxt(a.distance_km)} ${T.suggest.km} · ${escTxt(a.count)} ${routeWord(a.count)}</span></button>`
                     ).join('')}</div>`;
                 box.querySelectorAll('.sg-city').forEach(b => b.addEventListener('click', () => {
                     const a = window._alts[b.dataset.ai];
@@ -810,7 +842,7 @@
         const filled = Math.max(1, Math.min(5, Math.round(scale10 ? v / 2 : v)));
         let s = '';
         for (let i = 1; i <= 5; i++) s += `<svg class="ic ${i <= filled ? 'st-on' : 'st-off'}" aria-hidden="true"><use href="/_sprite.svg#i-star"></use></svg>`;
-        return ` <span class="carr-stars" title="Рейтинг ${escTxt(raw)} з ${scale10 ? 10 : 5}">${s}<span class="st-num">${escTxt(raw)}</span></span>`;
+        return ` <span class="carr-stars" title="${T.card.ratingTitle(escTxt(raw), scale10 ? 10 : 5)}">${s}<span class="st-num">${escTxt(raw)}</span></span>`;
     }
 
     // Час "HH:MM" -> хвилини; повна дата+час рейсу -> timestamp для сортування за виїздом
@@ -837,7 +869,7 @@
         if (badge) badge.textContent = `${pool.length} ${routeWord(pool.length)}`;
 
         if (_filters.size && !pool.length) {
-            tickets.innerHTML = `<div class="no-res"><div class="no-res-ico"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-filter"></use></svg></div><h3>Таких рейсів немає</h3><p>На цьому напрямку немає рейсів під обрані фільтри.<br>Вимкніть фільтр, щоб побачити всі варіанти.</p></div>`;
+            tickets.innerHTML = `<div class="no-res"><div class="no-res-ico"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-filter"></use></svg></div><h3>${T.results.filteredNoneTitle}</h3><p>${T.results.filteredNoneBody}</p></div>`;
             return;
         }
 
@@ -1311,24 +1343,24 @@
     // Оновлює заголовок/підказку/кнопку/бейдж оплати відповідно до стану (з урахуванням групи)
     function applyBookUI() {
         const book = canBookNow();
-        document.getElementById('m-title').textContent = book ? 'Бронювання поїздки' : 'Замовити поїздку';
+        document.getElementById('m-title').textContent = book ? T.modal.titleBook : T.modal.titleOrder;
         document.getElementById('m-booknote').style.display = book ? 'flex' : 'none';
         document.getElementById('m-submit').innerHTML = book
-            ? '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bolt"></use></svg> Забронювати'
-            : '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-paper-plane"></use></svg> Надіслати';
+            ? `<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bolt"></use></svg> ${T.card.book}`
+            : `<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-paper-plane"></use></svg> ${T.order.send}`;
         // Бейдж оплати в шапці: для групового рейсу залежить від кількості пасажирів
         const badge = document.querySelector('#m-trip .mt-pay .t-pay');
         if (badge && _isGroup) {
             const over = groupOver();
             badge.className = 't-pay ' + (over ? 'pay-part' : 'pay-none');
-            badge.textContent = over ? 'Попередня оплата 1 квитка' : 'Без передоплати';
+            badge.textContent = over ? T.modal.groupPrepayBadge : T.pay.none;
         }
         // Примітка про умову групової передоплати (показуємо лише для групових рейсів)
         const gn = document.getElementById('m-groupnote');
         if (gn) {
             const show = _isGroup && _groupThr > 0;
             gn.style.display = show ? 'flex' : 'none';
-            if (show) gn.innerHTML = `<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-info"></use></svg> Від ${_groupThr} пасажирів перевізник бере передоплату за 1 квиток. До ${_groupThr - 1} включно - без передоплати, оплата водієві.`;
+            if (show) gn.innerHTML = `<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-info"></use></svg> ${T.modal.groupNote(_groupThr)}`;
         }
         updateTurnstile(book);
     }
@@ -1413,8 +1445,8 @@
         document.getElementById('m-trip').innerHTML =
             `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-calendar"></use></svg> <b>${escTxt(fmtNiceDate(rt.date || _date))}</b></div>` +
             `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-clock"></use></svg> ${escTxt(dt || '-')}${at ? ' → ' + escTxt(at) : ''}${dur ? ` <span class="mt-dur">${escTxt(dur)}</span>` : ''}</div>` +
-            `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-tag"></use></svg> <b>${escTxt(fmtPrice(rt) || '-')}</b>&nbsp;/&nbsp;місце</div>` +
-            `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg> ${escTxt(rt.carrier || rt.company || 'Автобус')}</div>` +
+            `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-tag"></use></svg> <b>${escTxt(fmtPrice(rt) || '-')}</b>&nbsp;/&nbsp;${T.seats.forms[0]}</div>` +
+            `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg> ${escTxt(rt.carrier || rt.company || T.card.busFallback)}</div>` +
             `<div class="mt-row mt-pay"><span class="t-pay ${payTag(rt).cls}">${payTag(rt).txt}</span></div>` +
             ((fromSt || toSt) ? `<div class="mt-stations">${fromSt ? `<span><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${escTxt(fromSt)}</span>` : ''}${toSt ? `<span><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-flag-checkered"></use></svg> ${escTxt(toSt)}</span>` : ''}</div>` : '');
         document.getElementById('m-form').style.display = 'block';
@@ -1509,8 +1541,8 @@
             let ok = true;
             if (name.length < 1) { nameEl.style.borderColor = 'var(--red)'; ok = false; }
             if (surname.length < 1) { surEl.style.borderColor = 'var(--red)'; ok = false; }
-            if (!phone || digits < 9) { phEl.style.borderColor = 'var(--red)'; ok = false; if (phone && digits < 9 && !firstError) firstError = 'Перевірте номер телефону - здається, він введений неповністю.'; }
-            if (!ok && !firstError) firstError = 'Заповніть дані всіх пасажирів.';
+            if (!phone || digits < 9) { phEl.style.borderColor = 'var(--red)'; ok = false; if (phone && digits < 9 && !firstError) firstError = T.order.phoneIncomplete; }
+            if (!ok && !firstError) firstError = T.order.fillAllFields;
             // знижка (якщо обрана) - з блоку під коментарем за індексом пасажира
             const sel = _discOpen ? document.querySelector(`#disc-block .disc-sel[data-i="${i}"]`) : null;
             let ticket_type = '', discount_label = '', discount_percent = 0;
@@ -1531,7 +1563,7 @@
         const willBook = canBookNow();
         const btn = document.getElementById('m-submit');
         btn.disabled = true;
-        btn.innerHTML = willBook ? '<svg class="ic ic-spin" aria-hidden="true"><use href="/_sprite.svg#i-spinner"></use></svg> Бронюємо...' : '<svg class="ic ic-spin" aria-hidden="true"><use href="/_sprite.svg#i-spinner"></use></svg> Надсилаємо...';
+        btn.innerHTML = willBook ? `<svg class="ic ic-spin" aria-hidden="true"><use href="/_sprite.svg#i-spinner"></use></svg> ${T.order.booking}` : `<svg class="ic ic-spin" aria-hidden="true"><use href="/_sprite.svg#i-spinner"></use></svg> ${T.order.sending}`;
 
         const rt = selRoute || {};
         const payload = {
@@ -1578,17 +1610,17 @@
                 // Місця: якщо обирали і все пройшло - підтверджуємо; якщо не вийшло - чесно кажемо
                 const seatLine = j.seat_note
                     ? `<br><span class="ok-seatnote">${escTxt(j.seat_note)}</span>`
-                    : (_seatSel.length ? `<br>Ваші місця: <b>${escTxt(_seatSel.map(s => s.name).join(', '))}</b>` : '');
-                document.getElementById('m-ok-title').textContent = 'Місця заброньовано!';
+                    : (_seatSel.length ? `<br>${T.order.yourSeats}: <b>${escTxt(_seatSel.map(s => s.name).join(', '))}</b>` : '');
+                document.getElementById('m-ok-title').textContent = T.order.bookedTitle;
                 document.getElementById('m-ok-text').innerHTML = (tks.length
-                    ? 'Оплата - водієві при посадці.<br>Збережіть свої квитки:'
-                    : 'Оплата - водієві при посадці.<br>Квитки надішле менеджер найближчим часом.') + seatLine;
+                    ? T.order.bookedTextWithTickets
+                    : T.order.bookedTextNoTickets) + seatLine;
                 document.getElementById('m-ok-tickets').innerHTML = tks.map((tk, i) =>
-                    `<a class="tk-link" href="${escTxt(tk.pdf)}" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-file-pdf"></use></svg> Завантажити квиток${tks.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('');
+                    `<a class="tk-link" href="${escTxt(tk.pdf)}" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-file-pdf"></use></svg> ${T.order.downloadTicket}${tks.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('');
                 _okGuardArmed = tks.length > 0;
             } else {
-                document.getElementById('m-ok-title').textContent = 'Заявку прийнято!';
-                document.getElementById('m-ok-text').innerHTML = "Менеджер зв'яжеться з вами, узгодить деталі<br>та за потреби надасть реквізити для оплати.";
+                document.getElementById('m-ok-title').textContent = T.order.acceptedTitle;
+                document.getElementById('m-ok-text').innerHTML = T.order.acceptedText;
                 document.getElementById('m-ok-tickets').innerHTML = '';
                 _okGuardArmed = false;
             }
@@ -1602,14 +1634,14 @@
             document.getElementById('m-form').style.display = 'none';
             document.getElementById('m-ok').style.display = 'block';
         } catch (e) {
-            alert('Не вдалося надіслати заявку: ' + e.message + '\n\nСпробуйте ще раз або зателефонуйте менеджеру.');
+            alert(T.order.submitError(e.message));
             // Токен Turnstile одноразовий - без reset() повторна спроба відправки завжди провалиться.
             if (window.turnstile && _tsWidgetId !== null) { try { window.turnstile.reset(_tsWidgetId); } catch (e2) { } }
         } finally {
             btn.disabled = false;
             btn.innerHTML = canBookNow()
-                ? '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bolt"></use></svg> Забронювати'
-                : '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-paper-plane"></use></svg> Надіслати';
+                ? `<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bolt"></use></svg> ${T.card.book}`
+                : `<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-paper-plane"></use></svg> ${T.order.send}`;
         }
     });
     document.getElementById('m-close').addEventListener('click', closeBooking);
@@ -1619,7 +1651,7 @@
         inp.select();
         try { await navigator.clipboard.writeText(inp.value); } catch { document.execCommand('copy'); }
         const b = document.getElementById('m-ok-copy');
-        b.textContent = 'Скопійовано!'; setTimeout(() => { b.textContent = 'Копіювати'; }, 2000);
+        b.textContent = T.order.copiedLabel; setTimeout(() => { b.textContent = T.order.copyLabel; }, 2000);
         _okGuardArmed = false;
     });
     document.getElementById('m-ok-return').addEventListener('click', () => {
@@ -1672,7 +1704,7 @@
     function updateDateDisplay() {
         const inp = document.getElementById('date-input');
         const span = document.getElementById('date-display');
-        if (!inp.value) { span.textContent = 'Оберіть дату'; span.style.color = 'var(--text-3)'; return; }
+        if (!inp.value) { span.textContent = T.date.placeholder; span.style.color = 'var(--text-3)'; return; }
         const [y, m, d] = inp.value.split('-');
         span.textContent = `${d}.${m}.${y}`;
         span.style.color = 'var(--text)';
@@ -1693,8 +1725,8 @@
     (() => {
         const p = new URLSearchParams(location.search);
         if (p.has('notrack')) {
-            if (p.get('notrack') === '0') { LS.del('gdb_notrack'); alert('Облік увімкнено: цей браузер знову рахується у статистиці.'); }
-            else { LS.set('gdb_notrack', '1'); alert('Готово: заходи й пошуки з цього браузера більше не потраплятимуть у статистику сайту.'); }
+            if (p.get('notrack') === '0') { LS.del('gdb_notrack'); alert(T.track.on); }
+            else { LS.set('gdb_notrack', '1'); alert(T.track.off); }
         }
     })();
     const noTrack = () => LS.get('gdb_notrack') === '1';
