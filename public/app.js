@@ -69,6 +69,53 @@
         duration: {
             hour: 'год',
             dayForms: ['день', 'дні', 'днів']
+        },
+        // Зручності рейсу: код API → іконка + назва
+        amenities: {
+            wifi: { i: 'wifi', t: 'Wi-Fi' },
+            power: { i: 'plug', t: 'Розетки' },
+            air: { i: 'snowflake', t: 'Кондиціонер' },
+            wc: { i: 'restroom', t: 'Туалет' },
+            pets: { i: 'paw', t: 'Можна з тваринами' },
+            gps: { i: 'location-crosshairs', t: 'GPS-трекінг' },
+            seatselect: { i: 'chair', t: 'Вибір місця' },
+            addstop: { i: 'map-pin', t: 'Додаткові зупинки' },
+            // Вікові пороги для дітей без супроводу - шаблоном нижче (16_noaccompany, 18_noaccompany...)
+            noprepayment: { i: 'hand-holding-dollar', t: 'Без передоплати' },
+            norefund: { i: 'ban', t: 'Без повернення квитка' },
+            'pet-only-from-eu': { i: 'paw', t: 'Тварини - лише на рейсах з ЄС' },
+            starlink: { i: 'wifi', t: 'Супутниковий інтернет (Starlink)' },
+            drinks: { i: 'cup', t: 'Напої' },
+            steward: { i: 'user', t: 'Стюард у салоні' },
+            // Текст для шаблонних кодів AMEN_PATTERNS (не сам код - лише переклад)
+            noAccompany: n => `Діти ${n}+ без супроводу`
+        },
+        pay: {
+            none: 'Без передоплати',
+            groupNone: 'Без передоплати',
+            groupNote: 'Для груп - передоплата',
+            partial: 'Часткова передоплата',
+            full: 'Повна передоплата',
+            tagNone: 'Без передоплати',
+            tagPartial: 'Часткова передоплата',
+            tagFull: 'Повна передоплата'
+        },
+        results: {
+            amenitiesLabel: 'Зручності',
+            noneFoundTitle: 'Рейсів не знайдено',
+            noneFoundBody: (date, dep, arr) => `На ${date} за напрямком ${dep} → ${arr} рейсів немає.`,
+            noneFoundStatus: 'Рейсів не знайдено',
+            searchingSuggest: 'Шукаємо найближчі дати та міста...',
+            found: n => `Знайдено рейсів: ${n}`,
+            badge: n => `${n} рейсів`,
+            sort: 'Сортувати:',
+            sortPrice: 'Найдешевші',
+            sortDuration: 'Найшвидші',
+            sortDeparture: 'За часом виїзду',
+            filters: 'Фільтри:',
+            filterNoPrepay: 'Без передоплати',
+            filterDirect: 'Без пересадок',
+            filterPets: 'З твариною'
         }
     };
 
@@ -545,34 +592,18 @@
     const CUR = { UAH: '₴', EUR: '€', USD: '$', PLN: 'zł', GBP: '£', CZK: 'Kč', MDL: 'lei', RON: 'lei' };
     const fmtPrice = rt => (rt && rt.price) ? `${rt.price} ${CUR[rt.currency] || rt.currency || '₴'}` : '';
 
-    // Зручності рейсу: код API → іконка + назва
-    const AMENITIES = {
-        wifi: { i: 'wifi', t: 'Wi-Fi' },
-        power: { i: 'plug', t: 'Розетки' },
-        air: { i: 'snowflake', t: 'Кондиціонер' },
-        wc: { i: 'restroom', t: 'Туалет' },
-        pets: { i: 'paw', t: 'Можна з тваринами' },
-        gps: { i: 'location-crosshairs', t: 'GPS-трекінг' },
-        seatselect: { i: 'chair', t: 'Вибір місця' },
-        addstop: { i: 'map-pin', t: 'Додаткові зупинки' },
-        // Вікові пороги для дітей без супроводу - шаблоном нижче (16_noaccompany, 18_noaccompany...)
-        noprepayment: { i: 'hand-holding-dollar', t: 'Без передоплати' },
-        norefund: { i: 'ban', t: 'Без повернення квитка' },
-        'pet-only-from-eu': { i: 'paw', t: 'Тварини - лише на рейсах з ЄС' },
-        starlink: { i: 'wifi', t: 'Супутниковий інтернет (Starlink)' },
-        drinks: { i: 'cup', t: 'Напої' },
-        steward: { i: 'user', t: 'Стюард у салоні' }
-    };
+    // Зручності рейсу: код API → іконка + назва. Сама карта - у T.amenities (задача 2/4);
+    // тут лишається тільки логіка пошуку/нормалізації коду.
     // Ключі словника - у нижньому регістрі; код від API нормалізуємо перед пошуком
     // (той самий код приходить і як "Drinks", і як "drinks").
     const amenKey = c => String(c || '').trim().toLowerCase();
     // Шаблонні коди: той самий сенс приходить із різним числом ("16_noaccompany",
     // "18_noaccompany"). Обробляємо правилом, щоб не додавати кожен варіант окремо.
     const AMEN_PATTERNS = [
-        { re: /^(\d{1,2})_noaccompany$/, make: m => ({ i: 'child-reaching', t: `Діти ${m[1]}+ без супроводу` }) }
+        { re: /^(\d{1,2})_noaccompany$/, make: m => ({ i: 'child-reaching', t: T.amenities.noAccompany(m[1]) }) }
     ];
     function amenInfo(code) {
-        if (AMENITIES[code]) return AMENITIES[code];
+        if (T.amenities[code]) return T.amenities[code];
         for (const p of AMEN_PATTERNS) { const m = p.re.exec(code); if (m) return p.make(m); }
         return null;
     }
@@ -585,7 +616,7 @@
         try {
             fetch(`${PROXY_BASE}/client-error`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ msg: `Невідомий amenity-код від contrabus: "${code}" - додайте переклад у AMENITIES`, page: location.pathname })
+                body: JSON.stringify({ msg: `Невідомий amenity-код від contrabus: "${code}" - додайте переклад у T_UK.amenities`, page: location.pathname })
             });
         } catch (e) { }
     }
@@ -599,7 +630,7 @@
             if (!a) { reportUnknownAmenity(code); return ''; }
             return `<span class="amen"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-${a.i}"></use></svg> ${escTxt(a.t)}</span>`;
         }).join('');
-        return `<div class="td-row"><div class="td-label">Зручності</div><div class="td-amens">${chips}</div></div>`;
+        return `<div class="td-row"><div class="td-label">${T.results.amenitiesLabel}</div><div class="td-amens">${chips}</div></div>`;
     }
 
     // Прибираємо дублювання міста на початку адреси станції ("Запоріжжя, Автовокзал…" → "Автовокзал…")
@@ -615,12 +646,12 @@
     function paymentHtml(rt) {
         const cat = payCategory(rt);
         const label = cat === 'none'
-            ? '<span class="pay-badge pb-none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-credit-card"></use></svg> Без передоплати</span>'
+            ? `<span class="pay-badge pb-none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-credit-card"></use></svg> ${T.pay.none}</span>`
             : cat === 'group'
-                ? '<span class="pay-badge pb-none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-credit-card"></use></svg> Без передоплати</span><span class="pay-badge pb-part"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-users"></use></svg> Для груп - передоплата</span>'
+                ? `<span class="pay-badge pb-none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-credit-card"></use></svg> ${T.pay.groupNone}</span><span class="pay-badge pb-part"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-users"></use></svg> ${T.pay.groupNote}</span>`
             : (cat === 'partial'
-                ? '<span class="pay-badge pb-part"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-coins"></use></svg> Часткова передоплата</span>'
-                : '<span class="pay-badge pb-full"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-money-bill-wave"></use></svg> Повна передоплата</span>');
+                ? `<span class="pay-badge pb-part"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-coins"></use></svg> ${T.pay.partial}</span>`
+                : `<span class="pay-badge pb-full"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-money-bill-wave"></use></svg> ${T.pay.full}</span>`);
         return `<div class="pay-badges">${label}</div>` + (rt.price_label ? `<div class="pay-note">${escTxt(rt.price_label)}</div>` : '');
     }
 
@@ -628,9 +659,9 @@
     // none + group: для 1-2 пасажирів передоплати немає (нюанс про групи лишається в деталях).
     function payTag(rt) {
         const cat = payCategory(rt);
-        if (cat === 'partial') return { cls: 'pay-part', txt: 'Часткова передоплата' };
-        if (cat === 'full') return { cls: 'pay-full', txt: 'Повна передоплата' };
-        return { cls: 'pay-none', txt: 'Без передоплати' };
+        if (cat === 'partial') return { cls: 'pay-part', txt: T.pay.tagPartial };
+        if (cat === 'full') return { cls: 'pay-full', txt: T.pay.tagFull };
+        return { cls: 'pay-none', txt: T.pay.tagNone };
     }
 
     function renderResults(routes, date) {
@@ -654,21 +685,21 @@
                     <line x1="199" y1="55" x2="209" y2="66" stroke="#5E6E80" stroke-width="4" stroke-linecap="round"/>
                     <text x="187" y="48" text-anchor="middle" font-family="Nunito, sans-serif" font-size="17" font-weight="800" fill="#F06422">?</text>
                 </svg>
-                <h3>Рейсів не знайдено</h3>
-                <p>На ${escTxt(date)} за напрямком ${escTxt(dep)} → ${escTxt(arr)} рейсів немає.</p>
+                <h3>${T.results.noneFoundTitle}</h3>
+                <p>${T.results.noneFoundBody(escTxt(date), escTxt(dep), escTxt(arr))}</p>
                 <div class="suggest-box" id="suggest-box">
-                    <div class="sg-loading"><svg class="ic ic-spin" aria-hidden="true"><use href="/_sprite.svg#i-spinner"></use></svg> Шукаємо найближчі дати та міста...</div>
+                    <div class="sg-loading"><svg class="ic ic-spin" aria-hidden="true"><use href="/_sprite.svg#i-spinner"></use></svg> ${T.results.searchingSuggest}</div>
                     <div class="sg-skel">
                         <div class="skel-bar" style="width:230px;height:44px;border-radius:50px"></div>
                         <div class="skel-bar" style="width:180px;height:44px;border-radius:50px"></div>
                     </div>
                 </div>
             </div>`;
-            setStatus('Рейсів не знайдено', '');
+            setStatus(T.results.noneFoundStatus, '');
             fetchSuggest(date);
             return;
         }
-        setStatus(`Знайдено рейсів: ${routes.length}`, 'success');
+        setStatus(T.results.found(routes.length), 'success');
         // contrabus присилає коди зручностей у різному регістрі ("Drinks" і "drinks") та
         // з порожніми елементами. Нормалізуємо ОДИН раз тут, щоб усі перевірки нижче
         // (фільтр тварин, вибір місця, чипи) не залежали від регістру - інакше рейс із
@@ -690,19 +721,19 @@
         el.innerHTML = `
             <div class="res-hdr">
                 <div class="res-title">${escTxt(dep)} → ${escTxt(arr)} · ${escTxt(date)}</div>
-                <div class="res-badge">${routes.length} рейсів</div>
+                <div class="res-badge">${T.results.badge(routes.length)}</div>
             </div>
             <div class="sort-bar">
-                <span class="sort-lbl"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-down-short-wide"></use></svg> Сортувати:</span>
-                <button class="sort-btn" data-sort="price">Найдешевші${sortArrows}</button>
-                <button class="sort-btn" data-sort="duration">Найшвидші${sortArrows}</button>
-                <button class="sort-btn" data-sort="departure">За часом виїзду${sortArrows}</button>
+                <span class="sort-lbl"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-down-short-wide"></use></svg> ${T.results.sort}</span>
+                <button class="sort-btn" data-sort="price">${T.results.sortPrice}${sortArrows}</button>
+                <button class="sort-btn" data-sort="duration">${T.results.sortDuration}${sortArrows}</button>
+                <button class="sort-btn" data-sort="departure">${T.results.sortDeparture}${sortArrows}</button>
             </div>
             <div class="sort-bar filter-bar">
-                <span class="sort-lbl sort-lbl-f"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-filter"></use></svg> Фільтри:</span>
-                <button class="sort-btn filter-btn" data-filter="noprepay"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-credit-card"></use></svg> Без передоплати</button>
-                <button class="sort-btn filter-btn" data-filter="direct"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-route"></use></svg> Без пересадок</button>
-                <button class="sort-btn filter-btn" data-filter="pets"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-paw"></use></svg> З твариною</button>
+                <span class="sort-lbl sort-lbl-f"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-filter"></use></svg> ${T.results.filters}</span>
+                <button class="sort-btn filter-btn" data-filter="noprepay"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-credit-card"></use></svg> ${T.results.filterNoPrepay}</button>
+                <button class="sort-btn filter-btn" data-filter="direct"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-route"></use></svg> ${T.results.filterDirect}</button>
+                <button class="sort-btn filter-btn" data-filter="pets"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-paw"></use></svg> ${T.results.filterPets}</button>
             </div>
             <div id="tickets"></div>`;
 
