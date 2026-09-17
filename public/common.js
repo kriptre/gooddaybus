@@ -5,6 +5,16 @@
 (function () {
     'use strict';
 
+    var LANG = document.documentElement.lang === 'en' ? 'en' : 'uk';
+    var C_UK = {
+        cookieAria: 'Згода на використання cookie',
+        cookieText: 'Ми використовуємо cookie, щоб сайт працював зручно і ми могли робити його кращим для вас. Натисніть «Прийняти» - це допомагає нам покращувати сервіс. Детальніше - у <a href="/cookies">Політиці cookie</a>.',
+        cookieAccept: 'Прийняти',
+        cookieMinimal: 'Лише необхідні',
+        scrollTop: 'Нагору'
+    };
+    var C = (window.__I18N__ && window.__I18N__.common) || C_UK;
+
     // Сторінка ВХОДУ на сайт (перша за сесію, з utm-мітками реклами) - потрапляє
     // в заявку менеджеру, щоб бачити, з якої реклами/сторінки прийшов клієнт.
     try {
@@ -58,15 +68,15 @@
         var bar = document.createElement('div');
         bar.className = 'cookie-bar';
         bar.setAttribute('role', 'dialog');
-        bar.setAttribute('aria-label', 'Згода на використання cookie');
+        bar.setAttribute('aria-label', C.cookieAria);
         bar.innerHTML =
             '<div class="cookie-top">' +
             '<span class="cookie-ico" aria-hidden="true"><svg viewBox="0 0 32 32" width="22" height="22"><circle cx="16" cy="16" r="13" fill="#F06422"/><circle cx="12" cy="11" r="2" fill="#fff"/><circle cx="20.5" cy="13" r="1.6" fill="#fff"/><circle cx="14" cy="20" r="1.8" fill="#fff"/><circle cx="21" cy="20.5" r="1.4" fill="#fff"/></svg></span>' +
-            '<div class="cookie-txt">Ми використовуємо cookie, щоб сайт працював зручно і ми могли робити його кращим для вас. Натисніть «Прийняти» - це допомагає нам покращувати сервіс. Детальніше - у <a href="/cookies">Політиці cookie</a>.</div>' +
+            '<div class="cookie-txt">' + C.cookieText + '</div>' +
             '</div>' +
             '<div class="cookie-btns">' +
-            '<button type="button" class="ck-btn ck-accept">Прийняти</button>' +
-            '<button type="button" class="ck-link ck-min">Лише необхідні</button>' +
+            '<button type="button" class="ck-btn ck-accept">' + C.cookieAccept + '</button>' +
+            '<button type="button" class="ck-link ck-min">' + C.cookieMinimal + '</button>' +
             '</div>';
         document.body.appendChild(bar);
         requestAnimationFrame(function () { bar.classList.add('show'); });
@@ -86,7 +96,7 @@
     // Кнопка «нагору»: зʼявляється після прокрутки ~на екран.
     function initScrollTop() {
         var btn = document.createElement('button');
-        btn.className = 'scroll-top'; btn.type = 'button'; btn.setAttribute('aria-label', 'Нагору');
+        btn.className = 'scroll-top'; btn.type = 'button'; btn.setAttribute('aria-label', C.scrollTop);
         btn.innerHTML = '<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-up"></use></svg>';
         document.body.appendChild(btn);
         btn.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
