@@ -64,7 +64,7 @@ Admin-only (behind `requireAdmin`, gated by `ADMIN_KEY`): `GET /api/orders`, `GE
 
 **Two-minute search cache.** Identical route/date searches are cached in memory for 2 minutes. This absorbs latency from the upstream carrier API and reduces load during bursts of direct traffic, where many visitors search the same popular route around the same time.
 
-**Flagging bookings the dispatcher report will miss.** The carrier's booking list API can return a booking with `status: "undefined"` when the carrier's own dispatcher has not yet confirmed it - and such bookings are silently absent from the carrier's standard report. The admin panel counts and flags these so a manager does not lose track of a booking that exists but is invisible to the usual report.
+**Telemetry for unknown vendor amenity codes.** The Contrabus API attaches a list of amenity codes to each ride (Wi-Fi, seat selection, pet policy, and so on), and the frontend maps each code to an icon and a Ukrainian label through a local dictionary, plus a small set of regex patterns for numbered variants like `16_noaccompany`/`18_noaccompany`. The carrier can introduce a new code at any time; when one matches neither the dictionary nor a pattern, the site does not render the raw, untranslated code to the visitor - it drops that chip and reports the unmapped code to `/api/client-error` (capped at 5 distinct codes per visit) so a translation can be added, instead of the gap going unnoticed until a customer asks about it.
 
 **Per-IP rate limits plus a global circuit breaker.** Every public endpoint has its own per-IP rate limit (for example, 30 searches/minute, 5 order submissions per 10 minutes). On top of that, outbound requests to the Contrabus API share a single sliding-window ceiling: if the server sends more than a configured number of requests per minute (across all visitors combined), it stops sending further requests to Contrabus for 60 seconds and alerts the admin, instead of risking the shared agent account's API quota being exhausted by a bot attack.
 
@@ -90,11 +90,11 @@ Admin-only (behind `requireAdmin`, gated by `ADMIN_KEY`): `GET /api/orders`, `GE
 ```bash
 npm install
 copy .env.example .env    # Windows; cp on macOS/Linux
-# fill in API_LOGIN / API_PASSWORD for the carrier API, and ADMIN_KEY
+# fill in API_LOGIN / API_PASSWORD so route search works, and a real ADMIN_KEY
 npm start
 ```
 
-`.env.example` documents every variable the server reads: carrier API credentials, the admin panel password, the optional Telegram bot token and chat id for notifications, an optional separate chat id for daily database backups, the public base URL used to build links back to the site, and flags that enable automatic booking and cap how many passengers a single automatic booking can cover. Only `API_LOGIN`/`API_PASSWORD` and `ADMIN_KEY` are required to start the server; everything else is optional and degrades gracefully when unset (for example, without a Telegram token, notifications are simply skipped).
+`.env.example` documents every variable the server reads: carrier API credentials, the admin panel key, the optional Telegram bot token and chat id for notifications, an optional separate chat id for daily database backups, the public base URL used to build links back to the site, and flags that enable automatic booking and cap how many passengers a single automatic booking can cover. None of them are required for the process to start: `API_LOGIN`/`API_PASSWORD` default to empty strings and `ADMIN_KEY` defaults to `'change-me'`, and the server logs a warning for each and keeps running rather than refusing to boot. What actually breaks if you skip them: without `API_LOGIN`/`API_PASSWORD`, every search against the carrier API fails; without a real `ADMIN_KEY`, the admin panel is still gated by a key check, just with a publicly-known default key, which the server flags as a production security hole rather than blocking startup over.
 
 The server listens on the port from the `PORT` environment variable, defaulting to 3000 locally; hosting platforms that inject their own `PORT` are supported without changes.
 
