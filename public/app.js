@@ -135,6 +135,34 @@
             unavailable: 'Інформація недоступна',
             loading: 'Завантаження…',
             none: 'Спеціальних знижок немає'
+        },
+        pax: {
+            delete: 'Видалити',
+            firstName: "Ім'я",
+            firstNamePh: 'Іван',
+            lastName: 'Прізвище',
+            lastNamePh: 'Петренко',
+            phone: 'Телефон',
+            phonePh: '+380 XX XXX XX XX',
+            title: n => `Пасажир №${n}`,
+            fullTicket: 'Повний квиток',
+            discTitle: 'Знижка для пасажирів',
+            total: (n, word) => `Разом за ${n} ${word}:`
+        },
+        seats: {
+            forms: ['місце', 'місця', 'місць'],
+            driver: 'Водій',
+            table: 'Столик',
+            taken: 'Зайнято',
+            auto: 'Автоматично',
+            launch: 'Вибір місця',
+            optional: 'необовʼязково',
+            deck: n => `Поверх ${n}`,
+            legendFree: 'вільне',
+            legendSel: 'ваше',
+            legendTaken: 'зайняте',
+            chosen: (names, n, need) => `Обрано: <b>${names}</b> (${n} з ${need})`,
+            hint: need => `Торкніться вільних місць на схемі${need > 1 ? ` (потрібно ${need})` : ''} - або залиште як є, і місця призначаться автоматично.`
         }
     };
 
@@ -1002,23 +1030,23 @@
         return `<div class="pax-row">
             <div class="pax-head">
                 <span class="pax-title"></span>
-                <button type="button" class="pax-del"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-xmark"></use></svg> Видалити</button>
+                <button type="button" class="pax-del"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-xmark"></use></svg> ${T.pax.delete}</button>
             </div>
             <div class="pax-grid">
-                <div class="fg"><label class="f-lbl">Ім'я</label><input type="text" class="f-inp pax-name" placeholder="Іван" autocomplete="given-name"></div>
-                <div class="fg"><label class="f-lbl">Прізвище</label><input type="text" class="f-inp pax-surname" placeholder="Петренко" autocomplete="family-name"></div>
-                <div class="fg pax-phone-fg"><label class="f-lbl">Телефон</label><input type="tel" class="f-inp pax-phone" placeholder="+380 XX XXX XX XX" inputmode="tel" autocomplete="tel"></div>
+                <div class="fg"><label class="f-lbl">${T.pax.firstName}</label><input type="text" class="f-inp pax-name" placeholder="${T.pax.firstNamePh}" autocomplete="given-name"></div>
+                <div class="fg"><label class="f-lbl">${T.pax.lastName}</label><input type="text" class="f-inp pax-surname" placeholder="${T.pax.lastNamePh}" autocomplete="family-name"></div>
+                <div class="fg pax-phone-fg"><label class="f-lbl">${T.pax.phone}</label><input type="tel" class="f-inp pax-phone" placeholder="${T.pax.phonePh}" inputmode="tel" autocomplete="tel"></div>
             </div>
         </div>`;
     }
     function renumberPax() {
         const rows = document.querySelectorAll('#pax-list .pax-row');
         rows.forEach((row, i) => {
-            row.querySelector('.pax-title').textContent = `Пасажир №${i + 1}`;
+            row.querySelector('.pax-title').textContent = T.pax.title(i + 1);
             row.querySelector('.pax-del').style.display = rows.length > 1 ? '' : 'none';
         });
     }
-    const seatWord = n => n === 1 ? 'місце' : (n < 5 ? 'місця' : 'місць');
+    const seatWord = n => plural(n, T.seats.forms);
 
     // Блок знижок усередині "Додатково" - селекти показуємо одразу, без вкладеного розкриття
     function renderDiscBlock() {
@@ -1029,14 +1057,14 @@
         block.style.display = '';
         _discOpen = true; // знижки доступні - selectи активні (за замовчуванням "Повний квиток")
         // опції: "Повний квиток" (за замовчуванням) + реальні знижки (тільки українська назва)
-        const opts = [{ id: '', percent: 0, label: 'Повний квиток' }].concat(real.map(d => ({ id: d.id, percent: d.percent, label: cleanDiscName(d.description) })));
+        const opts = [{ id: '', percent: 0, label: T.pax.fullTicket }].concat(real.map(d => ({ id: d.id, percent: d.percent, label: cleanDiscName(d.description) })));
         block.innerHTML = `
-            <div class="disc-head"><span class="disc-title"><svg class="ic" style="color:var(--orange);margin-right:6px" aria-hidden="true"><use href="/_sprite.svg#i-tag"></use></svg>Знижка для пасажирів</span></div>
+            <div class="disc-head"><span class="disc-title"><svg class="ic" style="color:var(--orange);margin-right:6px" aria-hidden="true"><use href="/_sprite.svg#i-tag"></use></svg>${T.pax.discTitle}</span></div>
             <div class="disc-body">
                 ${rows.map((r, i) => {
                     const cur = _paxDiscSel[i] != null ? String(_paxDiscSel[i]) : '';
                     return `<div class="disc-row">
-                        <span class="disc-name">Пасажир №${i + 1}</span>
+                        <span class="disc-name">${T.pax.title(i + 1)}</span>
                         <select class="f-inp disc-sel" data-i="${i}">${opts.map(o => `<option value="${o.id}" data-pct="${o.percent}" ${String(o.id) === cur ? 'selected' : ''}>${escTxt(o.label)}</option>`).join('')}</select>
                         <span class="disc-price" data-i="${i}"></span>
                     </div>`;
@@ -1071,7 +1099,7 @@
         let total = 0;
         rows.forEach((r, i) => { total += base * (1 - paxPct(i) / 100); });
         document.getElementById('m-total').innerHTML = base
-            ? `Разом за ${rows.length} ${seatWord(rows.length)}: <b>${Math.round(total * 100) / 100} ${cur}</b>`
+            ? `${T.pax.total(rows.length, seatWord(rows.length))} <b>${Math.round(total * 100) / 100} ${cur}</b>`
             : '';
     }
     function addPax() {
@@ -1158,11 +1186,11 @@
 
     function seatCellHtml(c) {
         if (!c || c.type === 'empty') return '<span class="st st-gap"></span>';
-        if (c.type === 'driver') return '<span class="st st-driver" title="Водій"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-user"></use></svg></span>';
-        if (c.type === 'table') return '<span class="st st-table" title="Столик"></span>';
+        if (c.type === 'driver') return `<span class="st st-driver" title="${T.seats.driver}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-user"></use></svg></span>`;
+        if (c.type === 'table') return `<span class="st st-table" title="${T.seats.table}"></span>`;
         if (c.type === 'seat') {
             const sel = _seatSel.some(s => String(s.id) === String(c.id));
-            if (!c.available && !sel) return `<span class="st st-taken" title="Зайнято">${escTxt(c.number)}</span>`;
+            if (!c.available && !sel) return `<span class="st st-taken" title="${T.seats.taken}">${escTxt(c.number)}</span>`;
             return `<button type="button" class="st st-free${sel ? ' st-sel' : ''}" data-id="${escTxt(c.id)}" data-name="${escTxt(c.number)}">${escTxt(c.number)}</button>`;
         }
         return '<span class="st st-gap"></span>';
@@ -1173,11 +1201,11 @@
     function renderSeatLaunch(loading) {
         const box = document.getElementById('seat-block');
         if (!box) return;
-        const val = loading ? '…' : (_seatSel.length ? _seatSel.map(s => s.name).join(', ') : 'Автоматично');
+        const val = loading ? '…' : (_seatSel.length ? _seatSel.map(s => s.name).join(', ') : T.seats.auto);
         box.innerHTML =
             `<button type="button" class="seat-launch" id="seat-launch"${loading ? ' disabled' : ''}>
-                <span class="sl-l"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chair"></use></svg> Вибір місця</span>
-                <span class="sl-r"><span class="sl-col"><b title="${escTxt(val)}">${escTxt(val)}</b><span class="sl-opt">необовʼязково</span></span> <svg class="ic sl-chev" aria-hidden="true"><use href="/_sprite.svg#i-chevron-right"></use></svg></span>
+                <span class="sl-l"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chair"></use></svg> ${T.seats.launch}</span>
+                <span class="sl-r"><span class="sl-col"><b title="${escTxt(val)}">${escTxt(val)}</b><span class="sl-opt">${T.seats.optional}</span></span> <svg class="ic sl-chev" aria-hidden="true"><use href="/_sprite.svg#i-chevron-right"></use></svg></span>
             </button>`;
         box.style.display = 'block';
         if (!loading) box.querySelector('#seat-launch').addEventListener('click', openSeatSheet);
@@ -1205,7 +1233,7 @@
         if (!body || !_seatScheme) return;
         const decks = _seatScheme;
         const tabs = decks.length > 1
-            ? `<div class="sb-decks">${decks.map((_, i) => `<button type="button" class="sb-deck${i === _seatDeck ? ' active' : ''}" data-d="${i}">Поверх ${i + 1}</button>`).join('')}</div>`
+            ? `<div class="sb-decks">${decks.map((_, i) => `<button type="button" class="sb-deck${i === _seatDeck ? ' active' : ''}" data-d="${i}">${T.seats.deck(i + 1)}</button>`).join('')}</div>`
             : '';
         // Повністю порожні ряди схеми (без сидінь/водія/столиків): хвостові відрізаємо зовсім,
         // а всередині схлопуємо в маленький зазор - інакше салон розтягується "дірками"
@@ -1217,7 +1245,7 @@
             : `<div class="sb-row">${row.map(seatCellHtml).join('')}</div>`).join('');
         body.innerHTML = tabs +
             `<div class="sb-bus">${rows}</div>` +
-            `<div class="sb-legend"><span><i class="lg lg-free"></i> вільне</span><span><i class="lg lg-sel"></i> ваше</span><span><i class="lg lg-taken"></i> зайняте</span></div>`;
+            `<div class="sb-legend"><span><i class="lg lg-free"></i> ${T.seats.legendFree}</span><span><i class="lg lg-sel"></i> ${T.seats.legendSel}</span><span><i class="lg lg-taken"></i> ${T.seats.legendTaken}</span></div>`;
         updateSeatHint();
     }
 
@@ -1226,8 +1254,8 @@
         if (!h) return;
         const need = paxCount();
         h.innerHTML = _seatSel.length
-            ? `Обрано: <b>${escTxt(_seatSel.map(s => s.name).join(', '))}</b> (${_seatSel.length} з ${need})`
-            : `Торкніться вільних місць на схемі${need > 1 ? ` (потрібно ${need})` : ''} - або залиште як є, і місця призначаться автоматично.`;
+            ? T.seats.chosen(escTxt(_seatSel.map(s => s.name).join(', ')), _seatSel.length, need)
+            : T.seats.hint(need);
         const clr = document.getElementById('sb-clear');
         if (clr) clr.style.visibility = _seatSel.length ? 'visible' : 'hidden';
     }
