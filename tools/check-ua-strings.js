@@ -1,6 +1,9 @@
 // tools/check-ua-strings.js
-// Сверяет НАБОР украинских строковых литералов в public/app.js между двумя git-ревизиями.
-// Рефакторинг переносит литералы в словарь T - набор обязан остаться тем же.
+// Сверяет украинские строковые литералы в public/app.js между двумя git-ревизиями.
+// Рефакторинг переносит литералы в словарь T - мультимножество (строка -> сколько раз
+// она встречается) обязано остаться тем же: относиться (не пропадать, не меняться).
+// Строки внутри backtick-шаблонов тоже считаются - статические куски текста извлекаются,
+// а ${...}-интерполяции игнорируются (переименование переменной внутри ${} - не изменение текста).
 // Запуск: node tools/check-ua-strings.js HEAD
 const { execSync } = require('child_process');
 const fs = require('fs');
@@ -8,27 +11,156 @@ const fs = require('fs');
 const rev = process.argv[2] || 'HEAD';
 const cyr = /[А-Яа-яІіЇїЄєҐґ]/;
 
-function literals(src) {
+// Мини-лексер (не полноценный JS-парсер): один проход по символам, который умеет отличать
+// строки/шаблоны/комментарии/regex друг от друга, чтобы:
+//  - "//" и "/* */" внутри строкового литерала (например URL) не резали его текст (Finding 3);
+//  - backtick-шаблоны разбирались посегментно, а ${...} пропускались как код (Finding 1);
+//  - regex-литералы (например /['’ʼ]/g) не путались со строками из-за кавычек внутри них.
+function extractLiterals(src) {
+    src = src.replace(/\r\n/g, '\n');
+    const n = src.length;
     const out = [];
-    for (const line of src.split(/\r?\n/)) {
-        const code = line.replace(/\/\/.*$/, '');
-        const m = code.match(/'[^']*'|"[^"]*"/g) || [];
-        for (const lit of m) {
-            const body = lit.slice(1, -1);
-            if (cyr.test(body)) out.push(body);
+    let i = 0;
+    // lastSig: последний значимый символ кода - нужен только для того, чтобы отличить
+    // regex-литерал от деления ("/"). После значения (идентификатор, число, ")", "]",
+    // либо конец строки/шаблона/regex) следующий "/" - деление; иначе - начало regex.
+    let lastSig = '';
+    const isValueEnd = ch => /[A-Za-z0-9_$)\]]/.test(ch);
+
+    function push(body) {
+        if (cyr.test(body)) out.push(body);
+    }
+
+    function skipLineComment() {
+        while (i < n && src[i] !== '\n') i++;
+    }
+
+    function skipBlockComment() {
+        i += 2;
+        while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++;
+        i += 2;
+    }
+
+    function scanQuoted(quote) {
+        let body = '';
+        i++;
+        while (i < n) {
+            const c = src[i];
+            if (c === '\\') { body += c + (src[i + 1] || ''); i += 2; continue; }
+            if (c === quote) { i++; break; }
+            if (c === '\n') break; // непарная кавычка - не настоящий JS, дальше не тянем
+            body += c; i++;
+        }
+        push(body);
+        lastSig = ')'; // строка - это значение
+    }
+
+    function scanRegex() {
+        i++;
+        let inClass = false;
+        while (i < n) {
+            const c = src[i];
+            if (c === '\\') { i += 2; continue; }
+            if (c === '[') { inClass = true; i++; continue; }
+            if (c === ']') { inClass = false; i++; continue; }
+            if (c === '/' && !inClass) { i++; break; }
+            if (c === '\n') break;
+            i++;
+        }
+        while (i < n && /[a-z]/i.test(src[i])) i++; // флаги regex
+        lastSig = ')';
+    }
+
+    function scanTemplate() {
+        i++;
+        let seg = '';
+        while (i < n) {
+            const c = src[i];
+            if (c === '\\') { seg += c + (src[i + 1] || ''); i += 2; continue; }
+            if (c === '`') { i++; break; }
+            if (c === '$' && src[i + 1] === '{') {
+                push(seg); seg = '';
+                i += 2;
+                scanInterpolation();
+                continue;
+            }
+            seg += c; i++;
+        }
+        push(seg);
+        lastSig = ')';
+    }
+
+    // Разбирает код внутри ${...} до соответствующей закрывающей "}", учитывая вложенные
+    // фигурные скобки (объектные литералы), строки, шаблоны, комментарии и regex - но не
+    // строит AST, просто пропускает всё это как код и не извлекает из него текст.
+    function scanInterpolation() {
+        let depth = 1;
+        while (i < n && depth > 0) {
+            const c = src[i];
+            if (c === '/' && src[i + 1] === '/') { skipLineComment(); continue; }
+            if (c === '/' && src[i + 1] === '*') { skipBlockComment(); continue; }
+            if (c === "'" || c === '"') { scanQuoted(c); continue; }
+            if (c === '`') { scanTemplate(); continue; }
+            if (c === '/' && !isValueEnd(lastSig)) { scanRegex(); continue; }
+            if (c === '{') { depth++; lastSig = c; i++; continue; }
+            if (c === '}') { depth--; lastSig = c; i++; continue; }
+            if (!/\s/.test(c)) lastSig = c;
+            i++;
         }
     }
-    return out.sort();
+
+    while (i < n) {
+        const c = src[i];
+        if (c === '/' && src[i + 1] === '/') { skipLineComment(); continue; }
+        if (c === '/' && src[i + 1] === '*') { skipBlockComment(); continue; }
+        if (c === "'" || c === '"') { scanQuoted(c); continue; }
+        if (c === '`') { scanTemplate(); continue; }
+        if (c === '/' && !isValueEnd(lastSig)) { scanRegex(); continue; }
+        if (!/\s/.test(c)) lastSig = c;
+        i++;
+    }
+
+    return out;
 }
 
-const before = literals(execSync(`git show ${rev}:public/app.js`, { encoding: 'utf8' }));
-const after = literals(fs.readFileSync('public/app.js', 'utf8'));
+function countOf(list) {
+    const m = new Map();
+    for (const s of list) m.set(s, (m.get(s) || 0) + 1);
+    return m;
+}
 
-const missing = before.filter(s => !after.includes(s));
-const added = after.filter(s => !before.includes(s));
+const beforeList = extractLiterals(execSync(`git show ${rev}:public/app.js`, { encoding: 'utf8' }));
+const afterList = extractLiterals(fs.readFileSync('public/app.js', 'utf8'));
 
-console.log(`${rev}: ${before.length} литералов, рабочая копия: ${after.length}`);
-if (missing.length) console.log('ПРОПАЛИ:\n  ' + missing.join('\n  '));
-if (added.length) console.log('ПОЯВИЛИСЬ:\n  ' + added.join('\n  '));
-if (!missing.length && !added.length) console.log('OK: набор строк не изменился');
-process.exit(missing.length || added.length ? 1 : 0);
+const beforeCounts = countOf(beforeList);
+const afterCounts = countOf(afterList);
+
+const allKeys = new Set([...beforeCounts.keys(), ...afterCounts.keys()]);
+const reduced = []; // count went down (partially or fully lost)
+const increased = []; // count went up (new or duplicated)
+for (const key of allKeys) {
+    const b = beforeCounts.get(key) || 0;
+    const a = afterCounts.get(key) || 0;
+    if (a < b) reduced.push({ key, b, a });
+    else if (a > b) increased.push({ key, b, a });
+}
+reduced.sort((x, y) => x.key.localeCompare(y.key));
+increased.sort((x, y) => x.key.localeCompare(y.key));
+
+console.log(`${rev}: ${beforeList.length} литералов (${beforeCounts.size} уникальных), рабочая копия: ${afterList.length} (${afterCounts.size} уникальных)`);
+
+if (reduced.length) {
+    console.log('ПРОПАЛИ (количество уменьшилось или строка исчезла):');
+    for (const { key, b, a } of reduced) {
+        console.log(`  "${key}": было ${b}, стало ${a} (${a - b})`);
+    }
+}
+if (increased.length) {
+    console.log('ПОЯВИЛИСЬ (количество увеличилось или строка новая):');
+    for (const { key, b, a } of increased) {
+        console.log(`  "${key}": было ${b}, стало ${a} (+${a - b})`);
+    }
+}
+if (!reduced.length && !increased.length) console.log('OK: мультимножество строк не изменилось');
+
+process.exit(reduced.length || increased.length ? 1 : 0);
