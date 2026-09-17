@@ -65,6 +65,11 @@
         transfers: {
             direct: 'Без пересадок, прямий рейс',
             forms: ['пересадка', 'пересадки', 'пересадок']
+        },
+        duration: {
+            hour: 'год',
+            dayForms: ['день', 'дні', 'днів'],
+            plusHours: rh => ` ${rh} год`
         }
     };
 
@@ -462,9 +467,9 @@
     function fmtDuration(sec) {
         if (!sec || isNaN(sec)) return '';
         const h = Math.round(sec / 3600);
-        if (h < 24) return `${h} год`;
+        if (h < 24) return `${h} ${T.duration.hour}`;
         const days = Math.floor(h / 24), rh = h % 24;
-        return `${days} ${days === 1 ? 'день' : (days < 5 ? 'дні' : 'днів')}${rh ? ' ' + rh + ' год' : ''}`;
+        return `${days} ${plural(days, T.duration.dayForms)}${rh ? T.duration.plusHours(rh) : ''}`;
     }
 
     // Стислий опис пересадок: "2 пересадки · Дніпро, Хмельницький" (повний текст - у tooltip)
