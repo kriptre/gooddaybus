@@ -152,45 +152,45 @@
         <div class="search-row">
 
             <div class="s-field">
-                <label class="s-lbl" for="departure">Звідки</label>
+                <label class="s-lbl" for="departure" data-i18n="search.fromLabel">Звідки</label>
                 <div class="s-inp">
                     <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-dot"></use></svg>
-                    <input type="text" id="departure" placeholder="Місто відправлення" autocomplete="off">
+                    <input type="text" id="departure" placeholder="Місто відправлення" autocomplete="off" data-i18n-attr="placeholder:search.fromPlaceholder">
                 </div>
                 <div id="departure-list" class="ac-list"></div>
             </div>
 
-            <button class="swap-btn" id="swap-btn" title="Поміняти місцями" aria-label="Поміняти міста місцями">
+            <button class="swap-btn" id="swap-btn" title="Поміняти місцями" aria-label="Поміняти міста місцями" data-i18n-attr="title:search.swapTitle;aria-label:search.swapAria">
                 <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-right-left"></use></svg>
             </button>
 
             <div class="s-field">
-                <label class="s-lbl" for="arrival">Куди</label>
+                <label class="s-lbl" for="arrival" data-i18n="search.toLabel">Куди</label>
                 <div class="s-inp">
                     <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg>
-                    <input type="text" id="arrival" placeholder="Місто прибуття" autocomplete="off">
+                    <input type="text" id="arrival" placeholder="Місто прибуття" autocomplete="off" data-i18n-attr="placeholder:search.toPlaceholder">
                 </div>
                 <div id="arrival-list" class="ac-list"></div>
             </div>
 
             <div class="s-field">
-                <label class="s-lbl" for="date-input">Дата поїздки</label>
+                <label class="s-lbl" for="date-input" data-i18n="search.dateLabel">Дата поїздки</label>
                 <div class="s-inp" id="date-wrap">
                     <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-calendar"></use></svg>
                     <span id="date-display"></span>
-                    <input type="date" id="date-input" class="date-native" tabindex="-1" aria-label="Дата поїздки">
+                    <input type="date" id="date-input" class="date-native" tabindex="-1" aria-label="Дата поїздки" data-i18n-attr="aria-label:search.dateLabel">
                 </div>
             </div>
 
             <button class="btn-search" id="search-btn" disabled>
                 <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-magnifying-glass"></use></svg>
-                Знайти рейс
+                <span data-i18n="search.findRoute">Знайти рейс</span>
             </button>
         </div>
 
         <div class="status-row" id="status-row">
             <div class="s-dot"></div>
-            <span id="status-txt">Завантаження...</span>
+            <span id="status-txt" data-i18n="search.statusLoading">Завантаження...</span>
         </div>
     </div>
 </div>
@@ -199,7 +199,7 @@
 <div id="date-strip" class="date-strip"></div>
 
 <div class="quick-contact">
-    <span><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-headset"></use></svg> Питання? Менеджер допоможе:</span>
+    <span><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-headset"></use></svg> <span data-i18n="quickContact.question">Питання? Менеджер допоможе:</span></span>
     <a href="tel:+380967656732"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-phone"></use></svg> +38 (096) 765-67-32</a>
     <a href="https://t.me/gooddaybus" target="_blank" rel="noopener" class="qc-tg" aria-label="Telegram"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-telegram"></use></svg></a>
     <a href="viber://chat?number=%2B380967656732" class="qc-vb" aria-label="Viber"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-viber"></use></svg></a>
@@ -208,20 +208,20 @@
 
 <!-- Популярні напрямки: швидкий перехід на сторінки маршрутів (ховається під час пошуку) -->
 <section class="pop-routes" id="pop-routes">
-    <h3>Популярні напрямки</h3>
+    <h3 data-i18n="popRoutes.heading">Популярні напрямки</h3>
     <div class="seo-tags">
-        <a class="seo-tag" href="/kyiv-varshava">Київ - Варшава</a>
-        <a class="seo-tag" href="/varshava-kyiv">Варшава - Київ</a>
-        <a class="seo-tag" href="/lviv-krakiv">Львів - Краків</a>
-        <a class="seo-tag" href="/krakiv-lviv">Краків - Львів</a>
-        <a class="seo-tag" href="/kyiv-krakiv">Київ - Краків</a>
-        <a class="seo-tag" href="/krakiv-kyiv">Краків - Київ</a>
-        <a class="seo-tag" href="/lviv-varshava">Львів - Варшава</a>
-        <a class="seo-tag" href="/varshava-lviv">Варшава - Львів</a>
-        <a class="seo-tag" href="/kyiv-berlin">Київ - Берлін</a>
-        <a class="seo-tag" href="/berlin-kyiv">Берлін - Київ</a>
-        <a class="seo-tag" href="/lviv-praha">Львів - Прага</a>
-        <a class="seo-tag" href="/praha-lviv">Прага - Львів</a>
+        <a class="seo-tag" href="/kyiv-varshava" data-i18n="popRoutes.kyivWarsaw">Київ - Варшава</a>
+        <a class="seo-tag" href="/varshava-kyiv" data-i18n="popRoutes.warsawKyiv">Варшава - Київ</a>
+        <a class="seo-tag" href="/lviv-krakiv" data-i18n="popRoutes.lvivKrakow">Львів - Краків</a>
+        <a class="seo-tag" href="/krakiv-lviv" data-i18n="popRoutes.krakowLviv">Краків - Львів</a>
+        <a class="seo-tag" href="/kyiv-krakiv" data-i18n="popRoutes.kyivKrakow">Київ - Краків</a>
+        <a class="seo-tag" href="/krakiv-kyiv" data-i18n="popRoutes.krakowKyiv">Краків - Київ</a>
+        <a class="seo-tag" href="/lviv-varshava" data-i18n="popRoutes.lvivWarsaw">Львів - Варшава</a>
+        <a class="seo-tag" href="/varshava-lviv" data-i18n="popRoutes.warsawLviv">Варшава - Львів</a>
+        <a class="seo-tag" href="/kyiv-berlin" data-i18n="popRoutes.kyivBerlin">Київ - Берлін</a>
+        <a class="seo-tag" href="/berlin-kyiv" data-i18n="popRoutes.berlinKyiv">Берлін - Київ</a>
+        <a class="seo-tag" href="/lviv-praha" data-i18n="popRoutes.lvivPrague">Львів - Прага</a>
+        <a class="seo-tag" href="/praha-lviv" data-i18n="popRoutes.pragueLviv">Прага - Львів</a>
     </div>
 </section>
 
@@ -251,28 +251,28 @@
 <section class="contact-section">
     <div class="contact-inner">
         <div class="contact-left">
-            <h2>Залишились<br><em>запитання?</em></h2>
-            <p>Зверніться до нашого менеджера - відповімо на всі питання, допоможемо обрати зручний рейс та оформити поїздку. Ми на зв'язку щодня.</p>
+            <h2 data-i18n-html="contact.heading">Залишились<br><em>запитання?</em></h2>
+            <p data-i18n="contact.text">Зверніться до нашого менеджера - відповімо на всі питання, допоможемо обрати зручний рейс та оформити поїздку. Ми на зв'язку щодня.</p>
         </div>
 
         <div class="contact-card">
             <div class="manager-row">
                 <div class="manager-ava"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-user"></use></svg></div>
                 <div>
-                    <div class="manager-name">Сергій</div>
-                    <div class="manager-role">Менеджер GoodDayBus</div>
+                    <div class="manager-name" data-i18n="contact.managerName">Сергій</div>
+                    <div class="manager-role" data-i18n="contact.managerRole">Менеджер GoodDayBus</div>
                 </div>
             </div>
 
             <div class="c-line">
                 <div class="c-icons">
                     <div class="c-ico ci-ph"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-phone"></use></svg></div>
-                    <a href="viber://chat?number=%2B380967656732" class="c-msgr ci-vb" title="Viber" aria-label="Написати у Viber"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-viber"></use></svg></a>
-                    <a href="https://wa.me/380967656732" target="_blank" rel="noopener" class="c-msgr ci-wa" title="WhatsApp" aria-label="Написати у WhatsApp"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-whatsapp"></use></svg></a>
+                    <a href="viber://chat?number=%2B380967656732" class="c-msgr ci-vb" title="Viber" aria-label="Написати у Viber" data-i18n-attr="aria-label:contact.viberAria"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-viber"></use></svg></a>
+                    <a href="https://wa.me/380967656732" target="_blank" rel="noopener" class="c-msgr ci-wa" title="WhatsApp" aria-label="Написати у WhatsApp" data-i18n-attr="aria-label:contact.whatsappAria"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-whatsapp"></use></svg></a>
                 </div>
                 <div>
                     <a href="tel:+380967656732" class="c-tel"><div class="c-line-val">+38 (096) 765-67-32</div></a>
-                    <span class="c-line-sub">Дзвоніть або пишіть у месенджери</span>
+                    <span class="c-line-sub" data-i18n="contact.phoneSub">Дзвоніть або пишіть у месенджери</span>
                 </div>
             </div>
 
@@ -280,7 +280,7 @@
                 <div class="c-ico ci-tg"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-telegram"></use></svg></div>
                 <div>
                     <div class="c-line-val">@GooddayBus</div>
-                    <span class="c-line-sub">Telegram - відповімо швидко</span>
+                    <span class="c-line-sub" data-i18n="contact.telegramSub">Telegram - відповімо швидко</span>
                 </div>
             </a>
 
@@ -294,7 +294,7 @@
 
             <div class="c-hours">
                 <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-clock"></use></svg>
-                Працюємо <strong style="color:var(--text);margin-left:4px;">Пн-Нд, 7:00 - 23:00</strong>
+                <span data-i18n="contact.hoursLabel">Працюємо</span> <strong style="color:var(--text);margin-left:4px;" data-i18n="contact.hoursValue">Пн-Нд, 7:00 - 23:00</strong>
             </div>
         </div>
     </div>
@@ -303,14 +303,14 @@
 </main>
 
 <footer>
-    <nav class="footer-legal" aria-label="Правова інформація">
-        <a href="/faq">Питання й відповіді</a>
-        <a href="/terms">Умови користування</a>
-        <a href="/privacy">Конфіденційність</a>
-        <a href="/refund">Скасування та повернення</a>
-        <a href="/cookies">Cookie</a>
+    <nav class="footer-legal" aria-label="Правова інформація" data-i18n-attr="aria-label:footer.navAria">
+        <a href="/faq" data-i18n="footer.faq">Питання й відповіді</a>
+        <a href="/terms" data-i18n="footer.terms">Умови користування</a>
+        <a href="/privacy" data-i18n="footer.privacy">Конфіденційність</a>
+        <a href="/refund" data-i18n="footer.refund">Скасування та повернення</a>
+        <a href="/cookies" data-i18n="footer.cookies">Cookie</a>
     </nav>
-    <p>© 2026 <span>GoodDayBus</span> - Пасажирські перевезення Україна <svg class="ic" style="font-size:10px" aria-hidden="true"><use href="/_sprite.svg#i-arrow-right-arrow-left"></use></svg> Європа</p>
+    <p>© 2026 <span>GoodDayBus</span> - <span data-i18n="footer.tagline1">Пасажирські перевезення Україна</span> <svg class="ic" style="font-size:10px" aria-hidden="true"><use href="/_sprite.svg#i-arrow-right-arrow-left"></use></svg> <span data-i18n="footer.tagline2">Європа</span></p>
 </footer>
 
 <!-- MODAL -->
@@ -319,40 +319,40 @@
 
         <div id="m-form">
             <div class="modal-head">
-                <h2 id="m-title">Замовити поїздку</h2>
+                <h2 id="m-title" data-i18n="modal.titleOrder">Замовити поїздку</h2>
                 <div class="m-rtag" id="m-route">
                     <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg><span>-</span>
                 </div>
                 <div class="m-trip" id="m-trip"></div>
-                <div class="m-booknote" id="m-booknote" style="display:none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bolt"></use></svg> Місця бронюються одразу. Оплата - водієві при посадці.</div>
+                <div class="m-booknote" id="m-booknote" style="display:none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bolt"></use></svg> <span data-i18n="modal.bookNote">Місця бронюються одразу. Оплата - водієві при посадці.</span></div>
                 <div class="m-groupnote" id="m-groupnote" style="display:none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-info"></use></svg></div>
             </div>
             <div class="modal-body">
                 <div id="pax-list"></div>
-                <button type="button" class="btn-addpax" id="add-pax"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-plus"></use></svg> Додати пасажира</button>
+                <button type="button" class="btn-addpax" id="add-pax"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-plus"></use></svg> <span data-i18n="modal.addPax">Додати пасажира</span></button>
 
                 <!-- Вибір місця: схема салону (зʼявляється лише на рейсах, де перевізник це дозволяє) -->
                 <div id="seat-block" class="seat-block" style="display:none"></div>
 
                 <button type="button" class="more-toggle" id="more-toggle">
-                    <span class="mt-l"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-sliders"></use></svg> Додатково</span>
+                    <span class="mt-l"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-sliders"></use></svg> <span data-i18n="modal.more">Додатково</span></span>
                     <svg class="ic" id="more-chev" aria-hidden="true"><use href="/_sprite.svg#i-chevron-down"></use></svg>
                 </button>
                 <div id="more-body" style="display:none">
                     <div class="fg" id="pet-field" style="display:none;margin:16px 0 0">
-                        <label class="f-lbl"><svg class="ic" style="color:var(--orange);margin-right:5px" aria-hidden="true"><use href="/_sprite.svg#i-paw"></use></svg>Подорож із твариною</label>
+                        <label class="f-lbl"><svg class="ic" style="color:var(--orange);margin-right:5px" aria-hidden="true"><use href="/_sprite.svg#i-paw"></use></svg><span data-i18n="modal.petLabel">Подорож із твариною</span></label>
                         <select id="pet-select" class="f-inp">
-                            <option value="no">Без тварини</option>
-                            <option value="yes">Так, із твариною</option>
+                            <option value="no" data-i18n="modal.petNo">Без тварини</option>
+                            <option value="yes" data-i18n="modal.petYes">Так, із твариною</option>
                         </select>
-                        <div class="pet-note" id="pet-note" style="display:none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-info"></use></svg> Вартість перевезення тварини залежить від розміру та перевізника - менеджер уточнить ціну й підтвердить бронювання.</div>
+                        <div class="pet-note" id="pet-note" style="display:none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-info"></use></svg> <span data-i18n="modal.petNote">Вартість перевезення тварини залежить від розміру та перевізника - менеджер уточнить ціну й підтвердить бронювання.</span></div>
                     </div>
                     <div class="fg" style="margin:16px 0 0">
-                        <label class="f-lbl">Коментар (необов'язково)</label>
-                        <textarea id="c-comment" class="f-inp" placeholder="Побажання, місце біля вікна тощо..."></textarea>
+                        <label class="f-lbl" data-i18n="modal.commentLabel">Коментар (необов'язково)</label>
+                        <textarea id="c-comment" class="f-inp" placeholder="Побажання, місце біля вікна тощо..." data-i18n-attr="placeholder:modal.commentPlaceholder"></textarea>
                     </div>
                     <div id="disc-block" class="disc-block" style="display:none"></div>
-                    <div class="m-disc-note" id="m-disc-note" style="display:none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-info"></use></svg> Знижка діє за наявності підтверджуючого документа.</div>
+                    <div class="m-disc-note" id="m-disc-note" style="display:none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-info"></use></svg> <span data-i18n="modal.discNote">Знижка діє за наявності підтверджуючого документа.</span></div>
                 </div>
                 <!-- honeypot: приховане поле, люди його не бачать, заповнюють лише боти -->
                 <input type="text" id="c-hp" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
@@ -361,47 +361,47 @@
             <label class="m-consent" id="m-consent-wrap">
                 <input type="checkbox" id="m-consent">
                 <span class="ck-box" aria-hidden="true"></span>
-                <span class="ck-label">Я погоджуюся з <a href="/terms" target="_blank" rel="noopener">Умовами користування</a> та <a href="/privacy" target="_blank" rel="noopener">Політикою конфіденційності</a> і даю згоду на передачу вказаних даних перевізнику для оформлення поїздки.<span class="ck-err-note">Поставте галочку, щоб надіслати заявку</span></span>
+                <span class="ck-label" data-i18n-html="modal.consentLabel">Я погоджуюся з <a href="/terms" target="_blank" rel="noopener">Умовами користування</a> та <a href="/privacy" target="_blank" rel="noopener">Політикою конфіденційності</a> і даю згоду на передачу вказаних даних перевізнику для оформлення поїздки.<span class="ck-err-note">Поставте галочку, щоб надіслати заявку</span></span>
             </label>
             <!-- Cloudflare Turnstile (антибот): рендериться JS-ом (app.js, explicit-режим) лише для
                  бронюваних рейсів (canBookNow()) - звичайна заявка менеджеру Turnstile не потребує.
                  Site key - у константі TURNSTILE_SITE_KEY в app.js; поки плейсхолдер - віджет не рендериться. -->
             <div id="ts-holder"></div>
             <div class="modal-foot">
-                <button class="btn-cancel" id="m-cancel">Скасувати</button>
+                <button class="btn-cancel" id="m-cancel" data-i18n="modal.cancel">Скасувати</button>
                 <button class="btn-submit" id="m-submit">
-                    <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-paper-plane"></use></svg> Надіслати
+                    <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-paper-plane"></use></svg> <span data-i18n="modal.send">Надіслати</span>
                 </button>
             </div>
         </div>
 
         <div class="modal-ok" id="m-ok">
             <div class="ok-circle"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-check"></use></svg></div>
-            <h3 id="m-ok-title">Заявку прийнято!</h3>
-            <p id="m-ok-text">Наш менеджер зв'яжеться<br>з вами найближчим часом.</p>
+            <h3 id="m-ok-title" data-i18n="modal.okTitle">Заявку прийнято!</h3>
+            <p id="m-ok-text" data-i18n-html="modal.okText">Наш менеджер зв'яжеться<br>з вами найближчим часом.</p>
             <div id="m-ok-tickets"></div>
             <div id="m-ok-link" style="display:none">
-                <div class="ok-link-lbl">Посилання на вашу бронь - тут завжди квитки й деталі:</div>
+                <div class="ok-link-lbl" data-i18n="modal.okLinkLabel">Посилання на вашу бронь - тут завжди квитки й деталі:</div>
                 <div class="ok-link-row">
                     <input id="m-ok-url" type="text" readonly>
-                    <button type="button" id="m-ok-copy" class="ok-copy">Копіювати</button>
+                    <button type="button" id="m-ok-copy" class="ok-copy" data-i18n="modal.okCopy">Копіювати</button>
                 </div>
             </div>
             <div class="ok-msgrs">
-                <div class="ok-msgrs-lbl">Виникли питання? Напишіть нам:</div>
+                <div class="ok-msgrs-lbl" data-i18n="modal.okMsgrsLabel">Виникли питання? Напишіть нам:</div>
                 <div class="ok-msgrs-row">
                     <a class="ok-msgr ok-msgr-tg" href="https://t.me/gooddaybus" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-telegram"></use></svg> Telegram</a>
                     <a class="ok-msgr ok-msgr-vb" href="viber://chat?number=%2B380967656732"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-viber"></use></svg> Viber</a>
                     <a class="ok-msgr ok-msgr-wa" href="https://wa.me/380967656732" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-whatsapp"></use></svg> WhatsApp</a>
                 </div>
             </div>
-            <button type="button" id="m-ok-return" class="ok-return"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-right-arrow-left"></use></svg> Знайти зворотний рейс</button>
-            <button class="btn-submit" id="m-close" style="display:block;width:100%;">Закрити</button>
+            <button type="button" id="m-ok-return" class="ok-return"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-arrow-right-arrow-left"></use></svg> <span data-i18n="modal.okReturn">Знайти зворотний рейс</span></button>
+            <button class="btn-submit" id="m-close" style="display:block;width:100%;" data-i18n="modal.close">Закрити</button>
             <div id="m-ok-guard" style="display:none">
-                <p>Переконайтеся, що завантажили квитки або зберегли посилання на бронь - воно знадобиться при посадці.</p>
+                <p data-i18n="modal.guardText">Переконайтеся, що завантажили квитки або зберегли посилання на бронь - воно знадобиться при посадці.</p>
                 <div class="ok-guard-btns">
-                    <button type="button" id="m-ok-guard-back">Повернутися</button>
-                    <button type="button" id="m-ok-guard-close">Все одно закрити</button>
+                    <button type="button" id="m-ok-guard-back" data-i18n="modal.guardBack">Повернутися</button>
+                    <button type="button" id="m-ok-guard-close" data-i18n="modal.guardClose">Все одно закрити</button>
                 </div>
             </div>
         </div>
@@ -410,16 +410,16 @@
 
     <!-- Аркуш вибору місця: відкривається ПОВЕРХ вікна бронювання, щоб не розтягувати форму -->
     <div class="seat-sheet-bg" id="seat-sheet-bg">
-        <div class="seat-sheet" role="dialog" aria-label="Вибір місця">
+        <div class="seat-sheet" role="dialog" aria-label="Вибір місця" data-i18n-attr="aria-label:modal.seatSheetTitle">
             <div class="ss-head">
-                <span class="ss-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chair"></use></svg> Вибір місця</span>
-                <button type="button" class="ss-x" id="ss-x" aria-label="Закрити"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-xmark"></use></svg></button>
+                <span class="ss-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chair"></use></svg> <span data-i18n="modal.seatSheetTitle">Вибір місця</span></span>
+                <button type="button" class="ss-x" id="ss-x" aria-label="Закрити" data-i18n-attr="aria-label:modal.close"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-circle-xmark"></use></svg></button>
             </div>
             <div class="ss-hint" id="sb-hint"></div>
             <div class="ss-body" id="ss-body"></div>
             <div class="ss-foot">
-                <button type="button" class="ss-clear" id="sb-clear">Скинути</button>
-                <button type="button" class="ss-done" id="ss-done">Готово</button>
+                <button type="button" class="ss-clear" id="sb-clear" data-i18n="modal.seatClear">Скинути</button>
+                <button type="button" class="ss-done" id="ss-done" data-i18n="modal.seatDone">Готово</button>
             </div>
         </div>
     </div>

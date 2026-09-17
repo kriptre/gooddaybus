@@ -209,4 +209,8 @@ console.log(`Версія ассетів (?v=): ${ASSET_V}`);
 // Юридичні сторінки (terms/privacy/refund/cookies) з legal/*.md
 require('./build-legal.js');
 
+// Англійські сторінки (public/en/*.html) + словник-оверрайд (public/i18n/en.js).
+// Викликається останньою - читає index.html вже версійно-проштампованим (як build-legal.js).
+require('./build-i18n.js');
+
 })().catch(e => { console.error('[Build] Помилка:', e.message); process.exit(1); });

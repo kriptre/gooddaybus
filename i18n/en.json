@@ -1,0 +1,284 @@
+{
+  "meta": {
+    "title": "Bus tickets: Ukraine - Europe, no prepayment",
+    "description": "GoodDayBus - bus tickets Ukraine - Europe with no prepayment. Book in a minute, no registration, pay the driver: Poland, Germany, Czechia and more.",
+    "ogDescription": "Find a convenient trip in a minute. Book with no prepayment - pay the driver."
+  },
+  "hero": {
+    "badgeTransport": "Bus travel",
+    "badgeCountry": "Ukraine",
+    "badgeTarget": "Europe",
+    "title": "Your <em>journey</em><br>starts here",
+    "sub": "Find a convenient trip in a minute.<br>No registration, no extra steps."
+  },
+  "search": {
+    "fromLabel": "From",
+    "fromPlaceholder": "Departure city",
+    "toLabel": "To",
+    "toPlaceholder": "Arrival city",
+    "dateLabel": "Travel date",
+    "swapTitle": "Swap",
+    "swapAria": "Swap departure and arrival cities",
+    "findRoute": "Find a bus",
+    "statusLoading": "Loading..."
+  },
+  "quickContact": {
+    "question": "Questions? A manager can help:"
+  },
+  "popRoutes": {
+    "heading": "Popular routes",
+    "kyivWarsaw": "Kyiv - Warsaw",
+    "warsawKyiv": "Warsaw - Kyiv",
+    "lvivKrakow": "Lviv - Krakow",
+    "krakowLviv": "Krakow - Lviv",
+    "kyivKrakow": "Kyiv - Krakow",
+    "krakowKyiv": "Krakow - Kyiv",
+    "lvivWarsaw": "Lviv - Warsaw",
+    "warsawLviv": "Warsaw - Lviv",
+    "kyivBerlin": "Kyiv - Berlin",
+    "berlinKyiv": "Berlin - Kyiv",
+    "lvivPrague": "Lviv - Prague",
+    "pragueLviv": "Prague - Lviv"
+  },
+  "how": {
+    "title": "How it works",
+    "step1Title": "Find a trip",
+    "step1Text": "Choose where from, where to, and your travel date - then click \"Find a bus\".",
+    "step2Title": "Check the details",
+    "step2Text": "Click \"Trip details\" under the trip you want - see amenities, discounts, transfers and carrier info.",
+    "step3Title": "Order the trip",
+    "step3Text": "Click the button on the trip you want and enter passenger details.",
+    "step4Title": "The manager will contact you",
+    "step4Text": "We'll get in touch, confirm the booking and answer any questions."
+  },
+  "seo": {
+    "eyebrow": "About the service",
+    "heading": "Bus tickets <em>Ukraine - Europe</em>",
+    "p1": "Book bus tickets Ukraine - Europe in a minute, with no prepayment: pay the driver at boarding, no registration required. We help you quickly find and book trips to Poland, Germany, Czechia, Italy, Spain and other countries - hundreds of routes from vetted carriers, with schedule, prices, travel time and transfers all visible at once.",
+    "p2": "Booking takes a minute and needs no registration. Most trips can be booked with no prepayment - pay the driver at boarding. If you have questions, a real manager is always available - by phone, Telegram, Viber or WhatsApp, daily from 7:00 to 23:00."
+  },
+  "contact": {
+    "heading": "Still have<br><em>questions?</em>",
+    "text": "Reach out to our manager - we'll answer any questions, help you pick a convenient trip and arrange your booking. We're available every day.",
+    "managerName": "Serhii",
+    "managerRole": "GoodDayBus Manager",
+    "viberAria": "Message on Viber",
+    "whatsappAria": "Message on WhatsApp",
+    "phoneSub": "Call or message us",
+    "telegramSub": "Telegram - we reply fast",
+    "hoursLabel": "We're open",
+    "hoursValue": "Mon-Sun, 7:00 - 23:00"
+  },
+  "footer": {
+    "navAria": "Legal information",
+    "faq": "FAQ",
+    "terms": "Terms of use",
+    "privacy": "Privacy",
+    "refund": "Cancellation & refunds",
+    "cookies": "Cookies",
+    "tagline1": "Passenger transportation Ukraine",
+    "tagline2": "Europe"
+  },
+  "modal": {
+    "cancel": "Cancel",
+    "send": "Send",
+    "titleOrder": "Order the trip",
+    "addPax": "Add passenger",
+    "more": "More options",
+    "petLabel": "Traveling with a pet",
+    "petNo": "No pet",
+    "petYes": "Yes, with a pet",
+    "petNote": "The cost of transporting a pet depends on its size and the carrier - the manager will confirm the price and the booking.",
+    "commentLabel": "Comment (optional)",
+    "commentPlaceholder": "Preferences, window seat, etc...",
+    "discNote": "The discount applies with a supporting document.",
+    "bookNote": "Seats are booked right away. Payment - to the driver at boarding.",
+    "consentLabel": "I agree to the <a href=\"/terms\" target=\"_blank\" rel=\"noopener\">Terms of Use</a> and <a href=\"/privacy\" target=\"_blank\" rel=\"noopener\">Privacy Policy</a> and consent to sharing the details provided with the carrier to arrange the trip.<span class=\"ck-err-note\">Check the box to send the request</span>",
+    "okTitle": "Request accepted!",
+    "okText": "Our manager will contact you<br>shortly.",
+    "okLinkLabel": "Link to your booking - tickets and details are always here:",
+    "okCopy": "Copy",
+    "okMsgrsLabel": "Have questions? Message us:",
+    "okReturn": "Find a return trip",
+    "close": "Close",
+    "guardText": "Make sure you've downloaded the tickets or saved the booking link - you'll need it at boarding.",
+    "guardBack": "Go back",
+    "guardClose": "Close anyway",
+    "seatSheetTitle": "Choose a seat",
+    "seatClear": "Reset",
+    "seatDone": "Done"
+  },
+  "app": {
+    "status": {
+      "loadingCities": "Loading cities...",
+      "citiesReady": "{n} cities available - choose your route",
+      "citiesFailed": "Could not load cities - check your connection",
+      "retry": "Try again"
+    },
+    "date": {
+      "dow": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      "monShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+      "monFull": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+      "earlier": "Earlier",
+      "later": "Later",
+      "placeholder": "Choose a date"
+    },
+    "ac": {
+      "recent": "Recent",
+      "popular": "Popular routes"
+    },
+    "search": {
+      "differentCities": "Enter different cities",
+      "checkCities": "Check the city names or pick one from the suggestions",
+      "searching": "Searching for trips...",
+      "searchingBtn": "Searching...",
+      "findRoute": "Find a bus",
+      "error": "Error: {msg}"
+    },
+    "suggest": {
+      "otherDate": "No trips on the selected date, but there are on {d}:",
+      "showOtherDate": "Show trips on {d}",
+      "noDirect": "No direct trips. Tap a nearby city to see trips:",
+      "none": "Try a different date or route, or contact the manager below.",
+      "routeForms": ["trip", "trips"],
+      "km": "km"
+    },
+    "transfers": {
+      "direct": "No transfers, direct trip",
+      "forms": ["transfer", "transfers"]
+    },
+    "duration": {
+      "hour": "h",
+      "dayForms": ["day", "days"]
+    },
+    "amenities": {
+      "wifi": { "i": "wifi", "t": "Wi-Fi" },
+      "power": { "i": "plug", "t": "Power outlets" },
+      "air": { "i": "snowflake", "t": "Air conditioning" },
+      "wc": { "i": "restroom", "t": "Restroom" },
+      "pets": { "i": "paw", "t": "Pets allowed" },
+      "gps": { "i": "location-crosshairs", "t": "GPS tracking" },
+      "seatselect": { "i": "chair", "t": "Seat selection" },
+      "addstop": { "i": "map-pin", "t": "Extra stops" },
+      "noprepayment": { "i": "hand-holding-dollar", "t": "No prepayment" },
+      "norefund": { "i": "ban", "t": "Non-refundable ticket" },
+      "pet-only-from-eu": { "i": "paw", "t": "Pets - EU-bound trips only" },
+      "starlink": { "i": "wifi", "t": "Satellite internet (Starlink)" },
+      "drinks": { "i": "cup", "t": "Drinks" },
+      "steward": { "i": "user", "t": "Onboard steward" },
+      "noAccompany": "Children {n}+ unaccompanied"
+    },
+    "pay": {
+      "none": "No prepayment",
+      "groupNote": "Prepayment required for groups",
+      "partial": "Partial prepayment",
+      "full": "Full prepayment"
+    },
+    "results": {
+      "amenitiesLabel": "Amenities",
+      "noneFoundTitle": "No trips found",
+      "noneFoundBody": "No trips on {date} for {dep} → {arr}.",
+      "noneFoundStatus": "No trips found",
+      "searchingSuggest": "Looking for the nearest dates and cities...",
+      "found": "{n} trips found",
+      "badge": "{n} trips",
+      "sort": "Sort:",
+      "sortPrice": "Cheapest",
+      "sortDuration": "Fastest",
+      "sortDeparture": "By departure time",
+      "filters": "Filters:",
+      "filterDirect": "No transfers",
+      "filterPets": "With a pet",
+      "filteredNoneTitle": "No trips like that",
+      "filteredNoneBody": "No trips on this route match the selected filters.<br>Turn off the filter to see all options."
+    },
+    "card": {
+      "busFallback": "Bus",
+      "enRoute": "en route",
+      "direct": "no transfers",
+      "withTransfer": "with a transfer",
+      "perSeat": "per seat",
+      "free": "available",
+      "details": "Trip details",
+      "book": "Book now",
+      "order": "Order",
+      "payment": "Payment",
+      "discLabel": "Discounts",
+      "transfers": "Transfers",
+      "carrier": "Carrier",
+      "reliability": "{n}% reliability",
+      "ratingTitle": "Rating {raw} of {max}",
+      "baggage": "Baggage",
+      "collapse": "Collapse",
+      "moreBtn": "Show {n} more · {total} {word} total"
+    },
+    "discounts": {
+      "unavailable": "Information unavailable",
+      "loading": "Loading...",
+      "none": "No special discounts"
+    },
+    "pax": {
+      "delete": "Delete",
+      "firstName": "First name",
+      "firstNamePh": "John",
+      "lastName": "Last name",
+      "lastNamePh": "Smith",
+      "phone": "Phone",
+      "phonePh": "+1 234 567 8900",
+      "title": "Passenger #{n}",
+      "fullTicket": "Full-price ticket",
+      "discTitle": "Passenger discount",
+      "total": "Total for {n} {word}:"
+    },
+    "seats": {
+      "forms": ["seat", "seats"],
+      "driver": "Driver",
+      "table": "Table",
+      "taken": "Taken",
+      "auto": "Automatic",
+      "launch": "Choose seat",
+      "optional": "optional",
+      "deck": "Floor {n}",
+      "legendFree": "available",
+      "legendSel": "yours",
+      "legendTaken": "taken",
+      "chosen": "Selected: <b>{names}</b> ({n} of {need})",
+      "hint": "Tap available seats on the layout{needClause} - or leave as is and seats will be assigned automatically.",
+      "hintNeedClause": " (need {n})"
+    },
+    "modal": {
+      "titleBook": "Book the trip",
+      "titleOrder": "Order the trip",
+      "groupPrepayBadge": "Prepayment for 1 ticket",
+      "groupNote": "From {thr} passengers, the carrier requires prepayment for 1 ticket. Up to {thrMinus1} - no prepayment, pay the driver."
+    },
+    "order": {
+      "send": "Send",
+      "booking": "Booking...",
+      "sending": "Sending...",
+      "phoneIncomplete": "Check the phone number - it looks incomplete.",
+      "fillAllFields": "Fill in the details for all passengers.",
+      "yourSeats": "Your seats",
+      "bookedTitle": "Seats booked!",
+      "bookedTextWithTickets": "Payment - to the driver at boarding.<br>Save your tickets:",
+      "bookedTextNoTickets": "Payment - to the driver at boarding.<br>The manager will send the tickets shortly.",
+      "downloadTicket": "Download ticket",
+      "acceptedTitle": "Request accepted!",
+      "acceptedText": "The manager will contact you, confirm the details<br>and send payment details if needed.",
+      "submitError": "Could not send the request: {msg}\n\nTry again or call the manager.",
+      "copyLabel": "Copy",
+      "copiedLabel": "Copied!"
+    },
+    "track": {
+      "on": "Tracking enabled: this browser is counted in site statistics again.",
+      "off": "Done: visits and searches from this browser will no longer be counted in site statistics."
+    }
+  },
+  "common": {
+    "cookieAria": "Consent to use cookies",
+    "cookieText": "We use cookies to make the site work well and to keep improving it for you. Click \"Accept\" - this helps us improve the service. More details - in the <a href=\"/cookies\">Cookie Policy</a>.",
+    "cookieAccept": "Accept",
+    "cookieMinimal": "Necessary only",
+    "scrollTop": "To top"
+  }
+}
