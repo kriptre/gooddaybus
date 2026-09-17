@@ -92,13 +92,9 @@
         },
         pay: {
             none: 'Без передоплати',
-            groupNone: 'Без передоплати',
             groupNote: 'Для груп - передоплата',
             partial: 'Часткова передоплата',
-            full: 'Повна передоплата',
-            tagNone: 'Без передоплати',
-            tagPartial: 'Часткова передоплата',
-            tagFull: 'Повна передоплата'
+            full: 'Повна передоплата'
         },
         results: {
             amenitiesLabel: 'Зручності',
@@ -113,7 +109,6 @@
             sortDuration: 'Найшвидші',
             sortDeparture: 'За часом виїзду',
             filters: 'Фільтри:',
-            filterNoPrepay: 'Без передоплати',
             filterDirect: 'Без пересадок',
             filterPets: 'З твариною'
         }
@@ -648,7 +643,7 @@
         const label = cat === 'none'
             ? `<span class="pay-badge pb-none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-credit-card"></use></svg> ${T.pay.none}</span>`
             : cat === 'group'
-                ? `<span class="pay-badge pb-none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-credit-card"></use></svg> ${T.pay.groupNone}</span><span class="pay-badge pb-part"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-users"></use></svg> ${T.pay.groupNote}</span>`
+                ? `<span class="pay-badge pb-none"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-credit-card"></use></svg> ${T.pay.none}</span><span class="pay-badge pb-part"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-users"></use></svg> ${T.pay.groupNote}</span>`
             : (cat === 'partial'
                 ? `<span class="pay-badge pb-part"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-coins"></use></svg> ${T.pay.partial}</span>`
                 : `<span class="pay-badge pb-full"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-money-bill-wave"></use></svg> ${T.pay.full}</span>`);
@@ -659,9 +654,9 @@
     // none + group: для 1-2 пасажирів передоплати немає (нюанс про групи лишається в деталях).
     function payTag(rt) {
         const cat = payCategory(rt);
-        if (cat === 'partial') return { cls: 'pay-part', txt: T.pay.tagPartial };
-        if (cat === 'full') return { cls: 'pay-full', txt: T.pay.tagFull };
-        return { cls: 'pay-none', txt: T.pay.tagNone };
+        if (cat === 'partial') return { cls: 'pay-part', txt: T.pay.partial };
+        if (cat === 'full') return { cls: 'pay-full', txt: T.pay.full };
+        return { cls: 'pay-none', txt: T.pay.none };
     }
 
     function renderResults(routes, date) {
@@ -731,7 +726,7 @@
             </div>
             <div class="sort-bar filter-bar">
                 <span class="sort-lbl sort-lbl-f"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-filter"></use></svg> ${T.results.filters}</span>
-                <button class="sort-btn filter-btn" data-filter="noprepay"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-credit-card"></use></svg> ${T.results.filterNoPrepay}</button>
+                <button class="sort-btn filter-btn" data-filter="noprepay"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-credit-card"></use></svg> ${T.pay.none}</button>
                 <button class="sort-btn filter-btn" data-filter="direct"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-route"></use></svg> ${T.results.filterDirect}</button>
                 <button class="sort-btn filter-btn" data-filter="pets"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-paw"></use></svg> ${T.results.filterPets}</button>
             </div>
