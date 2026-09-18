@@ -184,8 +184,12 @@ test('перемикач мови веде на існуючі сторінки 
     assert.match(enIndex, /<a href="\/" hreflang="uk">UA<\/a>/, 'з англійської головної має бути посилання на українську');
     assert.ok(fs.existsSync(path.join(PUB, 'index.html')), 'public/index.html (ціль посилання) не існує');
 
+    // Перемикач веде на українського ДВІЙНИКА цієї ж сторінки, а не завжди на головну:
+    // інакше читач англійського FAQ, що хоче український, опиняється на головній і
+    // мусить шукати FAQ заново.
     const enFaq = fs.readFileSync(path.join(EN_DIR, 'faq.html'), 'utf8');
-    assert.match(enFaq, /<a href="\/" hreflang="uk">UA<\/a>/, 'з англійського FAQ має бути посилання на українську');
+    assert.match(enFaq, /<a href="\/faq" hreflang="uk">UA<\/a>/, 'з англійського FAQ має бути посилання на УКРАЇНСЬКИЙ FAQ');
+    assert.ok(fs.existsSync(path.join(PUB, 'faq.html')), 'public/faq.html (ціль посилання) не існує');
 
     const ukIndex = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8');
     assert.match(ukIndex, /<a href="\/en\/" hreflang="en">EN<\/a>/, 'з української головної має бути посилання на англійську');
@@ -193,6 +197,24 @@ test('перемикач мови веде на існуючі сторінки 
 
     const ukFaq = fs.readFileSync(path.join(PUB, 'faq.html'), 'utf8');
     assert.match(ukFaq, /<a href="\/en\/" hreflang="en">EN<\/a>/, 'з українського FAQ має бути посилання на англійську');
+});
+
+// Англійські сторінки мусять лишати відвідувача в англійській версії. Англійський FAQ
+// був згенерований, перекладений і при цьому НЕДОСЯЖНИЙ: на нього не вело жодне
+// посилання, бо і футер, і логотип показували на українські сторінки.
+test('навігація англійських сторінок не викидає в українську версію', () => {
+    for (const f of ['index.html', 'faq.html']) {
+        const html = fs.readFileSync(path.join(EN_DIR, f), 'utf8');
+        assert.match(html, /<a href="\/en\/" class="logo">/, `${f}: логотип має вести на англійську головну`);
+        assert.ok(!/href="\/faq"(?! hreflang)/.test(html), `${f}: посилання на FAQ має бути /en/faq, а не український /faq`);
+    }
+    // А юридичні сторінки англійською НЕ генеруються, тож посилання на них свідомо
+    // лишаються українськими: вести на неіснуючу сторінку було б гірше.
+    const enIndex = fs.readFileSync(path.join(EN_DIR, 'index.html'), 'utf8');
+    for (const legal of ['/terms', '/privacy', '/refund', '/cookies']) {
+        assert.ok(enIndex.includes(`href="${legal}"`), `посилання ${legal} має лишитись українським`);
+        assert.ok(fs.existsSync(path.join(PUB, legal.slice(1) + '.html')), `${legal} - ціль посилання не існує`);
+    }
 });
 
 // --- Крок 5: словник екзонімів (cities-en.json) без зайвих записів ----------------------

@@ -71,6 +71,25 @@
         return c ? c.name : fallback;
     }
 
+    // Індекс англійських назв для ПОШУКУ (не для показу). Будується один раз: cityName()
+    // на кожне натискання клавіші для ~3000 міст - це тисячі транслітерацій за кадр.
+    // Телеметрії тут навмисно немає: пропуск у словнику має репортити показ міста
+    // пасажиру, а не те, що воно проскочило повз фільтр.
+    let _enNameIdx = null;
+    function enSearchName(id) {
+        if (LANG !== 'en') return '';
+        if (!_enNameIdx) {
+            _enNameIdx = new Map();
+            for (const c of cities) {
+                const en = (I18N_CITIES && Object.prototype.hasOwnProperty.call(I18N_CITIES, c.id))
+                    ? I18N_CITIES[c.id]
+                    : (typeof window.translit === 'function' ? window.translit(c.name) : c.name);
+                _enNameIdx.set(c.id, String(en).toLowerCase());
+            }
+        }
+        return _enNameIdx.get(id) || '';
+    }
+
     function cityName(id, fallback) {
         if (LANG !== 'en') return fallback;
         if (I18N_CITIES && Object.prototype.hasOwnProperty.call(I18N_CITIES, id)) return I18N_CITIES[id];
@@ -579,7 +598,13 @@
             lst.innerHTML = ''; hl = -1;
             if (q.length < 2 || !cities.length) { if (!q && cities.length && isDep) showSuggest(); else lst.style.display = 'none'; return; }
             lst.classList.remove('sg-wide');
-            const res = cities.filter(c => c.name.toLowerCase().includes(q)).slice(0, 9);
+            // Шукаємо і за українською назвою, і за показаною англійською: інакше на
+            // /en/ набране "Warsaw" не знаходить нічого (у списку міст назва "Варшава"),
+            // і найперший елемент лійки виглядає зламаним. Українську теж лишаємо -
+            // хтось може вставити назву з листа чи набрати кирилицею.
+            const res = cities.filter(c =>
+                c.name.toLowerCase().includes(q) || enSearchName(c.id).includes(q)
+            ).slice(0, 9);
             if (!res.length) { lst.style.display = 'none'; return; }
             res.forEach(city => {
                 const el = document.createElement('div');
