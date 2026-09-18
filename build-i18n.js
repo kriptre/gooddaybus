@@ -18,6 +18,12 @@ const routes = JSON.parse(fs.readFileSync(path.join(__dirname, 'routes.json'), '
 
 const missing = [];
 
+// Версія словника для ?v= у посиланні на /i18n/en.js. Сервер віддає .js із
+// Cache-Control: immutable на рік, тож без версії браузер, який колись завантажив en.js,
+// НІКОЛИ не побачив би виправлений переклад. Хеш рахуємо від самого вмісту словника,
+// а не від ASSET_V основних ассетів: правка en.json не змінює app.min.js.
+const enVersion = src => require('crypto').createHash('md5').update(src).digest('hex').slice(0, 10);
+
 // Замінює блок між двома маркерами-коментарями разом із ними. Маркери - щоб не чіпляти
 // розмітку регуляркою по класах: коментар видно в шаблоні й зрозуміло, що його не можна прибрати.
 function replaceBetween(html, startMark, endMark, replacement) {
@@ -156,7 +162,7 @@ const EXPAND_FUNCTIONS_SRC = `
 })(window.__I18N__.app);
 `;
 
-function enPage(srcFile) {
+function enPage(srcFile, enV) {
     let html = fs.readFileSync(path.join(PUB, srcFile), 'utf8');
     html = translateAttrs(translateNodes(html));
     html = html.replace('<html lang="uk">', '<html lang="en">');
@@ -170,7 +176,7 @@ function enPage(srcFile) {
     html = html.replace(/\s*<link rel="canonical"[^>]*>\n?/, '\n');
     html = html.replace(/<meta property="og:locale" content="uk_UA">/, '<meta property="og:locale" content="en">');
     // словник підвантажується ПЕРЕД common.min.js/app.min.js - інакше T/C у них візьмуть T_UK/C_UK
-    html = html.replace('<script src="/common.min.js', '<script src="/i18n/en.js"></script>\n<script src="/common.min.js');
+    html = html.replace('<script src="/common.min.js', `<script src="/i18n/en.js?v=${enV}"></script>\n<script src="/common.min.js`);
     // booking.html не підключає common.min.js (сторінка повністю автономна, лише один
     // інлайн-скрипт) - тож для неї немає якоря вище. Натомість у розмітці стоїть окремий
     // маркер-коментар <!-- I18N-DICT --> прямо перед інлайн-скриптом; тут його заміняємо на
@@ -180,7 +186,7 @@ function enPage(srcFile) {
         if (!html.includes('<!-- I18N-DICT -->')) {
             throw new Error('[i18n] booking.html: маркер <!-- I18N-DICT --> не знайдено - інлайн-скрипт не отримає словник на англійській сторінці');
         }
-        html = html.replace('<!-- I18N-DICT -->', '<script src="/i18n/en.js"></script>');
+        html = html.replace('<!-- I18N-DICT -->', `<script src="/i18n/en.js?v=${enV}"></script>`);
     }
     // Перемикач мови: на англійській сторінці поточна мова - EN, посилання веде на українську.
     // Поточна мова НЕ посилання, а span: клікати мову, на якій уже перебуваєш, нема сенсу.
@@ -213,13 +219,14 @@ function enPage(srcFile) {
 fs.mkdirSync(EN, { recursive: true });
 fs.mkdirSync(path.join(PUB, 'i18n'), { recursive: true });
 
-const pages = ['index.html', 'faq.html', 'booking.html'];
-for (const p of pages) fs.writeFileSync(path.join(EN, p), enPage(p));
-
 // Файл-оверрайд для клієнта: кладе повний словник у window.__I18N__ до того,
 // як common.js/app.js виберуть T/C (див. коментар у самих файлах).
-fs.writeFileSync(path.join(PUB, 'i18n', 'en.js'),
-    'window.__I18N__=' + JSON.stringify({ app: dict.app, common: dict.common, booking: dict.booking }) + ';' + EXPAND_FUNCTIONS_SRC);
+const enJsSrc = 'window.__I18N__=' + JSON.stringify({ app: dict.app, common: dict.common, booking: dict.booking }) + ';' + EXPAND_FUNCTIONS_SRC;
+fs.writeFileSync(path.join(PUB, 'i18n', 'en.js'), enJsSrc);
+
+const pages = ['index.html', 'faq.html', 'booking.html'];
+const EN_V = enVersion(enJsSrc);
+for (const p of pages) fs.writeFileSync(path.join(EN, p), enPage(p, EN_V));
 
 if (missing.length) {
     console.error('[i18n] Немає перекладу для ключів:\n  ' + [...new Set(missing)].join('\n  '));
