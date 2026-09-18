@@ -1185,7 +1185,10 @@
         const real = (Array.isArray(d) ? d : []).filter(x => x.percent > 0);
         // Чіп ґаючиз на API опис знижки: показуємо тільки українську частину + процент
         const chip = x => {
-            const name = escTxt(cleanDiscName(x.description));
+            // Чіп вузький, тож позначку "(не перекладено)" сюди не вставляємо - вона
+            // розірвала б верстку. Нерозпізнана назва просто лишається українською:
+            // сама вона описова, а головне (відсоток) мовно-нейтральне й поруч.
+            const name = escTxt(vendorPlainText('discountName', cleanDiscName(x.description)));
             const pct = `<b class="dc-pct">-${escTxt(x.percent)}%</b>`;
             return `<span class="disc-chip"><span class="dc-name">${name}</span>${pct}</span>`;
         };
@@ -1229,8 +1232,10 @@
         if (!real.length || !rows.length) { block.style.display = 'none'; block.innerHTML = ''; document.getElementById('m-disc-note').style.display = 'none'; _discOpen = false; updateTotal(); return; }
         block.style.display = '';
         _discOpen = true; // знижки доступні - selectи активні (за замовчуванням "Повний квиток")
-        // опції: "Повний квиток" (за замовчуванням) + реальні знижки (тільки українська назва)
-        const opts = [{ id: '', percent: 0, label: T.pax.fullTicket }].concat(real.map(d => ({ id: d.id, percent: d.percent, label: cleanDiscName(d.description) })));
+        // опції: "Повний квиток" (за замовчуванням) + реальні знижки.
+        // label іде в <option>, тобто в контекст без HTML - беремо текстовий варіант
+        // перекладу, без позначки-span; нерозпізнана назва лишається українською.
+        const opts = [{ id: '', percent: 0, label: T.pax.fullTicket }].concat(real.map(d => ({ id: d.id, percent: d.percent, label: vendorPlainText('discountName', cleanDiscName(d.description)) })));
         block.innerHTML = `
             <div class="disc-head"><span class="disc-title"><svg class="ic" style="color:var(--orange);margin-right:6px" aria-hidden="true"><use href="/_sprite.svg#i-tag"></use></svg>${T.pax.discTitle}</span></div>
             <div class="disc-body">

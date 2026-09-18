@@ -228,7 +228,8 @@ const {
     carrierName,
     baggageText,
     transferText,
-    priceLabelText
+    priceLabelText,
+    discountName
 } = require('../i18n/vendor-en.js');
 
 test('carrierName: "ЛАТ/Кир" - латинська частина до "/" це бренд', () => {
@@ -424,4 +425,39 @@ test('багаж: "не більше" - це максимум, а не міні�
     const r = baggageText(s);
     assert.equal(r.translated, true, '"не більше" не має спрацьовувати як мінімум');
     assert.match(r.text, /up to 30 kg/);
+});
+
+// Знижки: перевізники описують ту саму категорію десятком способів, ще й з латинськими
+// літерами-двійниками всередині українських слів ("ПЕНСІЙНИЙ ВIК" з латинською I,
+// "cтудентського" з латинською c). Око різниці не бачить, регулярка бачить.
+test('знижки: основні категорії розпізнаються', () => {
+    assert.equal(discountName('Діти до 10 років (включно)').text, 'Children up to 10');
+    assert.equal(discountName('За віком: до 2 р. -50%').text, 'Age up to 2');
+    assert.equal(discountName('20% Діти 5-12 років').text, 'Children 5-12');
+    assert.equal(discountName('Дитячий (діти від 7 до 12 років)(-20%)').text, 'Children 7-12');
+    assert.equal(discountName('Люди похилого віку (від 60 років) -10%').text, 'Seniors (60+)');
+    assert.equal(discountName('Інваліди 1 або 2 групи (-10%)').text, 'Disability group 1 or 2');
+    assert.equal(discountName('Повний').text, 'Full fare');
+});
+
+test('знижки: латинські двійники всередині українських слів не ламають розбір', () => {
+    // "ВIК" тут з ЛАТИНСЬКОЮ I, "cтудентського" - з латинською c: так їх друкує перевізник
+    assert.equal(discountName('Пільга: ПЕНСІЙНИЙ ВIК -10%').text, 'Pension age');
+    assert.equal(discountName('Студенти до 26р (за наявності cтудентського квитка) -10%').text,
+        'Students up to 26 (with student ID)');
+    // ISIC - справжня латиниця, нормалізація не має її зіпсувати
+    assert.equal(discountName('Студенти до 26р (за наявності ISIC) -10%').text,
+        'Students up to 26 (with ISIC)');
+});
+
+test('знижки: УБД розпізнається попри те, що \b не працює з кирилицею', () => {
+    assert.equal(discountName('Пільга: УЧ. БОЙОВИХ ДІЙ -30%').text, 'Combat veteran (ID required)');
+    assert.equal(discountName("УБД при пред'явленні посвідчення -10%").text, 'Combat veteran (ID required)');
+});
+
+test('знижки: невідома категорія повертається як є', () => {
+    const s = 'Якась нова знижка від перевізника';
+    const r = discountName(s);
+    assert.equal(r.translated, false);
+    assert.equal(r.text, s);
 });

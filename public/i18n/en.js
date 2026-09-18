@@ -538,11 +538,70 @@
         return { text: text, translated: true };
     }
 
+    // --- Назви знижок --------------------------------------------------------------
+    // Перевізники описують ту саму знижку десятком способів: "Діти до 10 років (включно)",
+    // "За віком: до 10 р.", "Дитячий (діти від 7 до 12 років)", "50% Діти 0-5 лет" (так,
+    // з російським "лет" - помилка постачальника). Процент із назви вже зрізає виклик,
+    // тут лишається сама категорія. Порядок схем має значення: конкретніші йдуть першими.
+    var DISCOUNT_RULES = [
+        // Повний / стандартний тариф - це не знижка, а базова ціна
+        { re: /^(повний|стандартн)/i, en: function () { return 'Full fare'; } },
+        // Діапазон віку: "Діти 5-12 років", "Діти 0-5 лет", "Дитячий (діти від 7 до 12 років)"
+        { re: /діт(?:и|ей|ячий)[^\d]*(?:від\s*)?(\d+)\s*(?:-|–|до)\s*(\d+)\s*(?:р|лет)/i, en: function (m) { return 'Children ' + m[1] + '-' + m[2]; } },
+        // Верхня межа віку зі шкільним квитком - окремо, бо умова важлива
+        { re: /діт(?:и|ей)[^\d]*(\d+)[^)]*учнівськ/i, en: function (m) { return 'Children up to ' + m[1] + ' (with school ID)'; } },
+        // Верхня межа віку: "Діти до 10 років (включно)", "Дитячий (діти до 6 років)"
+        { re: /діт(?:и|ей|ячий)[^\d]*до\s*(\d+)\s*р/i, en: function (m) { return 'Children up to ' + m[1]; } },
+        // "За віком: до 10 р." - той самий зміст іншими словами
+        { re: /за\s+віком[^\d]*(\d+)\s*р/i, en: function (m) { return 'Age up to ' + m[1]; } },
+        // Студенти: з ISIC, зі студентським квитком, просто "Студентська"
+        // ISIC написаний латиницею, але нормалізація двійників (див. нижче) робить із нього
+        // "ІSІC" з кириличними І - тому в класі приймаємо обидва накреслення.
+        { re: /студент[^\d]*(\d+)\s*р[^)]*[iі][sс][iі][cс]/i, en: function (m) { return 'Students up to ' + m[1] + ' (with ISIC)'; } },
+        { re: /студент[^\d]*(\d+)\s*р[^)]*студентськ/i, en: function (m) { return 'Students up to ' + m[1] + ' (with student ID)'; } },
+        { re: /студент/i, en: function () { return 'Students'; } },
+        // Похилий вік: "Люди похилого віку (від 60 років)", "10% Пенсіонери від 60 років"
+        { re: /(?:похилого\s+віку|пенсіонер)[^\d]*(\d+)\s*р/i, en: function (m) { return 'Seniors (' + m[1] + '+)'; } },
+        { re: /пенсійн[а-яіїєґ]*\s+вік/i, en: function () { return 'Pension age'; } },
+        { re: /пенсіонер/i, en: function () { return 'Pensioners'; } },
+        // Інвалідність: група вказується цифрами
+        { re: /інвалід[^\d]*(\d+)\s*(?:або|чи|,|\/)\s*(\d+)\s*груп/i, en: function (m) { return 'Disability group ' + m[1] + ' or ' + m[2]; } },
+        { re: /інвалід/i, en: function () { return 'Disability'; } },
+        // Учасники бойових дій - і повна назва, і абревіатура УБД
+        // \b не працює з кирилицею, тож межу слова для УБД пишемо явним класом
+        { re: /уч[а-яіїєґ]*\.?\s*бойових\s+дій|(?:^|[^А-Яа-яІіЇїЄєҐґ])убд(?:[^А-Яа-яІіЇїЄєҐґ]|$)/i, en: function () { return 'Combat veteran (ID required)'; } }
+    ];
+
+    // Перевізники регулярно друкують латинські літери-двійники всередині українських слів:
+    // "ПЕНСІЙНИЙ ВIК" з латинською I, "cтудентського" з латинською c. Око різниці не бачить,
+    // регулярка бачить. Тому матчимо ЗАВЖДИ по нормалізованому рядку - інакше загальна схема
+    // ("студент") спрацювала б на сирому тексті раніше, ніж конкретніша на виправленому,
+    // і знижка втратила б деталі. Єдина справжня латиниця в правилах - ISIC, її схема
+    // приймає обидва накреслення.
+    var LOOKALIKE = { 'a': 'а', 'c': 'с', 'e': 'е', 'i': 'і', 'o': 'о', 'p': 'р', 'x': 'х', 'y': 'у', 'A': 'А', 'B': 'В', 'C': 'С', 'E': 'Е', 'H': 'Н', 'I': 'І', 'K': 'К', 'M': 'М', 'O': 'О', 'P': 'Р', 'T': 'Т', 'X': 'Х', 'Y': 'У' };
+    var LOOKALIKE_RE = /[aceiopxyABCEHIKMOPTXY]/g;
+    function deLookalike(s) { return s.replace(LOOKALIKE_RE, function (c) { return LOOKALIKE[c] || c; }); }
+
+    function matchDiscount(s) {
+        for (var i = 0; i < DISCOUNT_RULES.length; i++) {
+            var m = s.match(DISCOUNT_RULES[i].re);
+            if (m) return { text: DISCOUNT_RULES[i].en(m), translated: true };
+        }
+        return null;
+    }
+
+    function discountName(raw) {
+        var s = String(raw == null ? '' : raw).trim();
+        if (!s) return { text: s, translated: false };
+        return matchDiscount(deLookalike(s)) || { text: s, translated: false };
+    }
+
     var api = {
         carrierName: carrierName,
         baggageText: baggageText,
         transferText: transferText,
-        priceLabelText: priceLabelText
+        priceLabelText: priceLabelText,
+        discountName: discountName
     };
 
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
