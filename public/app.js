@@ -63,6 +63,14 @@
     // Англійська назва міста: словник-виняток -> транслітерація. Береться ID, а НЕ
     // відображуване ім'я - бо словник key - це числовий id з cities-en.json, і сам
     // fallback (translit) працює з довільним текстом незалежно від id.
+    // Канонічна УКРАЇНСЬКА назва міста за id - для даних, що йдуть не на екран
+    // пасажира, а в заявку (Telegram менеджеру, адмінка, звіт диспетчера). Мова цих
+    // записів не повинна залежати від того, якою версією сайту скористався пасажир.
+    function cityNameUk(id, fallback) {
+        const c = cities.find(x => String(x.id) === String(id));
+        return c ? c.name : fallback;
+    }
+
     function cityName(id, fallback) {
         if (LANG !== 'en') return fallback;
         if (I18N_CITIES && Object.prototype.hasOwnProperty.call(I18N_CITIES, id)) return I18N_CITIES[id];
@@ -491,7 +499,24 @@
         { f: 'Київ', t: 'Берлін', fi: 4, ti: 49 },
         { f: 'Львів', t: 'Прага', fi: 33, ti: 460 }
     ];
-    const getRecent = () => { try { return JSON.parse(LS.get('gdb_recent') || '[]'); } catch (e) { return []; } };
+    // Назви в "нещодавніх" беремо не зі сховища, а заново зі списку міст за id.
+    // localStorage СПІЛЬНИЙ для / і /en/ (той самий домен, /en/ - лише шлях), тож
+    // англійська назва, збережена після пошуку на англійській версії, інакше
+    // випливала б у підказках УКРАЇНСЬКОЇ сторінки. id мовно-нейтральний, а показ
+    // кожна сторінка будує сама під свою мову - заразом лікуються й записи,
+    // збережені до цієї правки.
+    const getRecent = () => {
+        let list;
+        try { list = JSON.parse(LS.get('gdb_recent') || '[]'); } catch (e) { return []; }
+        if (!Array.isArray(list)) return [];
+        const canon = (id, saved) => {
+            const c = cities.find(x => String(x.id) === String(id));
+            return c ? c.name : saved;
+        };
+        return list.map(r => (r && r.fi != null && r.ti != null)
+            ? { f: canon(r.fi, r.f), t: canon(r.ti, r.t), fi: r.fi, ti: r.ti }
+            : r);
+    };
     function saveRecent(f, t, fi, ti) {
         if (!f || !t || fi == null || ti == null) return;
         try {
@@ -1725,8 +1750,12 @@
         const payload = {
             passengers,
             comment: document.getElementById('c-comment').value.trim(),
-            route_from: document.getElementById('departure').value,
-            route_to: document.getElementById('arrival').value,
+            // У заявку йде КАНОНІЧНА українська назва зі списку міст, а не вміст поля:
+            // на англійській версії в полі стоїть перекладена назва, і в базу, в
+            // Telegram менеджеру та у звіт диспетчера поїхало б "Kyiv" замість "Київ".
+            // Читає це україномовна людина, тож мова запису не залежить від мови сайту.
+            route_from: cityNameUk(depId, document.getElementById('departure').value),
+            route_to: cityNameUk(arrId, document.getElementById('arrival').value),
             route_date: (document.getElementById('date-input').value.split('-').reverse().join('.')),
             route_time: rt.departure_time || rt.time_from || '',
             route_price: fmtPrice(rt),
