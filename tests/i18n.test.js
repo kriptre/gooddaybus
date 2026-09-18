@@ -217,3 +217,186 @@ test('глосарій: складений ключ застосовується
         );
     }
 });
+
+// Задача 15b: i18n/vendor-en.js - розбір шаблонних текстів перевізника (назва,
+// багаж, пересадка, умови оплати). Рядки нижче - реальні значення зі зрізу живих
+// даних .superpowers/sdd/vendor-sample.json (751 рейс, 8 напрямків); цей файл сам по
+// собі в .gitignore (dev-зріз), тож рядки для тестів вписані буквально, а не
+// прочитані з нього - щоб тести працювали на чистому чекауті й у CI.
+
+const {
+    carrierName,
+    baggageText,
+    transferText,
+    priceLabelText
+} = require('../i18n/vendor-en.js');
+
+test('carrierName: "ЛАТ/Кир" - латинська частина до "/" це бренд', () => {
+    assert.deepEqual(carrierName('TRANSTEMPO/ТрансТемпо'), { text: 'TRANSTEMPO', translated: true });
+    assert.deepEqual(carrierName('ATLASTRAVELBUS/AVTOEKSPRES'), { text: 'ATLASTRAVELBUS', translated: true });
+    assert.deepEqual(
+        carrierName('EAST WEST EUROLINES/ТзОВ "Гал-Всесвіт"'),
+        { text: 'EAST WEST EUROLINES', translated: true }
+    );
+});
+
+test('carrierName: форма власності перекладається окремим словом (приклад з брифу)', () => {
+    assert.deepEqual(carrierName('ТОВ МКТ Зесен Транс'), { text: 'MKT Zesen Trans LLC', translated: true });
+});
+
+test('carrierName: ТОВ-суфікс, ПП-префікс, ФОП-суфікс з реальних даних', () => {
+    // Форма власності завжди йде ПІСЛЯ вже транслітерованої назви - англійська
+    // конвенція ("Acme LLC"), незалежно від того, де вона стояла в українському рядку.
+    assert.deepEqual(carrierName('КАНТОЛ БУСТРЕВЕЛ ТОВ'), { text: 'KANTOL BUSTREVEL LLC', translated: true });
+    assert.deepEqual(
+        carrierName('ПОТАПЧУК В.В. ФОП'),
+        { text: translit('ПОТАПЧУК В.В.') + ' (sole trader)', translated: true }
+    );
+    assert.deepEqual(
+        carrierName('ПП "ЛисАвтоТранс"'),
+        { text: translit('ЛисАвтоТранс') + ' (sole proprietorship)', translated: true }
+    );
+});
+
+test('carrierName: назва без кирилиці лишається як є (нема що перекладати - вже латиниця)', () => {
+    assert.deepEqual(carrierName('I TRAVEL BUS'), { text: 'I TRAVEL BUS', translated: true });
+});
+
+test('carrierName: порожній вхід - translated:false, рядок не зникає', () => {
+    assert.deepEqual(carrierName(''), { text: '', translated: false });
+    assert.deepEqual(carrierName(null), { text: '', translated: false });
+});
+
+test('baggageText: одна одиниця + ручна поклажа, обидві з вагою (реальний рядок)', () => {
+    const raw = 'У вартість квитка входить одна одиниця багажу вагою до 25кг та ручна поклажа вагою до 5 кг. ' +
+        'Додатковий багаж може бути перевезений за окрему плату і тільки при наявності вільного місця в багажному відділенні автобуса.';
+    assert.deepEqual(baggageText(raw), {
+        text: 'Ticket price includes 1 item of baggage, up to 25 kg. Hand luggage is included, up to 5 kg. ' +
+            'Extra baggage can be carried for a separate fee, subject to space in the bus luggage compartment.',
+        translated: true
+    });
+});
+
+test('baggageText: "до двох одиниць" + габарити + вага (реальний рядок)', () => {
+    const raw = 'У вартість квитка входить до двох одиниць багажу загальною вагою до 40кг. ' +
+        'Додатковий багаж може бути перевезений за окрему плату і тільки при наявності вільного місця в багажному відділенні автобуса.';
+    assert.deepEqual(baggageText(raw), {
+        text: 'Ticket price includes up to 2 items of baggage, up to 40 kg. ' +
+            'Extra baggage can be carried for a separate fee, subject to space in the bus luggage compartment.',
+        translated: true
+    });
+});
+
+test('baggageText: "сума вимірів" (довжина+ширина+висота) - одне число замість трьох (реальний рядок)', () => {
+    const raw = 'У вартість квитка входить одна одиниця багажу розміром не більше 160см (у сумі вимірів довжина+ширина+висота) ' +
+        'і вагою до 23кг, та ручна поклажа розміром не більше 100см (у сумі вимірів довжина+ширина+висота) і вагою до 5кг. ' +
+        'Додатковий багаж може бути перевезений за окрему плату і тільки при наявності вільного місця в багажному відділенні автобуса.';
+    assert.deepEqual(baggageText(raw), {
+        text: 'Ticket price includes 1 item of baggage, total dimensions (L+W+H) up to 160 cm and up to 23 kg. ' +
+            'Hand luggage is included, total dimensions (L+W+H) up to 100 cm and up to 5 kg. ' +
+            'Extra baggage can be carried for a separate fee, subject to space in the bus luggage compartment.',
+        translated: true
+    });
+});
+
+test('baggageText: кількість ручної поклажі стоїть ПЕРЕД "ручної" і не має протікати в основну кількість', () => {
+    // Пастка: "та дві одиниці ручної поклажі" - "дві одиниці" стосується поклажі,
+    // а не основного багажу ("одна одиниця" раніше в тому ж реченні).
+    const raw = 'У вартість квитка входить одна одиниця багажу розміром до 30х60х80см і вагою до 25 кг., ' +
+        'та дві одиниці ручної поклажі розміром не більше 20х30х40 см. і вагою до 5кг. ' +
+        'Додатковий багаж може бути перевезений за окрему плату і тільки при наявності вільного місця в багажному відділенні автобуса.';
+    const result = baggageText(raw);
+    assert.equal(result.translated, true);
+    assert.match(result.text, /^Ticket price includes 1 item of baggage/);
+    assert.match(result.text, /2 items of hand luggage are included/);
+});
+
+test('baggageText: дитячий/віковий виняток після хвоста - переклад не спотворюється мовчки (translated:false)', () => {
+    // Реальний рядок: після стандартного хвоста йде сезонний виняток
+    // ("з 15 грудня по 11 січня..."), який наш шаблон з одним багажним місцем
+    // чесно передати не може - краще не перекладати, ніж загубити умову.
+    const raw = 'У вартість квитка входить одна одиниця багажу розміром до 40х40х80см і вагою до 25кг та ручна ' +
+        'поклажа вагою до 5кг. Додатковий багаж може бути перевезений за окрему плату і тільки при наявності ' +
+        'вільного місця в багажному відділенні автобуса.\r\nВ період з 15 грудня по 11 січня та з 1 червня по ' +
+        '30 серпня у вартість квитка  входить одна одиниця багажу до 25 кг і ручна поклажа до 5 кг';
+    assert.deepEqual(baggageText(raw), { text: raw, translated: false });
+});
+
+test('baggageText: рядок без стандартного вступу - translated:false, оригінал незмінний', () => {
+    const raw = 'Правила перевезення багажу уточнюйте у диспетчера.';
+    assert.deepEqual(baggageText(raw), { text: raw, translated: false });
+});
+
+test('transferText: "Пересадка у м. X" (приклад з брифу)', () => {
+    assert.deepEqual(transferText('Пересадка у м. Львів'), { text: 'Transfer in Lviv', translated: true });
+});
+
+test('transferText: дві пересадки через "та" (реальний рядок)', () => {
+    assert.deepEqual(
+        transferText('Пересадка у м. Київ та у м. Львів'),
+        { text: 'Transfer in Kyiv and Lviv', translated: true }
+    );
+});
+
+test('transferText: місто-екзонім зі словника (Варшава - "Warsaw", не "Varshava")', () => {
+    assert.deepEqual(transferText('Пересадка у м. Варшава'), { text: 'Transfer in Warsaw', translated: true });
+});
+
+test('transferText: "Прямий рейс" і "Можлива пересадка" - будівельні блоки без міста', () => {
+    assert.deepEqual(transferText('Прямий рейс'), { text: 'Direct route', translated: true });
+    assert.deepEqual(transferText('Можлива пересадка'), { text: 'Transfer possible', translated: true });
+    assert.deepEqual(transferText('Рейс з пересадкою'), { text: 'Route with a transfer', translated: true });
+});
+
+test('transferText: тривалість пересадки і застереження про чергу на кордоні (реальні рядки)', () => {
+    assert.deepEqual(
+        transferText('Пересадка у м. Київ, тривалість ~40 хв.'),
+        { text: 'Transfer in Kyiv (~40 min)', translated: true }
+    );
+    assert.deepEqual(
+        transferText('Пересадка у м. Львів. За умови черг на кордонах тривалість пересадки від 1 год.'),
+        {
+            text: 'Transfer in Lviv. If there are queues at the border, the transfer may take from 1 h.',
+            translated: true
+        }
+    );
+});
+
+test('transferText: пересадка на конкретній станції (не "у м. X") - розбір не впізнає, translated:false', () => {
+    // Реальний рядок: "на автовокзалі Lviv-Express" не вкладається в жоден з відомих
+    // блоків ("у м. X", "на АС ...", "тривалість ..."), тож чесніше не перекладати.
+    const raw = 'Пересадка на автовокзалі Lviv-Express';
+    assert.deepEqual(transferText(raw), { text: raw, translated: false });
+});
+
+test('priceLabelText: обов\'язкова передоплата для груп (приклад з реальних даних)', () => {
+    assert.deepEqual(
+        priceLabelText("Обов'язкова попередня оплата у розмірі вартості одного квитка для груп з трьох і більше осіб!"),
+        {
+            text: 'Advance payment equal to the price of one ticket is required for groups of 3 or more people!',
+            translated: true
+        }
+    );
+});
+
+test('priceLabelText: повна передоплата за кожен квиток + заборона бронювання без оплати (реальний рядок)', () => {
+    assert.deepEqual(
+        priceLabelText("Обов'язкова повна попередня оплата вартості кожного квитка! Бронь без оплати неможлива!"),
+        {
+            text: 'Full advance payment is required for every ticket. Booking without payment is not possible!',
+            translated: true
+        }
+    );
+});
+
+test('priceLabelText: акція зі знижкою у відсотках (реальний рядок)', () => {
+    assert.deepEqual(
+        priceLabelText('Акція! Знижка 25%!'),
+        { text: 'Promotion! 25% discount!', translated: true }
+    );
+});
+
+test('priceLabelText: умова оплати НІКОЛИ не ховається - незнайомий шаблон повертає оригінал, не порожній рядок', () => {
+    const raw = 'Щось геть нове про оплату, чого ми ще не бачили.';
+    assert.deepEqual(priceLabelText(raw), { text: raw, translated: false });
+});
