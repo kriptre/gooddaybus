@@ -103,3 +103,28 @@ test('реальні дані з API: назва перевізника з ла�
     assert.equal(translit('ТОВ МКТ Зесен Транс'), 'TOV MKT Zesen Trans');
     assert.equal(translit('ПП "ЛисАвтоТранс"'), 'PP "LysAvtoTrans"');
 });
+
+// Слово цілком великими літерами: перевізники приходять від API саме так
+// ("ЛЕКС КЛУБ ТОВ", "МУСТАНГ ТРАНС ТОВ"). Багатолітерний відповідник мусить стати
+// великим ЦІЛКОМ - інакше виходить "ShEVChENKO". Попередній набір тестів цього не
+// ловив, бо в його прикладах ("ЛЬВІВ", "КИЇВ") жодного диграфа немає.
+test('все-велике слово: диграфи теж великі цілком', () => {
+    assert.equal(translit('ШЕВЧЕНКО'), 'SHEVCHENKO');
+    assert.equal(translit('ЖОВТЕНЬ'), 'ZHOVTEN');
+    assert.equal(translit('ЩОРС'), 'SHCHORS');
+    assert.equal(translit('ХАРКІВ'), 'KHARKIV');
+    assert.equal(translit('ЦЮРУПИНСЬК'), 'TSIURUPYNSK');
+    assert.equal(translit('ЗГОРАНИ'), 'ZGHORANY');
+});
+
+test('все-велике не ламає звичайний регістр у тому ж рядку', () => {
+    assert.equal(translit('ТОВ Жовтень'), 'TOV Zhovten');
+    assert.equal(translit('ЛЕКС КЛУБ ТОВ'), 'LEKS KLUB TOV');
+});
+
+test('слово з однієї літери все-великим не вважається', () => {
+    // Ініціал має лишитись "S.", а не "S." зі спробою зробити все велике;
+    // самотнє "Я" природніше як "Ya", ніж "YA".
+    assert.equal(translit('вул. С. Петлюри, 32'), 'vul. S. Petliury, 32');
+    assert.equal(translit('Я'), 'Ya');
+});

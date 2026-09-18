@@ -33,8 +33,40 @@
     // саме тому вони й позначають межу слова.
     var WORD_CHAR = /[А-Яа-яІіЇїЄєҐґA-Za-z’ʼ']/;
 
+    // Слово ЦІЛКОМ великими літерами вимагає іншого регістру відповідника:
+    // "ШЕВЧЕНКО" -> "SHEVCHENKO", а не "ShEVChENKO". Тобто регістр не можна вирішувати
+    // по одній літері - треба знати, чи є в її слові хоч одна мала. Назви перевізників
+    // ("ЛЕКС КЛУБ ТОВ", "МУСТАНГ ТРАНС ТОВ") приходять від API саме так.
+    // Слово з однієї літери за все-велике НЕ вважаємо: ініціал "С." і самотнє "Я"
+    // природніше виглядають як "S." і "Ya", а не "S." і "YA".
+    function allCapsMask(s) {
+        var mask = new Array(s.length);
+        var i = 0;
+        while (i < s.length) {
+            if (!WORD_CHAR.test(s[i])) { mask[i] = false; i++; continue; }
+            var j = i, hasUpper = false, hasLower = false;
+            while (j < s.length && WORD_CHAR.test(s[j])) {
+                var c = s[j];
+                if (c !== c.toLowerCase()) hasUpper = true;
+                else if (c !== c.toUpperCase()) hasLower = true;
+                j++;
+            }
+            var all = hasUpper && !hasLower && (j - i) > 1;
+            for (var k = i; k < j; k++) mask[k] = all;
+            i = j;
+        }
+        return mask;
+    }
+
+    // Великий відповідник: у все-великому слові - увесь, інакше лише перша літера.
+    function upcase(res, allCaps) {
+        if (!res) return res;
+        return allCaps ? res.toUpperCase() : res[0].toUpperCase() + res.slice(1);
+    }
+
     function translit(str) {
         var s = String(str == null ? '' : str);
+        var caps = allCapsMask(s);
         var out = '';
         for (var i = 0; i < s.length; i++) {
             var ch = s[i];
@@ -46,7 +78,7 @@
             // Буквосполучення "зг" передається як "zgh", інакше "зг" і "ж" збіглися б в "zh"
             // (напр. "Згорани" -> "Zghorany", а не "Zhorany").
             if (low === 'з' && s[i + 1] && s[i + 1].toLowerCase() === 'г') {
-                out += upper ? 'Zgh' : 'zgh';
+                out += upper ? upcase('zgh', caps[i]) : 'zgh';
                 i++;
                 continue;
             }
@@ -56,12 +88,12 @@
                 res = POS[low][atStart ? 0 : 1];
                 // Форма з таблиці POS має "типовий" регістр (перша - з великої, друга -
                 // з малої); підганяємо під фактичний регістр вхідної літери.
-                res = upper ? (res[0].toUpperCase() + res.slice(1)) : res.toLowerCase();
+                res = upper ? upcase(res.toLowerCase(), caps[i]) : res.toLowerCase();
             } else if (Object.prototype.hasOwnProperty.call(MAP, low)) {
                 res = MAP[low];
                 // Капіталізується лише перша літера багатолітерного відповідника:
-                // "Жовтень" -> "Zhovten", ніколи "ZHovten".
-                if (upper && res) res = res[0].toUpperCase() + res.slice(1);
+                // "Жовтень" -> "Zhovten", ніколи "ZHovten". Виняток - все-велике слово.
+                if (upper) res = upcase(res, caps[i]);
             } else {
                 out += ch;
                 continue;
