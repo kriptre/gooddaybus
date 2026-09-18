@@ -166,6 +166,12 @@ const errText = (req, key, ...args) => {
     const v = ERR[key][req.query.lang === 'en' ? 'en' : 'uk'];
     return typeof v === 'function' ? v(...args) : v;
 };
+// Те саме повідомлення, але завжди українською - для логів і будь-чого, що читає
+// оператор. Мова службових записів не залежить від мови сайту, якою скористався пасажир.
+const errUk = (key, ...args) => {
+    const v = ERR[key].uk;
+    return typeof v === 'function' ? v(...args) : v;
+};
 
 // Єдина обробка 500: деталі — лише в лог сервера; клієнту в проді — загальний текст
 // (щоб не світити стек/внутрішні повідомлення). Локально віддаємо реальну помилку — зручніше дебажити.
@@ -942,13 +948,16 @@ app.post('/api/order', async (req, res) => {
         // 2) Готуємо й перевіряємо список пасажирів (з обмеженням довжин і кількості — захист від сміття/DoS)
         // Кожна відмова логуються з деталями: "тиха" відмова без сліду в логах уже коштувала
         // нам клієнта, який не зміг оформити заявку (див. reject400 нижче).
-        const reject400 = (msg) => {
+        // Приймає КЛЮЧ, а не готовий текст: клієнту йде повідомлення його мовою, а в лог -
+        // завжди українське. Лог читає україномовний оператор, і мова цього рядка не
+        // повинна залежати від того, якою версією сайту скористався пасажир.
+        const reject400 = (key, ...args) => {
             const p0 = Array.isArray(passengers) && passengers[0] ? passengers[0] : {};
-            console.log(`[Order] ✋ Відхилено (400): ${msg} · перший пасажир: "${logStr(p0.name, 40)} ${logStr(p0.surname, 40)}", тел "${logStr(p0.phone, 24)}" · ${logStr(req.body.route_from, 40)} → ${logStr(req.body.route_to, 40)} ${logStr(req.body.route_date, 16)}`);
-            return res.status(400).json({ error: msg });
+            console.log(`[Order] ✋ Відхилено (400): ${errUk(key, ...args)} · перший пасажир: "${logStr(p0.name, 40)} ${logStr(p0.surname, 40)}", тел "${logStr(p0.phone, 24)}" · ${logStr(req.body.route_from, 40)} → ${logStr(req.body.route_to, 40)} ${logStr(req.body.route_date, 16)}`);
+            return res.status(400).json({ error: errText(req, key, ...args) });
         };
         if (Array.isArray(passengers) && passengers.length > MAX_PASSENGERS) {
-            return reject400(errText(req, 'tooManyPassengers', MAX_PASSENGERS));
+            return reject400('tooManyPassengers', MAX_PASSENGERS);
         }
         const list = (Array.isArray(passengers) ? passengers : [])
             .slice(0, MAX_PASSENGERS)
@@ -962,16 +971,16 @@ app.post('/api/order', async (req, res) => {
             .filter(p => p.name || p.surname || p.phone);
 
         if (!list.length) {
-            return reject400(errText(req, 'noPassengers'));
+            return reject400('noPassengers');
         }
         for (let i = 0; i < list.length; i++) {
             const p = list[i];
             if (p.name.length < 1 || p.surname.length < 1) {
-                return reject400(errText(req, 'passengerNameRequired', i + 1));
+                return reject400('passengerNameRequired', i + 1);
             }
             const d = phoneDigits(p.phone);
             if (d < 9 || d > 15) {
-                return reject400(errText(req, 'passengerPhoneInvalid', i + 1));
+                return reject400('passengerPhoneInvalid', i + 1);
             }
         }
 

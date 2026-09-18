@@ -205,6 +205,46 @@
     };
     var B = (window.__I18N__ && window.__I18N__.booking) || B_UK;
 
+    // Дані заявки зберігаються українською навмисно - їх читає україномовний менеджер.
+    // На англійській сторінці перекладаємо їх ЛИШЕ для показу. id міста тут недоступний
+    // (ні відповідь API, ні таблиця orders його не тримають), тому мапа - за назвою;
+    // чого в ній немає - транслітеруємо, що для українських міст і є правильний результат.
+    var I18N = window.__I18N__ || null;
+    var isEn = document.documentElement.lang === 'en';
+
+    function trCity(name) {
+        if (!isEn || !name) return name;
+        var byName = I18N && I18N.cityByName;
+        if (byName && Object.prototype.hasOwnProperty.call(byName, name)) return byName[name];
+        return typeof window.translit === 'function' ? window.translit(name) : name;
+    }
+
+    function trCarrier(name) {
+        if (!isEn || !name) return name;
+        if (window.vendorEn && typeof window.vendorEn.carrierName === 'function') {
+            return window.vendorEn.carrierName(name).text;
+        }
+        return name;
+    }
+
+    // Адреса зупинки: службові слова - зі словника, решта - транслітерація.
+    // Заміна ПО МЕЖАХ СЛІВ і без урахування регістру: інакше "вокзал" усередині
+    // "Автовокзал" дає "Avtostation", а станцію метро "Вокзальна" ріже навпіл.
+    function trStation(text) {
+        if (!isEn || !text) return text;
+        var geo = I18N && I18N.geo;
+        var out = String(text);
+        if (geo) {
+            var cyr = 'А-Яа-яІіЇїЄєҐґ';
+            Object.keys(geo).sort(function (a, b) { return b.length - a.length; }).forEach(function (k) {
+                var esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                out = out.replace(new RegExp('(^|[^' + cyr + '])' + esc + '(?![' + cyr + '])', 'gi'),
+                    function (m, p) { return p + geo[k]; });
+            });
+        }
+        return typeof window.translit === 'function' ? window.translit(out) : out;
+    }
+
     function formatDate(iso) {
         var s = String(iso || '');
         var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);          // YYYY-MM-DD (старі/тестові записи)
@@ -318,17 +358,17 @@
             : B.statusPending;
         badge.appendChild(txt);
 
-        $('route-from').textContent = order.route_from || '';
-        $('route-to').textContent = order.route_to || '';
+        $('route-from').textContent = trCity(order.route_from || '');
+        $('route-to').textContent = trCity(order.route_to || '');
 
         var dateText = formatDate(order.route_date);
         if (order.route_time) dateText += ', ' + order.route_time;
         $('route-date').textContent = dateText;
 
-        setRow('row-carrier', 'route-carrier', order.route_carrier);
+        setRow('row-carrier', 'route-carrier', trCarrier(order.route_carrier));
         setRow('row-price', 'route-price', order.route_price);
-        setRow('row-from-station', 'route-from-station', order.route_from_station);
-        setRow('row-to-station', 'route-to-station', order.route_to_station);
+        setRow('row-from-station', 'route-from-station', trStation(order.route_from_station));
+        setRow('row-to-station', 'route-to-station', trStation(order.route_to_station));
         setRow('row-seats', 'route-seats', order.seats ? String(order.seats) : '');
 
         renderPassengers(order);

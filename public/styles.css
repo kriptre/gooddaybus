@@ -229,6 +229,10 @@
         .td-amens { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; }
         .amen { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--text); background: var(--white); border: 1px solid var(--border); border-radius: 50px; padding: 6px 13px; }
         /* Знижки в деталях - зеленими бейджами (видно вигоду), а не сірим текстом */
+        /* Позначка при тексті перевізника, який не вдалось розібрати: показуємо
+           український оригінал і чесно про це кажемо. Має читатись як тиха примітка,
+           а не як помилка - інакше звичайний опис багажу виглядатиме зламаним. */
+        .i18n-uk-note { color: var(--text-3); font-size: 12px; font-style: italic; white-space: nowrap; }
         .disc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
         /* Нейтральна плашка, акцент - лише на відсотку знижки */
         .disc-chip { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; background: var(--white); border: 1px solid var(--border); border-radius: 50px; padding: 4px 6px 4px 12px; }

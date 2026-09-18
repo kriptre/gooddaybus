@@ -259,8 +259,20 @@ fs.mkdirSync(path.join(PUB, 'i18n'), { recursive: true });
 // не читають зі словника, тож порядок відносно __I18N__ байдужий; але vendorEnSrc
 // у браузері бере translit саме з window.translit (root.translit), тож translitSrc
 // мусить іти РАНІШЕ vendorEnSrc.
+// Словник міст - за ЧИСЛОВИМ id, але сторінка броні id не бачить: ні відповідь
+// /api/booking/:token, ні таблиця orders їх не зберігають, там лише назва рядком.
+// Тож додатково віддаємо мапу ЗА НАЗВОЮ, зібрану з routes.json (він закомічений і
+// містить і назви, і id). Це покриває популярні напрямки, де назва - екзонім
+// ("Варшава" -> "Warsaw"); решту міст коректно транслітерує translit().
+const cityByName = {};
+for (const r of routes) {
+    cityByName[r.fromName] = i18nCities[r.fromId] || null;
+    cityByName[r.toName] = i18nCities[r.toId] || null;
+}
+for (const k of Object.keys(cityByName)) if (!cityByName[k]) delete cityByName[k];
+
 const enJsSrc = translitSrc + '\n' + vendorEnSrc + '\n'
-    + 'window.__I18N__=' + JSON.stringify({ app: dict.app, common: dict.common, booking: dict.booking, cities: i18nCities, geo: i18nGeo }) + ';' + EXPAND_FUNCTIONS_SRC;
+    + 'window.__I18N__=' + JSON.stringify({ app: dict.app, common: dict.common, booking: dict.booking, cities: i18nCities, cityByName: cityByName, geo: i18nGeo }) + ';' + EXPAND_FUNCTIONS_SRC;
 fs.writeFileSync(path.join(PUB, 'i18n', 'en.js'), enJsSrc);
 
 const pages = ['index.html', 'faq.html', 'booking.html'];
