@@ -497,3 +497,31 @@ test('багаж: суперечливий рядок ("кожна" і "разо
     assert.equal(r.translated, false, 'будь-яке трактування було б вигадкою');
     assert.equal(r.text, s.trim());
 });
+
+// Знижки - ВІДКРИТИЙ перелік: перевізник додає нове формулювання будь-коли. Ці вісім
+// знайшлись уже після релізу, оком на скриншоті. Основа слова була справжнім багом:
+// "діти" пишеться через і, а "дитячий" - через и, тож стара основа "діт" цілу гілку
+// не ловила й мовчала про це.
+test('знижки: формулювання, що спливли на живому сайті', () => {
+    assert.equal(discountName('Дорослий').text, 'Full fare');
+    assert.equal(discountName('Дитячий, до 6 років').text, 'Children up to 6');
+    assert.equal(discountName('Дитячий (0-14 років)').text, 'Children 0-14');
+    assert.equal(discountName('Тварини').text, 'Pets');
+    assert.equal(discountName('Молодь від 12 до 18 р.  - 10%').text, 'Youth 12-18');
+    assert.equal(discountName('Понад 60 років - 10%').text, 'Seniors (60+)');
+    assert.equal(discountName('10% Група від 5 осіб').text, 'Group of 5 or more');
+    assert.equal(discountName('50% 6-а поїздка з перевізником').text, '6th trip with the carrier');
+});
+
+test('знижки: пільга дітям загиблих захисників передається прямо, без пом\'якшення', () => {
+    assert.equal(discountName('20% Діти загиблих захисників України').text,
+        'Children of fallen defenders of Ukraine');
+});
+
+test('знижки: основа слова ловить і "діти", і "дитячий"', () => {
+    // Регресія: "дитячий" пишеться через И. Основа "діт" збігалась лише там, де поруч
+    // траплялось ще й "діти" - тому баг і не було видно у вибірці.
+    assert.equal(discountName('Дитячий').translated, false, 'без віку категорія неповна - краще оригінал');
+    assert.equal(discountName('Дитячий (діти до 6 років)(-50%)').text, 'Children up to 6');
+    assert.equal(discountName('Діти до 12 років (-20%)').text, 'Children up to 12');
+});

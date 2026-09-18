@@ -49,6 +49,22 @@
     // на англійській сторінці мовчки лишилось би кирилицею - тому один раз за сесію
     // повідомляємо про пропуск у логи, як і reportUnknownAmenity нижче.
     const _unkCity = new Set();
+    // Назви знижок - відкритий перелік: перевізник додає нове формулювання будь-коли,
+    // і воно тихо лишиться кирилицею серед перекладених чіпів. Саме так знайшлись
+    // "Дитячий, до 6 років" і "Тварини" - оком на скриншоті. Хай наступний пропуск
+    // повідомляє про себе сам, як це вже роблять невідомі коди зручностей і міст.
+    const _unkDisc = new Set();
+    function reportUnknownDiscount(name) {
+        if (_unkDisc.has(name) || _unkDisc.size > 5) return;
+        _unkDisc.add(name);
+        try {
+            fetch(`${PROXY_BASE}/client-error`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
+                body: JSON.stringify({ msg: `Знижка без англійської назви: "${name}" - додайте схему у i18n/vendor-en.js`, page: location.pathname })
+            });
+        } catch (e) { }
+    }
+
     function reportUnknownCity(id, name) {
         if (_unkCity.has(id) || _unkCity.size > 5) return;
         _unkCity.add(id);
@@ -152,6 +168,10 @@
         if (!s) return '';
         if (LANG !== 'en' || !VENDOR_EN || typeof VENDOR_EN[fnName] !== 'function') return raw;
         const v = VENDOR_EN[fnName](s);
+        // Знижки мають розбиратись повністю (усі 39 формулювань зі зрізу), тож пропуск -
+        // це нова формулювання від перевізника, а не штатний відкат. Багаж тут навмисно
+        // НЕ репортимо: у нього відкат на оригінал - очікувана частина задуму.
+        if (!v.translated && fnName === 'discountName') reportUnknownDiscount(s);
         return v.text || raw;
     }
 
