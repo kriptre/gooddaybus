@@ -171,13 +171,28 @@ function enPage(srcFile) {
     html = html.replace(/<meta property="og:locale" content="uk_UA">/, '<meta property="og:locale" content="en">');
     // словник підвантажується ПЕРЕД common.min.js/app.min.js - інакше T/C у них візьмуть T_UK/C_UK
     html = html.replace('<script src="/common.min.js', '<script src="/i18n/en.js"></script>\n<script src="/common.min.js');
+    // booking.html не підключає common.min.js (сторінка повністю автономна, лише один
+    // інлайн-скрипт) - тож для неї немає якоря вище. Натомість у розмітці стоїть окремий
+    // маркер-коментар <!-- I18N-DICT --> прямо перед інлайн-скриптом; тут його заміняємо на
+    // /i18n/en.js, щоб той самий приймач window.__I18N__.booking спрацював до виконання скрипту.
+    // Відсутність маркера - помилка складання шаблону, а не штатна ситуація, тож падаємо гучно.
+    if (srcFile === 'booking.html') {
+        if (!html.includes('<!-- I18N-DICT -->')) {
+            throw new Error('[i18n] booking.html: маркер <!-- I18N-DICT --> не знайдено - інлайн-скрипт не отримає словник на англійській сторінці');
+        }
+        html = html.replace('<!-- I18N-DICT -->', '<script src="/i18n/en.js"></script>');
+    }
     // Перемикач мови: на англійській сторінці поточна мова - EN, посилання веде на українську.
     // Поточна мова НЕ посилання, а span: клікати мову, на якій уже перебуваєш, нема сенсу.
-    html = replaceBetween(html, '<!-- LANG-SWITCH START', '<!-- LANG-SWITCH END -->',
-        '<!-- LANG-SWITCH START -->\n        <div class="lang-switch" aria-label="Site language">\n'
-        + '            <a href="/" hreflang="uk">UA</a>\n'
-        + '            <span class="lang-cur">EN</span>\n'
-        + '        </div>\n        <!-- LANG-SWITCH END -->');
+    // booking.html - самостійна сторінка без навігації в хедері (лише лого), маркера в ній
+    // немає - пропускаємо заміну для таких сторінок замість падати з "маркер не знайдено".
+    if (html.includes('<!-- LANG-SWITCH START')) {
+        html = replaceBetween(html, '<!-- LANG-SWITCH START', '<!-- LANG-SWITCH END -->',
+            '<!-- LANG-SWITCH START -->\n        <div class="lang-switch" aria-label="Site language">\n'
+            + '            <a href="/" hreflang="uk">UA</a>\n'
+            + '            <span class="lang-cur">EN</span>\n'
+            + '        </div>\n        <!-- LANG-SWITCH END -->');
+    }
 
     // Плитки популярних напрямків ведуть на SEO-сторінки маршрутів, яких англійською немає.
     // Замість навігації в український текст - той самий пошук через ?from=&to=, які app.js
@@ -198,13 +213,13 @@ function enPage(srcFile) {
 fs.mkdirSync(EN, { recursive: true });
 fs.mkdirSync(path.join(PUB, 'i18n'), { recursive: true });
 
-const pages = ['index.html', 'faq.html'];
+const pages = ['index.html', 'faq.html', 'booking.html'];
 for (const p of pages) fs.writeFileSync(path.join(EN, p), enPage(p));
 
 // Файл-оверрайд для клієнта: кладе повний словник у window.__I18N__ до того,
 // як common.js/app.js виберуть T/C (див. коментар у самих файлах).
 fs.writeFileSync(path.join(PUB, 'i18n', 'en.js'),
-    'window.__I18N__=' + JSON.stringify({ app: dict.app, common: dict.common }) + ';' + EXPAND_FUNCTIONS_SRC);
+    'window.__I18N__=' + JSON.stringify({ app: dict.app, common: dict.common, booking: dict.booking }) + ';' + EXPAND_FUNCTIONS_SRC);
 
 if (missing.length) {
     console.error('[i18n] Немає перекладу для ключів:\n  ' + [...new Set(missing)].join('\n  '));

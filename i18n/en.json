@@ -329,5 +329,31 @@
     "cookieAccept": "Accept",
     "cookieMinimal": "Necessary only",
     "scrollTop": "To top"
+  },
+  "booking": {
+    "meta": {
+      "title": "Your booking - GoodDayBus"
+    },
+    "pageTitle": "Your booking",
+    "loading": "Loading your booking...",
+    "notFound": "Booking not found. Check the link or message us.",
+    "labels": {
+      "date": "Date",
+      "carrier": "Carrier",
+      "price": "Price",
+      "boarding": "Boarding",
+      "dropoff": "Drop-off",
+      "seats": "Seats"
+    },
+    "paxHeading": "<svg class=\"ic\" aria-hidden=\"true\"><use href=\"/_sprite.svg#i-users\"></use></svg> Passengers",
+    "ticketsHeading": "<svg class=\"ic\" aria-hidden=\"true\"><use href=\"/_sprite.svg#i-ticket\"></use></svg> Tickets",
+    "contactHeading": "<svg class=\"ic\" aria-hidden=\"true\"><use href=\"/_sprite.svg#i-headset\"></use></svg> Contact us",
+    "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    "paxFallback": "Passenger",
+    "seatLabel": "Seat ",
+    "downloadTicket": "Download ticket ",
+    "ticketsNote": "The manager will send the tickets shortly",
+    "statusBooked": "Seats booked - pay the driver at boarding",
+    "statusPending": "Request accepted - the manager will contact you"
   }
 }

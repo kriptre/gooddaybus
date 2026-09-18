@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="booking.meta.title">Ваша бронь - GoodDayBus</title>
+    <title data-i18n="booking.meta.title">Your booking - GoodDayBus</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🚌</text></svg>'>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -96,17 +96,17 @@
 </header>
 
 <div class="wrap">
-    <h1 class="page-title" data-i18n="booking.pageTitle">Ваша бронь</h1>
+    <h1 class="page-title" data-i18n="booking.pageTitle">Your booking</h1>
 
     <div id="loading">
         <div class="spinner" aria-hidden="true"></div>
-        <span data-i18n="booking.loading">Завантажуємо дані броні...</span>
+        <span data-i18n="booking.loading">Loading your booking...</span>
     </div>
 
     <div id="error-state" class="hidden">
         <div class="card err-card">
             <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-triangle-exclamation"></use></svg>
-            <p data-i18n="booking.notFound">Бронь не знайдено. Перевірте посилання або напишіть нам.</p>
+            <p data-i18n="booking.notFound">Booking not found. Check the link or message us.</p>
         </div>
     </div>
 
@@ -121,51 +121,51 @@
             <div class="info-list">
                 <div class="info-row">
                     <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-calendar"></use></svg>
-                    <span class="info-lbl" data-i18n="booking.labels.date">Дата</span>
+                    <span class="info-lbl" data-i18n="booking.labels.date">Date</span>
                     <span class="info-val" id="route-date"></span>
                 </div>
                 <div class="info-row" id="row-carrier">
                     <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg>
-                    <span class="info-lbl" data-i18n="booking.labels.carrier">Перевізник</span>
+                    <span class="info-lbl" data-i18n="booking.labels.carrier">Carrier</span>
                     <span class="info-val" id="route-carrier"></span>
                 </div>
                 <div class="info-row" id="row-price">
                     <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-money-bill-wave"></use></svg>
-                    <span class="info-lbl" data-i18n="booking.labels.price">Ціна</span>
+                    <span class="info-lbl" data-i18n="booking.labels.price">Price</span>
                     <span class="info-val" id="route-price"></span>
                 </div>
                 <div class="info-row" id="row-from-station">
                     <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg>
-                    <span class="info-lbl" data-i18n="booking.labels.boarding">Посадка</span>
+                    <span class="info-lbl" data-i18n="booking.labels.boarding">Boarding</span>
                     <span class="info-val" id="route-from-station"></span>
                 </div>
                 <div class="info-row" id="row-to-station">
                     <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-flag-checkered"></use></svg>
-                    <span class="info-lbl" data-i18n="booking.labels.dropoff">Висадка</span>
+                    <span class="info-lbl" data-i18n="booking.labels.dropoff">Drop-off</span>
                     <span class="info-val" id="route-to-station"></span>
                 </div>
                 <div class="info-row" id="row-seats">
                     <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chair"></use></svg>
-                    <span class="info-lbl" data-i18n="booking.labels.seats">Місць</span>
+                    <span class="info-lbl" data-i18n="booking.labels.seats">Seats</span>
                     <span class="info-val" id="route-seats"></span>
                 </div>
             </div>
         </div>
 
         <div class="card hidden" id="pax-card">
-            <h2 data-i18n-html="booking.paxHeading"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-users"></use></svg> Пасажири</h2>
+            <h2 data-i18n-html="booking.paxHeading"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-users"></use></svg> Passengers</h2>
             <div class="pax-list" id="pax-list"></div>
         </div>
 
         <div class="card hidden" id="tickets-card">
-            <h2 data-i18n-html="booking.ticketsHeading"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-ticket"></use></svg> Квитки</h2>
+            <h2 data-i18n-html="booking.ticketsHeading"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-ticket"></use></svg> Tickets</h2>
             <div class="tickets-list" id="tickets-list"></div>
             <div class="tickets-note hidden" id="tickets-note"></div>
         </div>
     </div>
 
     <div class="card">
-        <h2 data-i18n-html="booking.contactHeading"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-headset"></use></svg> Звʼязатися з нами</h2>
+        <h2 data-i18n-html="booking.contactHeading"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-headset"></use></svg> Contact us</h2>
         <div class="contact-buttons">
             <a class="cbtn cbtn-tg" href="https://t.me/gooddaybus" target="_blank" rel="noopener">
                 <svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-telegram"></use></svg> Telegram
@@ -183,7 +183,7 @@
     </div>
 </div>
 
-<!-- I18N-DICT -->
+<script src="/i18n/en.js"></script>
 <script>
 (function () {
     'use strict';
