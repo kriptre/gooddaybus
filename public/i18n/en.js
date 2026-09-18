@@ -342,6 +342,14 @@
     var DIMS_CLASSIC_RE = /(\d+)\s*[xхX×]\s*(\d+)\s*[xхX×]\s*(\d+)/;
     var WEIGHT_RE = /(\d+)\s*кг/;
 
+    // "кожна" і "загальною"/"сумарною" кажуть про ОДНЕ І ТЕ САМЕ число протилежне,
+    // і сплутати їх - та сама порода помилки, заради якої існує MIN_QUALIFIER_RE вище:
+    // мовчазне припущення "на місце" перетворює 40 кг НА ВСІ РАЗОМ у "40 кг на кожне",
+    // пасажир пакує 80 кг і його розвертають при посадці. Тож передаємо те, що сказав
+    // перевізник; а якщо рядок каже одночасно обидва (суперечність, у живих даних не
+    // трапляється) - чесніше відмовитись, ніж вгадувати.
+    var TOTAL_RE = /загальн|сумарн/i;
+
     // Видобувачі чисел не дивляться на слово ПЕРЕД числом, а всі наші англійські
     // формулювання кажуть "up to N". Тому рядок із вказівкою на МІНІМУМ
     // ("вагою не менше 25 кг") перетворився б на "up to 25 kg" - зміст навиворіт,
@@ -381,7 +389,7 @@
     function parseWeight(text) {
         var w = text.match(WEIGHT_RE);
         if (!w) return null;
-        return { kg: parseInt(w[1], 10), each: EACH_RE.test(text) };
+        return { kg: parseInt(w[1], 10), each: EACH_RE.test(text), total: TOTAL_RE.test(text) };
     }
 
     function dimsPhrase(dims) {
@@ -390,9 +398,19 @@
         return 'up to ' + dims.l + 'x' + dims.w + 'x' + dims.h + ' cm';
     }
 
-    function weightPhrase(weight) {
+    // qty - розібрана кількість місць для ЦІЄЇ частини (основний багаж або ручна поклажа).
+    // Коли місце одне, "кожне" і "разом" означають те саме, тож уточнення не додаємо -
+    // "up to 25 kg in total" про одну валізу звучало б безглуздо. Коли місць більше -
+    // саме тут і живе різниця, заради якої все це робиться.
+    function weightPhrase(weight, qty) {
         if (!weight) return null;
-        return 'up to ' + weight.kg + ' kg' + (weight.each ? ' each' : '');
+        var singular = !qty || (qty.min === 1 && qty.max === 1);
+        var suffix = '';
+        if (!singular) {
+            if (weight.each) suffix = ' each';
+            else if (weight.total) suffix = ' in total';
+        }
+        return 'up to ' + weight.kg + ' kg' + suffix;
     }
 
     function itemWord(unit, n) {
@@ -409,7 +427,7 @@
     function describe(clauseText, qty) {
         var extras = [];
         var dp = dimsPhrase(parseDims(clauseText));
-        var wp = weightPhrase(parseWeight(clauseText));
+        var wp = weightPhrase(parseWeight(clauseText), qty);
         if (dp) extras.push(dp);
         if (wp) extras.push(wp);
         return extras;
@@ -432,13 +450,16 @@
         if (afterTail) return { text: s, translated: false };
         if (DENYLIST_RE.test(beforeTail)) return { text: s, translated: false };
         if (MIN_QUALIFIER_RE.test(beforeTail)) return { text: s, translated: false };
+        // Рядок, що каже і "кожне", і "разом" - суперечливий: будь-яке трактування ваги
+        // буде вигадкою. Віддаємо оригінал, хай пасажир питає менеджера.
+        if (EACH_RE.test(beforeTail) && TOTAL_RE.test(beforeTail)) return { text: s, translated: false };
 
         var handMatch = beforeTail.match(HAND_LUGGAGE_RE);
         var mainPart = handMatch ? beforeTail.slice(0, handMatch.index) : beforeTail;
         var handPart = handMatch ? beforeTail.slice(handMatch.index) : null;
 
         var mainQty = parseQuantity(mainPart);
-        var mainExtras = describe(mainPart);
+        var mainExtras = describe(mainPart, mainQty);
 
         var mainSentence;
         if (mainQty && mainQty.unit === 'suitcase') {
@@ -453,7 +474,7 @@
         var handSentence = '';
         if (handPart) {
             var handQty = parseQuantity(handPart);
-            var handExtras = describe(handPart);
+            var handExtras = describe(handPart, handQty);
             var handLead;
             if (handQty && handQty.min > 1) {
                 handLead = qtyPhrase(handQty) + ' of hand luggage are included';
