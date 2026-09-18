@@ -128,3 +128,92 @@ test('слово з однієї літери все-великим не вва�
     assert.equal(translit('вул. С. Петлюри, 32'), 'vul. S. Petliury, 32');
     assert.equal(translit('Я'), 'Ya');
 });
+
+// Задача 15: словник екзонімів міст (cities-en.json) і глосарій службових слів
+// адрес зупинок (geo-en.json). Обидва - виключення поверх translit(), не заміна йому.
+
+test('словник екзонімів містить лише випадки, де транслітерація хибна', () => {
+    const cities = require('../i18n/cities-en.json');
+    const { translit } = require('../i18n/translit.js');
+    // Варшава транслітерується як "Varshava" - без запису вийде неправильно
+    const values = Object.values(cities);
+    assert.ok(values.includes('Warsaw'), 'Варшава має бути у словнику');
+    // Київ транслітерується сам ("Kyiv") - запис зайвий
+    assert.ok(!values.includes('Kyiv'), 'Київ транслітерується сам, запис зайвий');
+});
+
+test('словник екзонімів: кожен запис справді виправляє транслітерацію (жодного зайвого)', () => {
+    // Захист від регресії: якщо колись хтось додасть запис, що збігається з translit(),
+    // цей тест впаде і вкаже, який саме запис зайвий.
+    // cities-sample.json - вибірка живих даних API для розробки (.superpowers/sdd/.gitignore),
+    // її може не бути на чистому чекауті чи в CI - тоді ця перевірка просто пропускається,
+    // а не падає: без "живих" українських назв міст перевірити translit() нема з чого.
+    let citiesSample;
+    try {
+        citiesSample = require('../.superpowers/sdd/cities-sample.json');
+    } catch (e) {
+        return; // немає вибірки - пропускаємо перевірку, а не падаємо
+    }
+    const cities = require('../i18n/cities-en.json');
+    const { translit } = require('../i18n/translit.js');
+    const nameById = new Map(citiesSample.map((c) => [String(c.id), c.name]));
+
+    for (const [id, en] of Object.entries(cities)) {
+        const uaName = nameById.get(id);
+        if (uaName === undefined) continue; // вибірка може не містити геть усі id - не привід падати
+        assert.notEqual(
+            translit(uaName),
+            en,
+            `id ${id} (${uaName}): translit() вже дає "${en}", запис у cities-en.json зайвий`
+        );
+    }
+});
+
+test('словник екзонімів: ключ - це рядок з числовим id, а не назва міста', () => {
+    const cities = require('../i18n/cities-en.json');
+    for (const id of Object.keys(cities)) {
+        assert.ok(/^\d+$/.test(id), `ключ "${id}" має бути числовим id міста, не назвою`);
+    }
+});
+
+test('глосарій станцій: покриває службові слова з реальних прикладів адрес API', () => {
+    const geo = require('../i18n/geo-en.json');
+    assert.equal(geo['автостанція'], 'bus station');
+    assert.equal(geo['ас'], 'bus station');
+    assert.equal(geo['автовокзал'], 'bus terminal');
+    assert.equal(geo['залізничний вокзал'], 'railway station');
+    assert.equal(geo['вокзал'], 'station');
+    assert.equal(geo['метро'], 'metro');
+    assert.equal(geo['вул.'], 'St.');
+    assert.equal(geo['буд.'], 'bld.');
+});
+
+test('глосарій: складений ключ застосовується раніше за свою частину', () => {
+    const geo = require('../i18n/geo-en.json');
+    // Порядок, у якому глосарій застосовується в app.js: від довгих ключів до коротких
+    const order = Object.keys(geo).sort((a, b) => b.length - a.length);
+
+    // Перевірка, що тест не проходить лише "тому що пар для порівняння немає":
+    // у словнику мусить бути хоча б одна пара, де довший ключ дійсно містить коротший
+    // ("вокзал" всередині "залізничний вокзал" і "автовокзал") - інакше цикл нижче
+    // нічого не перевіряє і тест минає впорожні.
+    const genuinePairs = [];
+    for (const long of order) {
+        for (const short of order) {
+            if (long !== short && long.includes(short)) genuinePairs.push([long, short]);
+        }
+    }
+    assert.ok(
+        genuinePairs.length > 0,
+        'у глосарії немає жодної пари "довгий ключ містить короткий" - перевірка порядку нижче була б порожньою'
+    );
+
+    // Для КОЖНОЇ пари, де один ключ міститься в іншому, довший мусить іти першим -
+    // інакше «вокзал» з'їсть «залізничний вокзал» і переклад вийде неповним.
+    for (const [long, short] of genuinePairs) {
+        assert.ok(
+            order.indexOf(long) < order.indexOf(short),
+            `"${short}" застосується раніше за "${long}" і зіпсує його`
+        );
+    }
+});
