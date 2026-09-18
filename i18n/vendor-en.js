@@ -232,6 +232,15 @@
     var DIMS_SUM_RE = /(\d+)\s*см\s*\(\s*у\s*сумі\s*вимірів/i;
     var DIMS_CLASSIC_RE = /(\d+)\s*[xхX×]\s*(\d+)\s*[xхX×]\s*(\d+)/;
     var WEIGHT_RE = /(\d+)\s*кг/;
+
+    // Видобувачі чисел не дивляться на слово ПЕРЕД числом, а всі наші англійські
+    // формулювання кажуть "up to N". Тому рядок із вказівкою на МІНІМУМ
+    // ("вагою не менше 25 кг") перетворився б на "up to 25 kg" - зміст навиворіт,
+    // причому впевнено. У сьогоднішніх даних такого формулювання немає, але
+    // перевізник може його ввести будь-коли: краще віддати український оригінал.
+    // Увага на "не більше": це МАКСИМУМ ("not more than"), і його перекладати треба.
+    // Мінімум - тільки "більше"/"понад" БЕЗ заперечення перед ним, звідси lookbehind.
+    var MIN_QUALIFIER_RE = /не\s+менше|щонайменше|як\s+мінімум|мінімум\s+\d|(?<!не\s{0,3})(?:понад|більше)\s+\d+\s*(?:кг|см)/i;
     var EACH_RE = /кожна/i;
 
     var QUANTITY_PATTERNS = [
@@ -313,6 +322,7 @@
         var afterTail = body.slice(tailMatch.index + tailMatch[0].length).trim();
         if (afterTail) return { text: s, translated: false };
         if (DENYLIST_RE.test(beforeTail)) return { text: s, translated: false };
+        if (MIN_QUALIFIER_RE.test(beforeTail)) return { text: s, translated: false };
 
         var handMatch = beforeTail.match(HAND_LUGGAGE_RE);
         var mainPart = handMatch ? beforeTail.slice(0, handMatch.index) : beforeTail;
