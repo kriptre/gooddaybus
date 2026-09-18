@@ -1287,6 +1287,81 @@ feat(i18n): city exonyms and station glossary - dictionary only where transliter
 
 ---
 
+## Task 15b: Схемы разбора текстов перевозчика
+
+Добавлена после осмотра боевых данных: 326 рейсов по четырём направлениям показали, что план недооценил этот пласт. Транслитерация здесь бесполезна - украинская фраза латиницей читателю ничего не даёт, - но тексты шаблонные.
+
+**Files:**
+- Create: `i18n/vendor-en.js`
+- Modify: `tests/i18n.test.js`
+
+**Interfaces:**
+- Consumes: `translit` (Task 14), `cities-en.json` (Task 15)
+- Produces:
+  - `carrierName(raw)` - `TRANSTEMPO/ТрансТемпо` → `TRANSTEMPO`; `ТОВ МКТ Зесен Транс` → `MKT Zesen Trans LLC`
+  - `baggageText(raw)` - разбирает числа и собирает английскую фразу
+  - `transferText(raw)` - `Пересадка у м. Львів` → `Transfer in Lviv`
+  - `priceLabelText(raw)` - условия оплаты
+  - Каждая возвращает `{ text, translated: true|false }`, чтобы вызывающий код знал, нужна ли пометка
+
+**Замеренный объём (не угадывать, проверять на своих данных):**
+
+| Поле | Уникальных | Ключ к разбору |
+|---|---|---|
+| `carrier` | 43, из них 26 с кириллицей, 5 вида `ЛАТ/Кир` | Латинская часть до `/` - бренд; формы собственности: ТОВ, ТзОВ → LLC, ПП → sole proprietorship |
+| `baggage` | 38 текстов, **8 вариантов начала** | Числа: количество мест, габариты `40х40х80`, вес `30кг` |
+| `change_info` | 21 | «Пересадка у м. X», «Можлива пересадка», «Прямий рейс» |
+| `price_label` | 5 | Обязательная предоплата, полная оплата, акция со скидкой |
+
+- [ ] **Step 1: Снять свежий срез данных**
+
+```bash
+node -e "
+(async()=>{
+const pairs=[[4,97],[33,287],[33,460],[4,49]];
+const all=[];
+for(const [f,t] of pairs){
+  const r=await fetch('http://localhost:3000/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from_id:f,to_id:t,date:'20.09.2026'})});
+  const d=await r.json(); all.push(...(Array.isArray(d)?d:(d.routes||[])));
+}
+const U=k=>[...new Set(all.map(x=>x[k]).filter(Boolean))];
+require('fs').writeFileSync('.superpowers/sdd/vendor-sample.json', JSON.stringify({carrier:U('carrier'),baggage:U('baggage'),change_info:U('change_info'),price_label:U('price_label')},null,1));
+console.log('снято');
+})()"
+```
+
+Схемы пишутся под реальные строки из этого файла, а не под примеры из плана: поставщик мог добавить новые формулировки.
+
+- [ ] **Step 2: Тесты на каждую функцию - до реализации**
+
+Для каждой из четырёх функций взять из среза не меньше трёх реальных строк и записать ожидаемый английский результат. Плюс обязательный тест: строка, не подходящая ни под одну схему, возвращает `translated: false` и исходный текст **без изменений**.
+
+- [ ] **Step 3: Запустить - должны упасть**
+
+Run: `node --test tests/i18n.test.js`
+Expected: FAIL, модуль не найден
+
+- [ ] **Step 4: Реализовать `i18n/vendor-en.js`**
+
+Модуль работает и в Node (тесты), и в браузере, как `i18n/translit.js`. Для багажа разбор строится вокруг чисел, а не вокруг точной формулировки: поставщик меняет слова чаще, чем структуру.
+
+- [ ] **Step 5: Тесты проходят**
+
+Run: `node --test tests/i18n.test.js`
+Expected: PASS
+
+- [ ] **Step 6: Коммит (выполняет пользователь)**
+
+```bash
+git add i18n/vendor-en.js tests/i18n.test.js
+```
+
+```
+feat(i18n): pattern parsers for carrier, baggage, transfer and price-label text
+```
+
+---
+
 ## Task 16: Перевод данных API на клиенте
 
 **Files:**
@@ -1363,6 +1438,8 @@ const geo = JSON.parse(fs.readFileSync(path.join(__dirname, 'i18n', 'geo-en.json
 
 | Место | Что обернуть |
 |---|---|
+| Карточка рейса и модалка | `rt.carrier` через `carrierName()`, `rt.change_info` через `transferText()`, `rt.baggage` через `baggageText()`, `rt.price_label` через `priceLabelText()` (Task 15b) |
+| Любой текст с `translated: false` | Показать исходный украинский с пометкой вроде `Carrier's description (Ukrainian)`. **Ценовую метку не скрывать никогда** - она несёт условия оплаты, и спрятанная метка заставит англоязычного пассажира считать бронь бесплатной |
 | `ac()` - автодополнение (`app.js:218`) | название города в подсказке через `cityName(c.id, c.name)` |
 | `POPULAR` в автодополнении (`app.js:231-237`) | `r.f` и `r.t` через `cityName(r.fi, r.f)` и `cityName(r.ti, r.t)` |
 | `renderResults` (`app.js:580`) | заголовок направления |
