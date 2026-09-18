@@ -20,6 +20,11 @@
     // англійський словник у window.__I18N__ - жодного часткового злиття,
     // повнота гарантується тестом (немає кирилиці у public/en/*.html).
     const LANG = document.documentElement.lang === 'en' ? 'en' : 'uk';
+    // Мова впливає ЛИШЕ на текст серверної помилки. Ключі кешу пошуку й міст від неї не
+    // залежать: дані API однакові для обох версій сайту. Додаємо до кожного серверного
+    // виклику, чия помилка показується користувачу (/search, /order - у їхніх URL немає
+    // інших параметрів, тож підходить '?lang=en'; якби були - знадобився б '&lang=en').
+    const LANG_Q = LANG === 'en' ? '?lang=en' : '';
 
     // Форми множини: українська має три, англійська дві.
     const PLURAL_RULE = {
@@ -538,7 +543,7 @@
             resultsEl.innerHTML = skeletonHtml();
         }, 450);
         try {
-            const r = await fetch(`${PROXY_BASE}/search`, {
+            const r = await fetch(`${PROXY_BASE}/search${LANG_Q}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ from_id: depId, to_id: arrId, date, notrack: noTrack() })
             });
@@ -1590,7 +1595,7 @@
         };
 
         try {
-            const r = await fetch(`${PROXY_BASE}/order`, {
+            const r = await fetch(`${PROXY_BASE}/order${LANG_Q}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });

@@ -137,12 +137,42 @@ const BOOKING_MAX_PAX = Math.max(1, parseInt(process.env.BOOKING_MAX_PAX, 10) ||
 const BOOKING_DRY_RUN = process.env.BOOKING_DRY_RUN === '1';
 
 const IS_PROD = process.env.NODE_ENV === 'production';
+
+// Повідомлення про помилки, що доходять до КЛІЄНТА (пасажира). Мова - з ?lang=en,
+// будь-яке інше значення або його відсутність означає українську (нічого не змінює для
+// існуючого українського трафіку). Повідомлення для менеджера/логів/Telegram сюди НЕ входять -
+// їх пасажир не бачить, перекладати не треба.
+// Значення можуть бути рядком або функцією (для повідомлень з підставленими даними).
+const ERR = {
+    internalServerError: { uk: 'Внутрішня помилка сервера', en: 'Internal server error' },
+    tooManyRequests: { uk: 'Забагато запитів. Зачекайте хвилину.', en: 'Too many requests. Please wait a minute.' },
+    searchMissingParams: { uk: 'Потрібні from_id, to_id та date', en: 'from_id, to_id and date are required' },
+    serviceOverloaded: { uk: 'Сервіс тимчасово перевантажений, спробуйте за хвилину', en: 'Service is temporarily overloaded, please try again in a minute' },
+    suggestMissingParams: { uk: 'Потрібні from_id, to_id, date', en: 'from_id, to_id, date are required' },
+    tooManyPassengers: { uk: max => `Забагато пасажирів (максимум ${max})`, en: max => `Too many passengers (maximum ${max})` },
+    noPassengers: { uk: 'Додайте хоча б одного пасажира', en: 'Add at least one passenger' },
+    passengerNameRequired: { uk: i => `Вкажіть ім'я та прізвище пасажира №${i}`, en: i => `Enter the first and last name of passenger #${i}` },
+    passengerPhoneInvalid: { uk: i => `Перевірте телефон пасажира №${i}`, en: i => `Check the phone number of passenger #${i}` },
+    tooManyOrders: { uk: 'Забагато заявок. Спробуйте трохи пізніше або зателефонуйте нам.', en: 'Too many requests. Please try again later or call us.' },
+    tooManyRequestsShort: { uk: 'Забагато запитів', en: 'Too many requests' },
+    bookingNotFound: { uk: 'Бронь не знайдено', en: 'Booking not found' },
+    ticketNotFound: { uk: 'Квиток не знайдено', en: 'Ticket not found' },
+    requestTooLarge: { uk: 'Завеликий запит', en: 'Request too large' },
+    invalidRequestFormat: { uk: 'Некоректний формат запиту', en: 'Invalid request format' }
+};
+// Навмисно без захисту від відсутнього ключа: ключ приходить із сусіднього рядка цього ж
+// файлу, а не ззовні. Одруківка мусить впасти одразу, а не віддати клієнту undefined.
+const errText = (req, key, ...args) => {
+    const v = ERR[key][req.query.lang === 'en' ? 'en' : 'uk'];
+    return typeof v === 'function' ? v(...args) : v;
+};
+
 // Єдина обробка 500: деталі — лише в лог сервера; клієнту в проді — загальний текст
 // (щоб не світити стек/внутрішні повідомлення). Локально віддаємо реальну помилку — зручніше дебажити.
-function serverError(res, err, tag = 'API') {
+function serverError(req, res, err, tag = 'API') {
     console.error(`[${tag}]`, err?.message || err);
     alertAdmin('5xx: ' + tag, err?.message || err);
-    return res.status(500).json({ error: IS_PROD ? 'Внутрішня помилка сервера' : (err?.message || 'error') });
+    return res.status(500).json({ error: IS_PROD ? errText(req, 'internalServerError') : (err?.message || 'error') });
 }
 // ==========================================
 
@@ -252,7 +282,7 @@ function autobookAllowed() {
 app.get('/api/cities', async (req, res) => {
     try {
         if (citiesLimited(req.ip || 'unknown')) {
-            return res.status(429).json({ error: 'Забагато запитів. Зачекайте хвилину.' });
+            return res.status(429).json({ error: errText(req, 'tooManyRequests') });
         }
         // Фронту потрібні лише id та name (автокомпліт) — віддаємо мінімум (231КБ → ~вдвічі менше).
         // Повні дані (lat_lon, country_code) лишаються на сервері для /api/suggest.
@@ -260,7 +290,7 @@ app.get('/api/cities', async (req, res) => {
         res.set('Cache-Control', 'public, max-age=1800');
         res.json((await getCities()).map(c => ({ id: c.id, name: c.name })));
     } catch (err) {
-        serverError(res, err, 'Cities');
+        serverError(req, res, err, 'Cities');
     }
 });
 
@@ -324,10 +354,10 @@ app.post('/api/search', async (req, res) => {
     try {
         const { from_id, to_id, date } = req.body;
         if (!from_id || !to_id || !date) {
-            return res.status(400).json({ error: 'Потрібні from_id, to_id та date' });
+            return res.status(400).json({ error: errText(req, 'searchMissingParams') });
         }
         if (searchLimited(req.ip || 'unknown')) {
-            return res.status(429).json({ error: 'Забагато запитів. Зачекайте хвилину.' });
+            return res.status(429).json({ error: errText(req, 'tooManyRequests') });
         }
 
         const routes = await searchRoutes(from_id, to_id, date);
@@ -348,9 +378,9 @@ app.post('/api/search', async (req, res) => {
         } catch (e) { /* аналітика не критична */ }
     } catch (err) {
         if (err instanceof CbBusy) {
-            return res.status(503).json({ error: 'Сервіс тимчасово перевантажений, спробуйте за хвилину' });
+            return res.status(503).json({ error: errText(req, 'serviceOverloaded') });
         }
-        serverError(res, err, 'Search');
+        serverError(req, res, err, 'Search');
     }
 });
 
@@ -410,14 +440,14 @@ const suggestCache = new Map();
 app.post('/api/suggest', async (req, res) => {
     try {
         const { from_id, to_id, date } = req.body;
-        if (!from_id || !to_id || !date) return res.status(400).json({ error: 'Потрібні from_id, to_id, date' });
+        if (!from_id || !to_id || !date) return res.status(400).json({ error: errText(req, 'suggestMissingParams') });
 
         const sKey = `${from_id}|${to_id}|${date}`;
         const sHit = suggestCache.get(sKey);
         if (sHit && Date.now() - sHit.t < 10 * 60 * 1000) return res.json(sHit.d);
 
         if (suggestLimited(req.ip || 'unknown')) {
-            return res.status(429).json({ error: 'Забагато запитів. Зачекайте хвилину.' });
+            return res.status(429).json({ error: errText(req, 'tooManyRequests') });
         }
         const sendAndCache = obj => {
             if (suggestCache.size > 500) suggestCache.clear();
@@ -918,7 +948,7 @@ app.post('/api/order', async (req, res) => {
             return res.status(400).json({ error: msg });
         };
         if (Array.isArray(passengers) && passengers.length > MAX_PASSENGERS) {
-            return reject400(`Забагато пасажирів (максимум ${MAX_PASSENGERS})`);
+            return reject400(errText(req, 'tooManyPassengers', MAX_PASSENGERS));
         }
         const list = (Array.isArray(passengers) ? passengers : [])
             .slice(0, MAX_PASSENGERS)
@@ -932,16 +962,16 @@ app.post('/api/order', async (req, res) => {
             .filter(p => p.name || p.surname || p.phone);
 
         if (!list.length) {
-            return reject400('Додайте хоча б одного пасажира');
+            return reject400(errText(req, 'noPassengers'));
         }
         for (let i = 0; i < list.length; i++) {
             const p = list[i];
             if (p.name.length < 1 || p.surname.length < 1) {
-                return reject400(`Вкажіть ім'я та прізвище пасажира №${i + 1}`);
+                return reject400(errText(req, 'passengerNameRequired', i + 1));
             }
             const d = phoneDigits(p.phone);
             if (d < 9 || d > 15) {
-                return reject400(`Перевірте телефон пасажира №${i + 1}`);
+                return reject400(errText(req, 'passengerPhoneInvalid', i + 1));
             }
         }
 
@@ -949,7 +979,7 @@ app.post('/api/order', async (req, res) => {
         const ip = req.ip || req.connection?.remoteAddress || 'unknown';
         if (orderLimited(ip)) {
             console.log(`[Order] Перевищено ліміт заявок з IP ${ip}`);
-            return res.status(429).json({ error: 'Забагато заявок. Спробуйте трохи пізніше або зателефонуйте нам.' });
+            return res.status(429).json({ error: errText(req, 'tooManyOrders') });
         }
 
         // 4) Перший пасажир — основний контакт заявки
@@ -1102,7 +1132,7 @@ app.post('/api/order', async (req, res) => {
         if (bookFail) alertAdmin('Автобронь не вдалася', `#${order.id} ${bookFail}`);
         res.status(201).json({ ok: true, id: order.id, booked, tickets: booked ? tickets : undefined, seat_note: seat_note || undefined, token: bookToken });
     } catch (err) {
-        serverError(res, err, 'Order');
+        serverError(req, res, err, 'Order');
     }
 });
 
@@ -1187,11 +1217,11 @@ app.post('/api/seats', async (req, res) => {
 // GET /api/booking/:token — публічна сторінка броні: віддаємо все, що треба пасажиру,
 // без прямих pdf-лінків (телефони пасажирів віддаємо - рішення власника).
 app.get('/api/booking/:token', (req, res) => {
-    if (bookingPageLimited(req.ip || 'unknown')) return res.status(429).json({ error: 'Забагато запитів' });
+    if (bookingPageLimited(req.ip || 'unknown')) return res.status(429).json({ error: errText(req, 'tooManyRequestsShort') });
     const t = String(req.params.token || '');
-    if (!/^[a-f0-9]{32}$/.test(t)) return res.status(404).json({ error: 'Бронь не знайдено' });
+    if (!/^[a-f0-9]{32}$/.test(t)) return res.status(404).json({ error: errText(req, 'bookingNotFound') });
     const o = db.getOrderByToken(t);
-    if (!o) return res.status(404).json({ error: 'Бронь не знайдено' });
+    if (!o) return res.status(404).json({ error: errText(req, 'bookingNotFound') });
     let passengers = [];
     try { passengers = (JSON.parse(o.passengers) || []).filter(p => p && typeof p === 'object').map(p => ({ first_name: p.name || '', last_name: p.surname || '', phone: p.phone || '', seat_name: p.seat_name || '' })); } catch { }
     let tickets = [];
@@ -1210,12 +1240,12 @@ app.get('/api/booking/:token', (req, res) => {
 // GET /api/booking/:token/ticket/:tid — PDF квитка через наш сервер: посилання живе вічно,
 // навіть якщо лінк contrabus протух - перекачуємо заново через get_ticket_info
 app.get('/api/booking/:token/ticket/:tid', async (req, res) => {
-    if (bookingPageLimited(req.ip || 'unknown')) return res.status(429).json({ error: 'Забагато запитів' });
+    if (bookingPageLimited(req.ip || 'unknown')) return res.status(429).json({ error: errText(req, 'tooManyRequestsShort') });
     try {
         const o = /^[a-f0-9]{32}$/.test(req.params.token) ? db.getOrderByToken(req.params.token) : null;
         let list = []; try { list = JSON.parse(o?.tickets) || []; } catch { }
         const tk = list.find(x => String(x.id) === String(req.params.tid));
-        if (!tk) return res.status(404).json({ error: 'Квиток не знайдено' });
+        if (!tk) return res.status(404).json({ error: errText(req, 'ticketNotFound') });
 
         const fetchPdf = async url => {
             const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
@@ -1239,7 +1269,7 @@ app.get('/api/booking/:token/ticket/:tid', async (req, res) => {
         }
         res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="kvytok-${tk.id}.pdf"` });
         res.send(buf);
-    } catch (err) { serverError(res, err, 'TicketPdf'); }
+    } catch (err) { serverError(req, res, err, 'TicketPdf'); }
 });
 
 // --- Захист панелі менеджера простим ключем ---
@@ -1282,7 +1312,7 @@ app.get('/api/orders', requireAdmin, (req, res) => {
             counts: countsPayload()
         });
     } catch (err) {
-        serverError(res, err);
+        serverError(req, res, err);
     }
 });
 
@@ -1291,7 +1321,7 @@ app.get('/api/stats', requireAdmin, (req, res) => {
     try {
         res.json(db.getStats(req.query.from, req.query.to));
     } catch (err) {
-        serverError(res, err);
+        serverError(req, res, err);
     }
 });
 
@@ -1302,7 +1332,7 @@ app.post('/api/analytics/reset', requireAdmin, (req, res) => {
         console.log(`[Analytics] Скинуто: пошуків ${r.searches}, візитів ${r.visits}`);
         res.json({ ok: true, ...r });
     } catch (err) {
-        serverError(res, err);
+        serverError(req, res, err);
     }
 });
 
@@ -1353,7 +1383,7 @@ app.get('/api/sales-report', requireAdmin, async (req, res) => {
         repCache.set(key, { d: data, t: Date.now() });
         res.json(data);
     } catch (err) {
-        serverError(res, err);
+        serverError(req, res, err);
     }
 });
 
@@ -1380,7 +1410,7 @@ app.get('/api/bookings', requireAdmin, async (req, res) => {
         const unconfirmed = list.filter(b => !CANCELLED_BOOKING.has(String(b.status)) && String(b.status) === 'undefined').length;
         res.json({ bookings: list, unconfirmed });
     } catch (err) {
-        serverError(res, err);
+        serverError(req, res, err);
     }
 });
 
@@ -1404,7 +1434,7 @@ app.post('/api/bookings/:ticketId/cancel', requireAdmin, async (req, res) => {
         alertAdmin('Скасування броні', `Квиток ${id} скасовано менеджером через адмінку`);
         cbCache = null; // скидаємо кеш списку: інакше ще ~60с бронь показувалась би активною
         res.json({ ok: true });
-    } catch (err) { serverError(res, err, 'CancelBooking'); }
+    } catch (err) { serverError(req, res, err, 'CancelBooking'); }
 });
 
 // GET /api/clients — унікальні клієнти з історією (?q=пошук)
@@ -1415,7 +1445,7 @@ app.get('/api/clients', requireAdmin, (req, res) => {
             counts: countsPayload()
         });
     } catch (err) {
-        serverError(res, err);
+        serverError(req, res, err);
     }
 });
 
@@ -1448,7 +1478,7 @@ app.get('/api/orders/export.csv', requireAdmin, (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
         res.send(csv);
     } catch (err) {
-        serverError(res, err);
+        serverError(req, res, err);
     }
 });
 
@@ -1459,7 +1489,7 @@ app.patch('/api/orders/:id', requireAdmin, (req, res) => {
         if (!order) return res.status(404).json({ error: 'Заявку не знайдено' });
         res.json(order);
     } catch (err) {
-        serverError(res, err);
+        serverError(req, res, err);
     }
 });
 
@@ -1470,7 +1500,7 @@ app.delete('/api/orders/:id', requireAdmin, (req, res) => {
         if (!n) return res.status(404).json({ error: 'Заявку не знайдено' });
         res.json({ ok: true, deleted: n });
     } catch (err) {
-        serverError(res, err);
+        serverError(req, res, err);
     }
 });
 
@@ -1483,7 +1513,7 @@ app.delete('/api/clients', requireAdmin, (req, res) => {
         console.log(`[Delete] Клієнт ${logStr(req.query.name, 80)} ${logStr(phone, 24)} — змінено заявок: ${n}`);
         res.json({ ok: true, deleted: n });
     } catch (err) {
-        serverError(res, err);
+        serverError(req, res, err);
     }
 });
 
@@ -1491,12 +1521,12 @@ app.delete('/api/clients', requireAdmin, (req, res) => {
 // завелике тіло віддає HTML зі стектрейсом - шляхи файлів і структура node_modules.
 app.use((err, req, res, next) => {
     if (res.headersSent) return next(err);
-    if (err && err.type === 'entity.too.large') return res.status(413).json({ error: 'Завеликий запит' });
+    if (err && err.type === 'entity.too.large') return res.status(413).json({ error: errText(req, 'requestTooLarge') });
     if (err && (err.type === 'entity.parse.failed' || err instanceof SyntaxError)) {
-        return res.status(400).json({ error: 'Некоректний формат запиту' });
+        return res.status(400).json({ error: errText(req, 'invalidRequestFormat') });
     }
     console.error('[Unhandled]', err?.message || err);
-    return res.status(500).json({ error: IS_PROD ? 'Внутрішня помилка сервера' : (err?.message || 'error') });
+    return res.status(500).json({ error: IS_PROD ? errText(req, 'internalServerError') : (err?.message || 'error') });
 });
 
 const server = app.listen(PORT, () => {
