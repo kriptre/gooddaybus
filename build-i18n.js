@@ -160,6 +160,8 @@ function enPage(srcFile) {
     let html = fs.readFileSync(path.join(PUB, srcFile), 'utf8');
     html = translateAttrs(translateNodes(html));
     html = html.replace('<html lang="uk">', '<html lang="en">');
+    // FAQPage-розмітка на noindex-сторінці не має сенсу
+    html = html.replace(/\s*<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '');
     // noindex замість index: англійська версія навмисно не індексується (сирий /en/ дубль)
     html = html.replace(/<meta name="robots" content="[^"]*">/, '<meta name="robots" content="noindex, nofollow">');
     // canonical при noindex зайвий і дав би суперечливий сигнал - прибираємо повністю
@@ -194,7 +196,7 @@ function enPage(srcFile) {
 fs.mkdirSync(EN, { recursive: true });
 fs.mkdirSync(path.join(PUB, 'i18n'), { recursive: true });
 
-const pages = ['index.html'];
+const pages = ['index.html', 'faq.html'];
 for (const p of pages) fs.writeFileSync(path.join(EN, p), enPage(p));
 
 // Файл-оверрайд для клієнта: кладе повний словник у window.__I18N__ до того,
