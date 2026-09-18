@@ -45,6 +45,14 @@
         .logo-icon img { display: block; width: 100%; height: 100%; }
         .logo-name { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; color: var(--text); }
         .logo-name span { color: var(--orange); }
+        /* Телефон і перемикач мови в одному контейнері: header - flex зі space-between,
+           третій прямий нащадок роз'їхався б по центру й зсунув шапку. */
+        .hdr-right { display: flex; align-items: center; gap: 18px; }
+        .lang-switch { display: flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 700; }
+        .lang-switch span, .lang-switch a { padding: 5px 9px; border-radius: var(--r-sm); text-decoration: none; line-height: 1; }
+        .lang-switch .lang-cur { background: var(--orange-bg); color: var(--orange); }
+        .lang-switch a { color: var(--text-2); transition: var(--tr); }
+        .lang-switch a:hover { color: var(--orange); background: var(--orange-bg); }
         .hdr-phone { display: flex; align-items: center; gap: 10px; color: var(--text-2); font-size: 15px; text-decoration: none; transition: var(--tr); font-weight: 600; }
         .hdr-phone:hover { color: var(--orange); }
         .hdr-phone-ico { width: 36px; height: 36px; background: var(--orange-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--orange); font-size: 13px; }

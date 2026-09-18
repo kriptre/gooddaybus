@@ -88,7 +88,7 @@
     <noscript>
         <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     </noscript>
-    <link rel="stylesheet" href="/styles.min.css?v=372d3b6fa3">
+    <link rel="stylesheet" href="/styles.min.css?v=8cdc507eae">
 </head>
 <body>
 <!-- GTM-BODY START -->
@@ -102,10 +102,18 @@
         <div class="logo-icon"><img src="/icon-192.png" alt="GoodDayBus" width="40" height="40"></div>
         <span class="logo-name">GoodDay<span>Bus</span></span>
     </a>
-    <a href="tel:+380967656732" class="hdr-phone">
-        <div class="hdr-phone-ico"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-phone"></use></svg></div>
-        <span class="hdr-phone-txt">+38 (096) 765-67-32</span>
-    </a>
+    <div class="hdr-right">
+        <a href="tel:+380967656732" class="hdr-phone">
+            <div class="hdr-phone-ico"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-phone"></use></svg></div>
+            <span class="hdr-phone-txt">+38 (096) 765-67-32</span>
+        </a>
+        <!-- LANG-SWITCH START -->
+        <div class="lang-switch" aria-label="Site language">
+            <a href="/" hreflang="uk">UA</a>
+            <span class="lang-cur">EN</span>
+        </div>
+        <!-- LANG-SWITCH END -->
+    </div>
 </header>
 <main>
 
@@ -182,18 +190,18 @@
 <section class="pop-routes" id="pop-routes">
     <h3 data-i18n="popRoutes.heading">Popular routes</h3>
     <div class="seo-tags">
-        <a class="seo-tag" href="/kyiv-varshava" data-i18n="popRoutes.kyivWarsaw">Kyiv - Warsaw</a>
-        <a class="seo-tag" href="/varshava-kyiv" data-i18n="popRoutes.warsawKyiv">Warsaw - Kyiv</a>
-        <a class="seo-tag" href="/lviv-krakiv" data-i18n="popRoutes.lvivKrakow">Lviv - Krakow</a>
-        <a class="seo-tag" href="/krakiv-lviv" data-i18n="popRoutes.krakowLviv">Krakow - Lviv</a>
-        <a class="seo-tag" href="/kyiv-krakiv" data-i18n="popRoutes.kyivKrakow">Kyiv - Krakow</a>
-        <a class="seo-tag" href="/krakiv-kyiv" data-i18n="popRoutes.krakowKyiv">Krakow - Kyiv</a>
-        <a class="seo-tag" href="/lviv-varshava" data-i18n="popRoutes.lvivWarsaw">Lviv - Warsaw</a>
-        <a class="seo-tag" href="/varshava-lviv" data-i18n="popRoutes.warsawLviv">Warsaw - Lviv</a>
-        <a class="seo-tag" href="/kyiv-berlin" data-i18n="popRoutes.kyivBerlin">Kyiv - Berlin</a>
-        <a class="seo-tag" href="/berlin-kyiv" data-i18n="popRoutes.berlinKyiv">Berlin - Kyiv</a>
-        <a class="seo-tag" href="/lviv-praha" data-i18n="popRoutes.lvivPrague">Lviv - Prague</a>
-        <a class="seo-tag" href="/praha-lviv" data-i18n="popRoutes.pragueLviv">Prague - Lviv</a>
+        <a class="seo-tag" href="/en/?from=4&amp;to=97" data-i18n="popRoutes.kyivWarsaw">Kyiv - Warsaw</a>
+        <a class="seo-tag" href="/en/?from=97&amp;to=4" data-i18n="popRoutes.warsawKyiv">Warsaw - Kyiv</a>
+        <a class="seo-tag" href="/en/?from=33&amp;to=287" data-i18n="popRoutes.lvivKrakow">Lviv - Krakow</a>
+        <a class="seo-tag" href="/en/?from=287&amp;to=33" data-i18n="popRoutes.krakowLviv">Krakow - Lviv</a>
+        <a class="seo-tag" href="/en/?from=4&amp;to=287" data-i18n="popRoutes.kyivKrakow">Kyiv - Krakow</a>
+        <a class="seo-tag" href="/en/?from=287&amp;to=4" data-i18n="popRoutes.krakowKyiv">Krakow - Kyiv</a>
+        <a class="seo-tag" href="/en/?from=33&amp;to=97" data-i18n="popRoutes.lvivWarsaw">Lviv - Warsaw</a>
+        <a class="seo-tag" href="/en/?from=97&amp;to=33" data-i18n="popRoutes.warsawLviv">Warsaw - Lviv</a>
+        <a class="seo-tag" href="/en/?from=4&amp;to=49" data-i18n="popRoutes.kyivBerlin">Kyiv - Berlin</a>
+        <a class="seo-tag" href="/en/?from=49&amp;to=4" data-i18n="popRoutes.berlinKyiv">Berlin - Kyiv</a>
+        <a class="seo-tag" href="/en/?from=33&amp;to=460" data-i18n="popRoutes.lvivPrague">Lviv - Prague</a>
+        <a class="seo-tag" href="/en/?from=460&amp;to=33" data-i18n="popRoutes.pragueLviv">Prague - Lviv</a>
     </div>
 </section>
 
@@ -426,7 +434,7 @@
      всіх сторінках, app.js викликає turnstile.render() вручну лише для бронюваних рейсів -->
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <script src="/i18n/en.js"></script>
-<script src="/common.min.js?v=372d3b6fa3"></script>
-<script src="/app.min.js?v=372d3b6fa3"></script>
+<script src="/common.min.js?v=8cdc507eae"></script>
+<script src="/app.min.js?v=8cdc507eae"></script>
 </body>
 </html>

@@ -14,7 +14,21 @@ const lookup = key => key.split('.').reduce((o, k) => (o == null ? o : o[k]), di
 const escAttr = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const escHtml = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
+const routes = JSON.parse(fs.readFileSync(path.join(__dirname, 'routes.json'), 'utf8'));
+
 const missing = [];
+
+// Замінює блок між двома маркерами-коментарями разом із ними. Маркери - щоб не чіпляти
+// розмітку регуляркою по класах: коментар видно в шаблоні й зрозуміло, що його не можна прибрати.
+function replaceBetween(html, startMark, endMark, replacement) {
+    const i = html.indexOf(startMark);
+    const j = i < 0 ? -1 : html.indexOf(endMark, i);
+    if (i < 0 || j < 0) {
+        missing.push(`маркер не знайдено: ${startMark} .. ${endMark}`);
+        return html;
+    }
+    return html.slice(0, i) + replacement + html.slice(j + endMark.length);
+}
 
 // Знаходить кінець вмісту та позицію одразу ПІСЛЯ закриваючого тега з урахуванням вкладеності
 // ОДНАКОВОГО тега (наприклад <span data-i18n-html="..."> ... <span class="ck-err-note">...</span> ... </span>).
@@ -153,6 +167,24 @@ function enPage(srcFile) {
     html = html.replace(/<meta property="og:locale" content="uk_UA">/, '<meta property="og:locale" content="en">');
     // словник підвантажується ПЕРЕД common.min.js/app.min.js - інакше T/C у них візьмуть T_UK/C_UK
     html = html.replace('<script src="/common.min.js', '<script src="/i18n/en.js"></script>\n<script src="/common.min.js');
+    // Перемикач мови: на англійській сторінці поточна мова - EN, посилання веде на українську.
+    // Поточна мова НЕ посилання, а span: клікати мову, на якій уже перебуваєш, нема сенсу.
+    html = replaceBetween(html, '<!-- LANG-SWITCH START', '<!-- LANG-SWITCH END -->',
+        '<!-- LANG-SWITCH START -->\n        <div class="lang-switch" aria-label="Site language">\n'
+        + '            <a href="/" hreflang="uk">UA</a>\n'
+        + '            <span class="lang-cur">EN</span>\n'
+        + '        </div>\n        <!-- LANG-SWITCH END -->');
+
+    // Плитки популярних напрямків ведуть на SEO-сторінки маршрутів, яких англійською немає.
+    // Замість навігації в український текст - той самий пошук через ?from=&to=, які app.js
+    // уже вміє читати (applyQueryParams). Працює без JS-обробника, переживає відкриття
+    // посилання в новій вкладці. ID беремо з routes.json, щоб не дублювати їх у розмітці.
+    html = html.replace(/(<a class="seo-tag" href=")\/([a-z-]+)(")/g, (full, pre, slug, post) => {
+        const r = routes.find(x => x.slug === slug);
+        if (!r) { missing.push(`routes.json: немає маршруту "${slug}"`); return full; }
+        return `${pre}/en/?from=${r.fromId}&amp;to=${r.toId}${post}`;
+    });
+
     // Примітка: посилання на /faq, /terms, /privacy, /refund, /cookies свідомо НЕ переписуються на
     // /en/* - таких сторінок ця задача не генерує. Чесніше вести на реальну (українську) сторінку,
     // ніж на неіснуючу англійську (гілка footer.faq тощо перекладає лише текст посилання, не href).
