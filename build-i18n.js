@@ -8,6 +8,13 @@ const path = require('path');
 const PUB = path.join(__dirname, 'public');
 const EN = path.join(PUB, 'en');
 const dict = JSON.parse(fs.readFileSync(path.join(__dirname, 'i18n', 'en.json'), 'utf8'));
+// Task 16: переклад даних API на клієнті - транслітерація, парсери перевізника (Task 15b),
+// словник міст і глосарій адрес станцій вкладаються в той самий en.js, що й T/C-словник,
+// щоб клієнт мав усе для перекладу ще до відмальовки першого результату пошуку.
+const translitSrc = fs.readFileSync(path.join(__dirname, 'i18n', 'translit.js'), 'utf8');
+const vendorEnSrc = fs.readFileSync(path.join(__dirname, 'i18n', 'vendor-en.js'), 'utf8');
+const i18nCities = JSON.parse(fs.readFileSync(path.join(__dirname, 'i18n', 'cities-en.json'), 'utf8'));
+const i18nGeo = JSON.parse(fs.readFileSync(path.join(__dirname, 'i18n', 'geo-en.json'), 'utf8'));
 
 const lookup = key => key.split('.').reduce((o, k) => (o == null ? o : o[k]), dict);
 
@@ -225,7 +232,13 @@ fs.mkdirSync(path.join(PUB, 'i18n'), { recursive: true });
 
 // Файл-оверрайд для клієнта: кладе повний словник у window.__I18N__ до того,
 // як common.js/app.js виберуть T/C (див. коментар у самих файлах).
-const enJsSrc = 'window.__I18N__=' + JSON.stringify({ app: dict.app, common: dict.common, booking: dict.booking }) + ';' + EXPAND_FUNCTIONS_SRC;
+// translitSrc і vendorEnSrc йдуть ПЕРЕД window.__I18N__=... - обидва самі лише
+// оголошують window.translit / window.vendorEn (browser-гілка їхніх IIFE), нічого
+// не читають зі словника, тож порядок відносно __I18N__ байдужий; але vendorEnSrc
+// у браузері бере translit саме з window.translit (root.translit), тож translitSrc
+// мусить іти РАНІШЕ vendorEnSrc.
+const enJsSrc = translitSrc + '\n' + vendorEnSrc + '\n'
+    + 'window.__I18N__=' + JSON.stringify({ app: dict.app, common: dict.common, booking: dict.booking, cities: i18nCities, geo: i18nGeo }) + ';' + EXPAND_FUNCTIONS_SRC;
 fs.writeFileSync(path.join(PUB, 'i18n', 'en.js'), enJsSrc);
 
 const pages = ['index.html', 'faq.html', 'booking.html'];

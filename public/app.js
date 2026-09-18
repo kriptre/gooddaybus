@@ -26,6 +26,108 @@
     // інших параметрів, тож підходить '?lang=en'; якби були - знадобився б '&lang=en').
     const LANG_Q = LANG === 'en' ? '?lang=en' : '';
 
+    // --- Переклад даних API (Task 16) ---------------------------------------
+    // Дані з «Контрабаса» (назви міст, адреси станцій, перевізник, багаж, пересадка,
+    // умови оплати) приходять українською незалежно від мови сторінки - на англійській
+    // версії перекладаємо ПІД ЧАС ВІДМАЛЮВАННЯ: кеші пошуку й міст від мови НЕ залежать.
+    // На українській сторінці всі функції нижче - прозорі no-op (LANG !== 'en'), тож
+    // жоден видимий символ на / не міняється.
+    const I18N_CITIES = (window.__I18N__ && window.__I18N__.cities) || null; // id (числовий) -> англ. назва
+    const I18N_GEO = (window.__I18N__ && window.__I18N__.geo) || null;       // службове слово адреси -> англ.
+    // Ключі глосарію - від довгих до коротких: інакше короткий "вокзал" перехопив би
+    // частину довшого "залізничний вокзал" ще до того, як дійде черга до повної фрази.
+    const GEO_KEYS = I18N_GEO ? Object.keys(I18N_GEO).sort((a, b) => b.length - a.length) : [];
+    // Клас "літери" для межі слова при заміні за глосарієм. У JS \w і \b НЕ бачать
+    // кирилицю (\w == [A-Za-z0-9_]) - тому /\bвокзал\b/ на кириличному тексті мовчки
+    // не спрацьовує взагалі, а наївна заміна без меж перетворює "Автовокзал" на
+    // "Avtostation" (вокзал знайдено ВСЕРЕДИНІ слова) і "Вокзальна" (станція метро
+    // Києва) - на зіпсоване слово. Явний кириличний+латинський клас символів замінює
+    // тут \w, границя перевіряється вручну по сусідніх символах.
+    const GEO_WORD_CHAR = "А-Яа-яІіЇїЄєҐґA-Za-z0-9";
+
+    // Невідоме серверу місто (немає ні в словнику, ні внутрішньо-помітної транслітерації)
+    // на англійській сторінці мовчки лишилось би кирилицею - тому один раз за сесію
+    // повідомляємо про пропуск у логи, як і reportUnknownAmenity нижче.
+    const _unkCity = new Set();
+    function reportUnknownCity(id, name) {
+        if (_unkCity.has(id) || _unkCity.size > 5) return;
+        _unkCity.add(id);
+        try {
+            fetch(`${PROXY_BASE}/client-error`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
+                body: JSON.stringify({ msg: `Місто без англійської назви: id=${id} "${name}"`, page: location.pathname })
+            });
+        } catch (e) { }
+    }
+
+    // Англійська назва міста: словник-виняток -> транслітерація. Береться ID, а НЕ
+    // відображуване ім'я - бо словник key - це числовий id з cities-en.json, і сам
+    // fallback (translit) працює з довільним текстом незалежно від id.
+    function cityName(id, fallback) {
+        if (LANG !== 'en') return fallback;
+        if (I18N_CITIES && Object.prototype.hasOwnProperty.call(I18N_CITIES, id)) return I18N_CITIES[id];
+        const t = typeof window.translit === 'function' ? window.translit(fallback) : fallback;
+        // translit() не змінив рядок, а кирилиця в ньому лишилась - отже, переклад
+        // не спрацював (не просто "транслітерація і є переклад", як для звичайного
+        // міста): і словника, і транслітерації бракує - вартий репорту пропуск.
+        if (t === fallback && /[А-Яа-яІіЇїЄєҐґ]/.test(String(fallback))) reportUnknownCity(id, fallback);
+        return t;
+    }
+
+    // Заміна ОДНОГО службового слова глосарію в тексті з дотриманням межі слова
+    // (див. коментар біля GEO_WORD_CHAR вище) - case-insensitive.
+    function replaceGeoWord(s, key, val) {
+        const esc = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const re = new RegExp(`(^|[^${GEO_WORD_CHAR}])(${esc})(?![${GEO_WORD_CHAR}])`, 'gi');
+        return s.replace(re, (m, pre) => pre + val);
+    }
+
+    // Адреса станції: спершу глосарій службових слів (вул./просп./вокзал/...),
+    // потім транслітерація решти (власні назви - Кам'янець-Подільський тощо).
+    function stationName(text) {
+        if (LANG !== 'en' || !text) return text;
+        let s = String(text);
+        for (const k of GEO_KEYS) s = replaceGeoWord(s, k, I18N_GEO[k]);
+        return typeof window.translit === 'function' ? window.translit(s) : s;
+    }
+
+    // Розбір шаблонних текстів «Контрабаса» (Task 15b, i18n/vendor-en.js): перевізник,
+    // багаж, пересадка, умови оплати. Контракт кожної функції - { text, translated }.
+    // Коли розпізнати не вдалось - text це ОРИГІНАЛЬНИЙ український рядок (ніколи не
+    // порожній, ніколи напівпереклад), тож показ САМОГО тексту завжди безпечний;
+    // translated:false лише вирішує, чи додавати позначку "не перекладено".
+    const VENDOR_EN = (typeof window.vendorEn === 'object' && window.vendorEn) || null;
+
+    // Позначка для нерозпізнаного (непереведеного) тексту - показуємо оригінал
+    // українською ЧЕСНО, а не мовчки: особливо важливо для умов оплати (price_label) -
+    // прихована умова передоплати виглядає як "бронь безкоштовна", а зʼясовується це
+    // вже на автобусі.
+    function untranslatedNote(subject) {
+        return ` <span class="i18n-uk-note">(${subject} - Ukrainian, not translated)</span>`;
+    }
+
+    // Переклад для контексту, де можна вставляти HTML (span з позначкою) - вміст
+    // td-текстового рядка, а не значення HTML-атрибута.
+    function vendorHtml(fnName, raw, noteLabel) {
+        const s = String(raw == null ? '' : raw).trim();
+        if (!s) return '';
+        if (LANG !== 'en' || !VENDOR_EN || typeof VENDOR_EN[fnName] !== 'function') return escTxt(raw);
+        const v = VENDOR_EN[fnName](s);
+        return escTxt(v.text) + (v.translated ? '' : untranslatedNote(noteLabel));
+    }
+
+    // Переклад для контексту, де HTML вставляти НЕ можна (значення атрибута title,
+    // або текст, що йде і в атрибут, і в контент) - лише текст, без позначки-span.
+    // Ніколи не повертає порожній рядок для непорожнього raw - гірше показати
+    // український оригінал, ніж нічого не показати.
+    function vendorPlainText(fnName, raw) {
+        const s = String(raw == null ? '' : raw).trim();
+        if (!s) return '';
+        if (LANG !== 'en' || !VENDOR_EN || typeof VENDOR_EN[fnName] !== 'function') return raw;
+        const v = VENDOR_EN[fnName](s);
+        return v.text || raw;
+    }
+
     // Форми множини: українська має три, англійська дві.
     const PLURAL_RULE = {
         uk: n => (n % 10 === 1 && n % 100 !== 11) ? 0
@@ -206,7 +308,7 @@
     const T = (window.__I18N__ && window.__I18N__.app) || T_UK;
 
     let cities = [], depId = null, arrId = null, selRoute = null;
-    let _routes = [], _view = [], _dep = '', _arr = '', _date = '', _sortBy = 'departure';
+    let _routes = [], _view = [], _dep = '', _arr = '', _depId = null, _arrId = null, _date = '', _sortBy = 'departure';
     let _sortDir = 1;    // 1 = за зростанням; повторний клік по активному сортуванню - реверс
     let _shown = 20;     // скільки карток показано ("Показати ще" довантажує порціями)
     const SHOW_STEP = 20;
@@ -353,8 +455,8 @@
 
     function initRoutePage() {
         const R = window.__ROUTE__;
-        document.getElementById('departure').value = R.fromName; depId = R.fromId;
-        document.getElementById('arrival').value = R.toName; arrId = R.toId;
+        document.getElementById('departure').value = cityName(R.fromId, R.fromName); depId = R.fromId;
+        document.getElementById('arrival').value = cityName(R.toId, R.toName); arrId = R.toId;
         // Стрічку дат переносимо всередину білої картки пошуку - щоб не висіла окремо
         const strip = document.getElementById('date-strip'), card = document.querySelector('.search-card');
         if (strip && card) card.appendChild(strip);
@@ -371,8 +473,8 @@
         const cf = cities.find(c => String(c.id) === String(fromId));
         const ct = cities.find(c => String(c.id) === String(toId));
         if (!cf || !ct) return;
-        document.getElementById('departure').value = cf.name; depId = cf.id;
-        document.getElementById('arrival').value = ct.name; arrId = ct.id;
+        document.getElementById('departure').value = cityName(cf.id, cf.name); depId = cf.id;
+        document.getElementById('arrival').value = cityName(ct.id, ct.name); arrId = ct.id;
         if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
             document.getElementById('date-input').value = date;
             updateDateDisplay();
@@ -420,7 +522,13 @@
             items[hl].scrollIntoView({ block: 'nearest' });
         };
 
-        const routeItemHtml = (r, icon) => `<div class="ac-item ac-route" data-f="${escTxt(r.f)}" data-t="${escTxt(r.t)}" data-fi="${r.fi}" data-ti="${r.ti}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#${icon}"></use></svg><span class="ac-route-txt">${escTxt(r.f)} → ${escTxt(r.t)}</span></div>`;
+        // cityName() тут перекладає ВІДОБРАЖЕННЯ (і те, що піде назад у поле після кліку -
+        // applyRoute бере f/t із цього ж data-f/data-t); fi/ti - числові id, як були,
+        // без жодного дотику - саме вони підуть у depId/arrId і в тіло /search.
+        const routeItemHtml = (r, icon) => {
+            const f = cityName(r.fi, r.f), t = cityName(r.ti, r.t);
+            return `<div class="ac-item ac-route" data-f="${escTxt(f)}" data-t="${escTxt(t)}" data-fi="${r.fi}" data-ti="${r.ti}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#${icon}"></use></svg><span class="ac-route-txt">${escTxt(f)} → ${escTxt(t)}</span></div>`;
+        };
         // Підказки при фокусі порожнього поля: нещодавні пошуки + популярні напрямки
         function showSuggest() {
             const recent = getRecent();
@@ -451,9 +559,17 @@
             res.forEach(city => {
                 const el = document.createElement('div');
                 el.className = 'ac-item';
-                el.innerHTML = `<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg><span>` + escTxt(city.name).replace(new RegExp(`(${escRe(q)})`, 'gi'), '<strong>$1</strong>') + `</span>`;
+                // Пошук фільтрує за УКРАЇНСЬКОЮ назвою (q набраний в полі) незалежно від
+                // мови сторінки - це не змінюємо (поза межами задачі). Показ - інша річ:
+                // на англійській показуємо переклад без підсвітки збігу (вона рахована
+                // проти українського тексту й для перекладеного рядка сенсу не має).
+                const dispName = cityName(city.id, city.name);
+                const nameHtml = LANG === 'en'
+                    ? escTxt(dispName)
+                    : escTxt(city.name).replace(new RegExp(`(${escRe(q)})`, 'gi'), '<strong>$1</strong>');
+                el.innerHTML = `<svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg><span>` + nameHtml + `</span>`;
                 el.addEventListener('click', () => {
-                    inp.value = city.name; lst.style.display = 'none'; hl = -1;
+                    inp.value = dispName; lst.style.display = 'none'; hl = -1;
                     isDep ? (depId = city.id) : (arrId = city.id);
                     // Після вибору міста відправлення - автофокус у «Куди» (якщо порожнє), щоб не тягтись мишею
                     if (isDep) { const a = document.getElementById('arrival'); if (a && !a.value.trim()) { a.dataset.skipSuggest = '1'; a.focus(); } }
@@ -495,14 +611,19 @@
     });
 
     // Зіставлення введеного вручну тексту з містом зі списку (точна назва -> унікальний префікс -> унікальний збіг).
+    // На англійській сторінці поле показує cityName(c.id, c.name) (переклад/транслітерація),
+    // а НЕ c.name - тому звіряти текст треба з тим самим відображуваним іменем, інакше
+    // (КРИТИЧНО) syncTypedIds() нижче ніколи не визнає жоден вибір «своїм» і щоразу
+    // скидатиме depId/arrId у null - англійський пошук був би непрацездатний повністю.
+    const cityDisplayName = c => (LANG === 'en' ? cityName(c.id, c.name) : c.name);
     function matchCityByText(text) {
         const q = (text || '').trim().toLowerCase();
         if (q.length < 2 || !cities.length) return null;
-        const exact = cities.find(c => c.name.trim().toLowerCase() === q);
+        const exact = cities.find(c => cityDisplayName(c).trim().toLowerCase() === q);
         if (exact) return exact.id;
-        const pre = cities.filter(c => c.name.trim().toLowerCase().startsWith(q));
+        const pre = cities.filter(c => cityDisplayName(c).trim().toLowerCase().startsWith(q));
         if (pre.length === 1) return pre[0].id;
-        const inc = cities.filter(c => c.name.trim().toLowerCase().includes(q));
+        const inc = cities.filter(c => cityDisplayName(c).trim().toLowerCase().includes(q));
         if (inc.length === 1) return inc[0].id;
         return null;
     }
@@ -511,9 +632,9 @@
     function syncTypedIds() {
         const dEl = document.getElementById('departure'), aEl = document.getElementById('arrival');
         const byId = id => cities.find(c => String(c.id) === String(id));
-        const ok = (id, el) => { const c = byId(id); return c && c.name.trim().toLowerCase() === el.value.trim().toLowerCase(); };
-        if (!ok(depId, dEl)) { const id = matchCityByText(dEl.value); depId = id; if (id != null) dEl.value = byId(id).name; }
-        if (!ok(arrId, aEl)) { const id = matchCityByText(aEl.value); arrId = id; if (id != null) aEl.value = byId(id).name; }
+        const ok = (id, el) => { const c = byId(id); return c && cityDisplayName(c).trim().toLowerCase() === el.value.trim().toLowerCase(); };
+        if (!ok(depId, dEl)) { const id = matchCityByText(dEl.value); depId = id; if (id != null) dEl.value = cityDisplayName(byId(id)); }
+        if (!ok(arrId, aEl)) { const id = matchCityByText(aEl.value); arrId = id; if (id != null) aEl.value = cityDisplayName(byId(id)); }
     }
 
     async function search() {
@@ -565,6 +686,10 @@
     // Розбиваємо по "Пересадка №N" у окремі рядки - без круглих плашок, просто з крапкою.
     function transfersHtml(ci) {
         if (!ci) return T.transfers.direct;
+        // Task 15b: на англійській - розпізнаний зв'язний опис пересадки замість
+        // порізаного на "Пересадка №N" рядків; не розпізнано - оригінал українською
+        // з чесною позначкою (vendorHtml ніколи не ховає непереклад).
+        if (LANG === 'en') return vendorHtml('transferText', ci, 'Transfer details');
         const parts = String(ci).split(/(?=Пересадка\s*№?\s*\d)/).map(s => s.trim()).filter(Boolean);
         if (parts.length <= 1) return escTxt(ci);
         return `<div class="td-transfers">${parts.map(p => `<div class="tr-item"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${escTxt(p)}</div>`).join('')}</div>`;
@@ -639,7 +764,7 @@
                 window._alts = s.alternatives;
                 box.innerHTML = `<div class="sg-title"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-lightbulb"></use></svg> ${T.suggest.noDirect}</div>
                     <div class="sg-cities">${s.alternatives.map((a, i) =>
-                        `<button class="sg-btn sg-city" data-ai="${i}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${escTxt(a.name)} <span class="sg-dist">~${escTxt(a.distance_km)} ${T.suggest.km} · ${escTxt(a.count)} ${routeWord(a.count)}</span></button>`
+                        `<button class="sg-btn sg-city" data-ai="${i}"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${escTxt(cityName(a.id, a.name))} <span class="sg-dist">~${escTxt(a.distance_km)} ${T.suggest.km} · ${escTxt(a.count)} ${routeWord(a.count)}</span></button>`
                     ).join('')}</div>`;
                 box.querySelectorAll('.sg-city').forEach(b => b.addEventListener('click', () => {
                     const a = window._alts[b.dataset.ai];
@@ -661,7 +786,7 @@
         search();
     }
     function setCityAndSearch(cid, cname) {
-        document.getElementById('arrival').value = cname;
+        document.getElementById('arrival').value = cityName(cid, cname);
         arrId = cid;
         search();
     }
@@ -736,7 +861,12 @@
             : (cat === 'partial'
                 ? `<span class="pay-badge pb-part"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-coins"></use></svg> ${T.pay.partial}</span>`
                 : `<span class="pay-badge pb-full"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-money-bill-wave"></use></svg> ${T.pay.full}</span>`);
-        return `<div class="pay-badges">${label}</div>` + (rt.price_label ? `<div class="pay-note">${escTxt(rt.price_label)}</div>` : '');
+        // price_label несе умови оплати (передоплата для груп тощо) - НІКОЛИ не ховається,
+        // навіть коли LANG==='en' і priceLabelText() не розпізнала шаблон: показ
+        // оригіналу українською (через vendorHtml) кращий за мовчання, яке виглядає
+        // як "бронь безкоштовна".
+        const priceNote = LANG === 'en' ? vendorHtml('priceLabelText', rt.price_label, 'Payment terms') : escTxt(rt.price_label);
+        return `<div class="pay-badges">${label}</div>` + (rt.price_label ? `<div class="pay-note">${priceNote}</div>` : '');
     }
 
     // Головний бейдж типу оплати - завжди видимий на картці й у шапці модалки (щоб не ховався в деталях).
@@ -770,7 +900,7 @@
                     <text x="187" y="48" text-anchor="middle" font-family="Nunito, sans-serif" font-size="17" font-weight="800" fill="#F06422">?</text>
                 </svg>
                 <h3>${T.results.noneFoundTitle}</h3>
-                <p>${T.results.noneFoundBody(escTxt(date), escTxt(dep), escTxt(arr))}</p>
+                <p>${T.results.noneFoundBody(escTxt(date), escTxt(cityName(depId, dep)), escTxt(cityName(arrId, arr)))}</p>
                 <div class="suggest-box" id="suggest-box">
                     <div class="sg-loading"><svg class="ic ic-spin" aria-hidden="true"><use href="/_sprite.svg#i-spinner"></use></svg> ${T.results.searchingSuggest}</div>
                     <div class="sg-skel">
@@ -795,7 +925,7 @@
                     .map(c => String(c).trim().toLowerCase());
             }
         });
-        _routes = routes; _dep = dep; _arr = arr; _date = date;
+        _routes = routes; _dep = dep; _arr = arr; _depId = depId; _arrId = arrId; _date = date;
         _shown = SHOW_STEP; // новий пошук - знову з першої порції
 
         // Подвійний шеврон ↕ на кожній кнопці сортування: одразу видно, що напрямок
@@ -804,7 +934,7 @@
 
         el.innerHTML = `
             <div class="res-hdr">
-                <div class="res-title">${escTxt(dep)} → ${escTxt(arr)} · ${escTxt(date)}</div>
+                <div class="res-title">${escTxt(cityName(depId, dep))} → ${escTxt(cityName(arrId, arr))} · ${escTxt(date)}</div>
                 <div class="res-badge">${T.results.badge(routes.length)}</div>
             </div>
             <div class="sort-bar">
@@ -897,11 +1027,17 @@
             const at    = escTxt(rt.arrival_time   || rt.time_to   || '-:-');
             const ddate = escTxt(fmtNiceDate(rt.date || _date));
             const adate = escTxt(fmtNiceDate(rt.arrival_date));
-            const fromCity = escTxt(rt.from || _dep);
-            const toCity   = escTxt(rt.to   || _arr);
+            // Сирі (неперекладені) назви - для stripCityTxt нижче: він порівнює з префіксом
+            // адреси станції, яка приходить від API УКРАЇНСЬКОЮ; переклад застосовуємо
+            // лише до того, що йде В ЕКРАН, а не до значення, яким звіряємо збіг.
+            const fromCityRaw = rt.from || _dep;
+            const toCityRaw   = rt.to   || _arr;
+            const fromCity = escTxt(cityName(_depId, fromCityRaw));
+            const toCity   = escTxt(cityName(_arrId, toCityRaw));
             const pr    = escTxt(fmtPrice(rt) || '-');
             const st    = escTxt(rt.free_seats !== undefined ? rt.free_seats : '?');
-            const car   = escTxt(rt.carrier || rt.company || T.card.busFallback);
+            const carRaw = rt.carrier || rt.company;
+            const car   = carRaw ? escTxt(vendorPlainText('carrierName', carRaw)) : escTxt(T.card.busFallback);
             const dur   = fmtDuration(rt.travel_time);
             const pay   = payTag(rt);
             return `<div class="ticket ${pay.cls}" style="animation-delay:${Math.min((i % SHOW_STEP) * 0.05, 0.28)}s">
@@ -910,7 +1046,7 @@
                         <div class="t-time">${dt}</div>
                         ${ddate ? `<div class="t-date">${ddate}</div>` : ''}
                         <div class="t-city">${fromCity}</div>
-                        ${rt.departure_station ? `<div class="t-station" title="${escTxt(rt.departure_station)}">${escTxt(stripCityTxt(rt.departure_station, fromCity))}</div>` : ''}
+                        ${rt.departure_station ? `<div class="t-station" title="${escTxt(stationName(rt.departure_station))}">${escTxt(stationName(stripCityTxt(rt.departure_station, fromCityRaw)))}</div>` : ''}
                     </div>
                     <div class="t-route">
                         ${dur ? `<div class="t-dur"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-clock"></use></svg> ${dur} ${T.card.enRoute}</div>` : ''}
@@ -921,7 +1057,7 @@
                         <div class="t-time">${at}</div>
                         ${adate ? `<div class="t-date">${adate}</div>` : ''}
                         <div class="t-city">${toCity}</div>
-                        ${rt.arrival_station ? `<div class="t-station" title="${escTxt(rt.arrival_station)}">${escTxt(stripCityTxt(rt.arrival_station, toCity))}</div>` : ''}
+                        ${rt.arrival_station ? `<div class="t-station" title="${escTxt(stationName(rt.arrival_station))}">${escTxt(stationName(stripCityTxt(rt.arrival_station, toCityRaw)))}</div>` : ''}
                     </div>
                     <div class="t-divider"></div>
                     <div class="t-action">
@@ -943,7 +1079,7 @@
                     <div class="td-row"><div class="td-label">${T.card.discLabel}</div><div class="td-text td-disc">-</div></div>
                     <div class="td-row"><div class="td-label">${T.card.transfers}</div><div class="td-text">${transfersHtml(rt.change_info)}</div></div>
                     <div class="td-row"><div class="td-label">${T.card.carrier}</div><div class="td-text td-carrier">${car}${starsHtml(rt.carrier_rating)}${rt.carrier_reliability ? ` <span class="carr-badge cb-rel"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-shield-halved"></use></svg> ${T.card.reliability(escTxt(rt.carrier_reliability))}</span>` : ''}</div></div>
-                    ${rt.baggage ? `<div class="td-row"><div class="td-label">${T.card.baggage}</div><div class="td-text">${escTxt(rt.baggage)}</div></div>` : ''}
+                    ${rt.baggage ? `<div class="td-row"><div class="td-label">${T.card.baggage}</div><div class="td-text">${LANG === 'en' ? vendorHtml('baggageText', rt.baggage, 'Baggage details') : escTxt(rt.baggage)}</div></div>` : ''}
                     <div class="td-foot">
                         <button class="td-close" type="button"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-chevron-up"></use></svg> ${T.card.collapse}</button>
                         <button class="btn-ticket" data-i="${i}">${rt.bookable ? T.card.book : T.card.order}</button>
@@ -1441,17 +1577,27 @@
         _isGroup = isGroupPrepay(rt); _groupThr = groupThreshold(rt);
         _modalDiscounts = []; _paxDiscSel = []; _discOpen = false;
         const dt = rt.departure_time || rt.time_from || '';
-        document.querySelector('#m-route span').textContent = `${dep} → ${arr}`;
+        // dep/arr - показуване ім'я (на англійській - уже перекладене, бо саме таке
+        // лежить у _dep/_arr після renderResults). Для stripCityTxt нижче потрібне СИРЕ
+        // українське ім'я - адреса станції від API завжди українська незалежно від
+        // мови сторінки; беремо його з master-списку cities за id, а не з dep/arr.
+        const depCity = cities.find(c => String(c.id) === String(_depId));
+        const arrCity = cities.find(c => String(c.id) === String(_arrId));
+        const depRaw = (depCity && depCity.name) || dep;
+        const arrRaw = (arrCity && arrCity.name) || arr;
+        document.querySelector('#m-route span').textContent = `${cityName(_depId, depRaw)} → ${cityName(_arrId, arrRaw)}`;
         // Зведення рейсу - щоб клієнт бачив, що саме бронює
         const at = rt.arrival_time || rt.time_to || '';
         const dur = fmtDuration(rt.travel_time);
-        const fromSt = rt.departure_station ? stripCityTxt(rt.departure_station, dep) : '';
-        const toSt = rt.arrival_station ? stripCityTxt(rt.arrival_station, arr) : '';
+        const fromSt = rt.departure_station ? stationName(stripCityTxt(rt.departure_station, depRaw)) : '';
+        const toSt = rt.arrival_station ? stationName(stripCityTxt(rt.arrival_station, arrRaw)) : '';
+        const carRaw = rt.carrier || rt.company;
+        const carHtml = carRaw ? escTxt(vendorPlainText('carrierName', carRaw)) : escTxt(T.card.busFallback);
         document.getElementById('m-trip').innerHTML =
             `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-calendar"></use></svg> <b>${escTxt(fmtNiceDate(rt.date || _date))}</b></div>` +
             `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-clock"></use></svg> ${escTxt(dt || '-')}${at ? ' → ' + escTxt(at) : ''}${dur ? ` <span class="mt-dur">${escTxt(dur)}</span>` : ''}</div>` +
             `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-tag"></use></svg> <b>${escTxt(fmtPrice(rt) || '-')}</b>&nbsp;/&nbsp;${T.seats.forms[0]}</div>` +
-            `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg> ${escTxt(rt.carrier || rt.company || T.card.busFallback)}</div>` +
+            `<div class="mt-row"><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg> ${carHtml}</div>` +
             `<div class="mt-row mt-pay"><span class="t-pay ${payTag(rt).cls}">${payTag(rt).txt}</span></div>` +
             ((fromSt || toSt) ? `<div class="mt-stations">${fromSt ? `<span><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-location-dot"></use></svg> ${escTxt(fromSt)}</span>` : ''}${toSt ? `<span><svg class="ic" aria-hidden="true"><use href="/_sprite.svg#i-flag-checkered"></use></svg> ${escTxt(toSt)}</span>` : ''}</div>` : '');
         document.getElementById('m-form').style.display = 'block';
