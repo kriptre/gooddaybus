@@ -161,7 +161,9 @@ function enPage(srcFile) {
     html = translateAttrs(translateNodes(html));
     html = html.replace('<html lang="uk">', '<html lang="en">');
     // FAQPage-розмітка на noindex-сторінці не має сенсу
-    html = html.replace(/\s*<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '');
+    // Разом зі скриптом прибираємо і коментар-заголовок перед ним, інакше в англійській
+    // сторінці лишається український підпис до блоку, якого вже немає.
+    html = html.replace(/\s*(?:<!--[^>]*?-->\s*)?<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '');
     // noindex замість index: англійська версія навмисно не індексується (сирий /en/ дубль)
     html = html.replace(/<meta name="robots" content="[^"]*">/, '<meta name="robots" content="noindex, nofollow">');
     // canonical при noindex зайвий і дав би суперечливий сигнал - прибираємо повністю
