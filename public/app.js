@@ -712,8 +712,16 @@
     // Ведемо не до результатів, а до САМОЇ ФОРМИ: так вона лишається на екрані (дату чи
     // напрямок можна поправити не гортаючи вгору), а під нею одразу видно перші рейси.
     // Прокрутка до результатів ховала форму, і по кожну зміну дати доводилось вертатись.
-    function scrollToSearch() {
-        const el = document.querySelector('.search-wrap');
+    // Ціль прокрутки різна, і це не компроміс, а наслідок висоти форми.
+    // Десктоп: форма низька (~170px, поля в рядок) - ведемо ДО НЕЇ. Під нею одразу видно
+    //   рейси, а дату чи напрямок можна поправити не гортаючи вгору.
+    // Телефон: форма в стовпчик і займає майже весь екран - прокрутка до неї сховала б
+    //   результати. Тому там ведемо ДО ВИДАЧІ.
+    // 760px - та сама межа, що й у styles.css (де .search-row стає в один стовпчик).
+    // Міняючи її там, треба міняти й тут.
+    function scrollAfterSearch(resultsEl) {
+        const narrow = window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
+        const el = narrow ? resultsEl : document.querySelector('.search-wrap');
         if (!el) return;
         const top = el.getBoundingClientRect().top;
         if (top >= 0 && top < 24) return; // вже вгорі - не смикаємо сторінку
@@ -759,7 +767,7 @@
                 throw new Error(err.error || `HTTP ${r.status}`);
             }
             renderResults(await r.json(), date);
-            scrollToSearch();
+            scrollAfterSearch(resultsEl);
         } catch (e) { clearTimeout(skelTimer); resultsEl.innerHTML = ''; setStatus(T.search.error(e.message), 'error'); }
         finally {
             searchBtn.disabled = false;
