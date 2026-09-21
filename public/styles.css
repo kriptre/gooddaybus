@@ -61,7 +61,10 @@
         .hero {
             background: linear-gradient(180deg, #FFF8F2 0%, var(--bg) 100%);
             position: relative; overflow: hidden;
-            padding: 64px 24px 96px; text-align: center;
+            /* Було 64/96. Зменшено, щоб на ноутбуці 1366x768 під формою лишалось місце
+               для рядка статусу й натяку на результати: до правки картка закінчувалась
+               на 727 з 768, тобто на екрані 720 вже обрізалась. */
+            padding: 48px 24px 64px; text-align: center;
         }
         .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--orange-bg); border: 1px solid var(--orange-brd); color: var(--orange); font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; padding: 6px 16px; border-radius: 50px; margin-bottom: 24px; }
         .hero-badge .hb-part { white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; }
@@ -568,6 +571,30 @@
         @media (max-width: 760px) {
             header { padding: 0 18px; }
             .hdr-phone-txt { display: none; }
+
+            /* Форма пошуку МУСИТЬ вміщатись у перший екран разом із кнопкою.
+               Замір на 360x640 (типовий бюджетний Android) до цієї правки: кнопка
+               «Знайти рейс» була на 238px НИЖЧЕ згину, тобто людина заходила на сайт
+               бронювання й не бачила, де шукати. Бюджет жорсткий: шапка 68 + картка
+               форми ~437 лишають на hero близько 130px, тому тут ріжеться все зайве -
+               бейдж, повітря й розмір заголовка. Змінювати ці значення, не перевіривши
+               на 360x640, не можна: саме тут вони й вирішують. */
+            .hero { padding: 18px 20px 14px; }
+            .hero-badge { display: none; }
+            .hero .hero-title { font-size: 25px; line-height: 1.15; margin-bottom: 6px; }
+            .hero .hero-title br { display: none; }
+            .hero p { font-size: 13px; line-height: 1.35; margin-bottom: 0; }
+            .search-card { padding: 18px; }
+        }
+
+        /* Вузькі екрани (320-400px, старі телефони): заголовок переноситься на два рядки
+           й з'їдає ті самі ~34px, яких бракує кнопці. Тут дотискаємо ще трохи. */
+        @media (max-width: 400px) {
+            .hero { padding: 14px 16px 10px; }
+            .hero .hero-title { font-size: 22px; }
+            .hero p { font-size: 12.5px; }
+            .search-card { padding: 15px; }
+
             .search-row { grid-template-columns: 1fr; }
             .swap-btn { width: 100%; }
             .btn-search { width: 100%; justify-content: center; }

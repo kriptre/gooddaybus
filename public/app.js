@@ -707,6 +707,18 @@
         if (!ok(arrId, aEl)) { const id = matchCityByText(aEl.value); arrId = id; if (id != null) aEl.value = cityDisplayName(byId(id)); }
     }
 
+    // Після пошуку сторінка нікуди не прокручувалась: на телефоні людина докручувала до
+    // кнопки, тиснула - і візуально не відбувалось нічого, бо результати з'являлись ще
+    // нижче. Ведемо до них самі. Якщо виждача вже вгорі екрана - не смикаємо сторінку.
+    function scrollToResults(el) {
+        if (!el) return;
+        const top = el.getBoundingClientRect().top;
+        if (top >= 0 && top < 120) return;
+        const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        try { el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }
+        catch (e) { el.scrollIntoView(); } // старі браузери не знають об'єкта-опцій
+    }
+
     async function search() {
         syncTypedIds();
         if (!depId || !arrId) { setStatus(T.search.checkCities, 'error'); setTimeout(() => setStatus('',''), 3500); return; }
@@ -744,6 +756,7 @@
                 throw new Error(err.error || `HTTP ${r.status}`);
             }
             renderResults(await r.json(), date);
+            scrollToResults(resultsEl);
         } catch (e) { clearTimeout(skelTimer); resultsEl.innerHTML = ''; setStatus(T.search.error(e.message), 'error'); }
         finally {
             searchBtn.disabled = false;

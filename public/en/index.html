@@ -61,7 +61,7 @@
     <noscript>
         <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     </noscript>
-    <link rel="stylesheet" href="/styles.min.css?v=4ca77e4234">
+    <link rel="stylesheet" href="/styles.min.css?v=3b18efcfb1">
 </head>
 <body>
 <!-- GTM-BODY START -->
@@ -97,6 +97,9 @@
         <span class="hb-part"><svg class="ic" style="font-size:10px;" aria-hidden="true"><use href="/_sprite.svg#i-bus"></use></svg> <span data-i18n="hero.badgeTransport">Bus travel</span></span>
         <span class="hb-part"><span data-i18n="hero.badgeCountry">Ukraine</span> <svg class="ic" style="font-size:10px" aria-hidden="true"><use href="/_sprite.svg#i-arrow-right-arrow-left"></use></svg> <span data-i18n="hero.badgeTarget">Europe</span></span>
     </div>
+    <!-- Пробіл після <br> навмисний: на мобільному перенос ховається (щоб форма влізла
+         в перший екран), і без пробілу слова злипаються в "подорожпочинається".
+         На десктопі, де перенос видимий, цей пробіл згортається й нічого не змінює. -->
     <h1 class="hero-title" data-i18n-html="hero.title">Your <em>journey</em><br>starts here</h1>
     <p data-i18n-html="hero.sub">Find a convenient trip in a minute.<br>No registration, no extra steps.</p>
 </section>
@@ -407,7 +410,7 @@
      всіх сторінках, app.js викликає turnstile.render() вручну лише для бронюваних рейсів -->
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <script src="/i18n/en.js?v=f9ce28af3c"></script>
-<script src="/common.min.js?v=4ca77e4234"></script>
-<script src="/app.min.js?v=4ca77e4234"></script>
+<script src="/common.min.js?v=3b18efcfb1"></script>
+<script src="/app.min.js?v=3b18efcfb1"></script>
 </body>
 </html>
