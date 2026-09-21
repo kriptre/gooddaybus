@@ -591,15 +591,6 @@
             .hero .hero-title br { display: none; }
             .hero p { font-size: 13px; line-height: 1.35; margin-bottom: 0; }
             .search-card { padding: 18px; }
-        }
-
-        /* Вузькі екрани (320-400px, старі телефони): заголовок переноситься на два рядки
-           й з'їдає ті самі ~34px, яких бракує кнопці. Тут дотискаємо ще трохи. */
-        @media (max-width: 400px) {
-            .hero { padding: 14px 16px 10px; }
-            .hero .hero-title { font-size: 22px; }
-            .hero p { font-size: 12.5px; }
-            .search-card { padding: 15px; }
 
             .search-row { grid-template-columns: 1fr; }
             .swap-btn { width: 100%; }
@@ -622,6 +613,20 @@
             .features { grid-template-columns: 1fr; }
             .contact-inner { grid-template-columns: 1fr; gap: 28px; }
             .contact-left h2 { font-size: 32px; }
+        }
+
+        /* Вузькі екрани (до 400px): заголовок переноситься на два рядки й з'їдає ті
+           ~34px, яких бракує кнопці пошуку в першому екрані. Дотискаємо ще трохи.
+           УВАГА: цей блок мусить стояти ПІСЛЯ блоку 760px, а не всередині нього.
+           Одного разу його вставили в середину, закривши 760px передчасно - і все, що
+           йшло далі (зокрема .search-row у стовпчик), потрапило сюди. На телефонах
+           шириною 401-760px, тобто на більшості сучасних, форма лишилась у десктопній
+           сітці й розсипалась. */
+        @media (max-width: 400px) {
+            .hero { padding: 14px 16px 10px; }
+            .hero .hero-title { font-size: 22px; }
+            .hero p { font-size: 12.5px; }
+            .search-card { padding: 15px; }
         }
 
         /* ── VISUAL POLISH ── */
