@@ -36,12 +36,14 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com', 'https://challenges.cloudflare.com'],
+            // Google Ads (тег AW- через GTM): конверсії й ремаркетинг ідуть на googleadservices/googlesyndication/doubleclick.
+            // Без цих доменів CSP мовчки блокує збір конверсій - рекламні кліки не повʼязуються з бронюваннями.
+            scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com', 'https://www.googleadservices.com', 'https://googleads.g.doubleclick.net', 'https://challenges.cloudflare.com'],
             styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
             fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
-            imgSrc: ["'self'", 'data:', 'https://www.googletagmanager.com', 'https://*.google-analytics.com'],
-            connectSrc: ["'self'", 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://*.analytics.google.com', 'https://www.googletagmanager.com'],
-            frameSrc: ["'self'", 'https://www.googletagmanager.com', 'https://challenges.cloudflare.com'],
+            imgSrc: ["'self'", 'data:', 'https://www.googletagmanager.com', 'https://*.google-analytics.com', 'https://pagead2.googlesyndication.com', 'https://www.googleadservices.com', 'https://googleads.g.doubleclick.net', 'https://www.google.com'],
+            connectSrc: ["'self'", 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://*.analytics.google.com', 'https://www.googletagmanager.com', 'https://pagead2.googlesyndication.com', 'https://www.googleadservices.com', 'https://googleads.g.doubleclick.net', 'https://www.google.com'],
+            frameSrc: ["'self'", 'https://www.googletagmanager.com', 'https://td.doubleclick.net', 'https://challenges.cloudflare.com'],
             objectSrc: ["'none'"],
             frameAncestors: ["'none'"]
         }
