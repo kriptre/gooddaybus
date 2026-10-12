@@ -8,7 +8,7 @@
     "badgeTransport": "Bus travel",
     "badgeCountry": "Ukraine",
     "badgeTarget": "Europe",
-    "title": "Your <em>journey</em><br>starts here",
+    "title": "Bus tickets<br><em>Ukraine - Europe</em>",
     "sub": "Find a convenient trip in a minute.<br>No registration, no extra steps."
   },
   "search": {
@@ -53,7 +53,7 @@
   },
   "seo": {
     "eyebrow": "About the service",
-    "heading": "Bus tickets <em>Ukraine - Europe</em>",
+    "heading": "Booking <em>without prepayment</em>",
     "p1": "Book bus tickets Ukraine - Europe in a minute, with no prepayment: pay the driver at boarding, no registration required. We help you quickly find and book trips to Poland, Germany, Czechia, Italy, Spain and other countries - hundreds of routes from vetted carriers, with schedule, prices, travel time and transfers all visible at once.",
     "p2": "Booking takes a minute and needs no registration. Most trips can be booked with no prepayment - pay the driver at boarding. If you have questions, a real manager is always available - by phone, Telegram, Viber or WhatsApp, daily from 7:00 to 23:00."
   },

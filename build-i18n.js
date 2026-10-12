@@ -207,6 +207,8 @@ function enPage(srcFile, enV) {
     // Замість навігації в український текст - той самий пошук через ?from=&to=, які app.js
     // уже вміє читати (applyQueryParams). Працює без JS-обробника, переживає відкриття
     // посилання в новій вкладці. ID беремо з routes.json, щоб не дублювати їх у розмітці.
+    // Посилання "Усі маршрути" веде на українську карту маршрутів - англійською її немає, прибираємо.
+    html = html.replace(/\s*<a class="seo-tag seo-tag-all"[^>]*>[^<]*<\/a>/g, '');
     html = html.replace(/(<a class="seo-tag" href=")\/([a-z-]+)(")/g, (full, pre, slug, post) => {
         const r = routes.find(x => x.slug === slug);
         if (!r) { missing.push(`routes.json: немає маршруту "${slug}"`); return full; }
