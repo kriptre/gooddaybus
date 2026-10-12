@@ -158,7 +158,7 @@ function routeContent(r) {
         ['Ціна квитка', `від ${price}`],
         ['Час у дорозі', directFaster ? `від ${fastest} (прямим рейсом від ${hours(d.minTravelDirect)})` : `від ${fastest}`],
         ['Рейсів на день', `${d.n} (${directLine})`],
-        ['Перевізники', listUa(carriers) + (moreCarriers > 0 ? ` та ще ${moreCarriers}` : '')],
+        ['Перевізники', moreCarriers > 0 ? `${carriers.join(', ')} та ще ${moreCarriers}` : listUa(carriers)],
         [d.nDirect ? 'Відправлення прямих рейсів' : 'Відправлення', d.departures.slice(0, 14).join(', ') + (d.departures.length > 14 ? '…' : '')],
         fromSt.length && [`Звідки (${A})`, fromSt.join('; ')],
         toSt.length && [`Куди (${B})`, toSt.join('; ')],
@@ -321,7 +321,9 @@ const HUB_MIN = 3;
 const hubByCity = new Map();
 {
     const count = new Map();
-    for (const r of routes) for (const [id, name, country] of [[r.fromId, r.fromName, r.data && r.data.fromCountry], [r.toId, r.toName, r.data && r.data.toCountry]]) {
+    // Хаб "X - Європа/Україна" - за міжнародними маршрутами; маршрути по Україні лише показуються в ньому
+    const isIntl = r => r.data ? r.data.fromCountry !== r.data.toCountry : true;
+    for (const r of routes.filter(isIntl)) for (const [id, name, country] of [[r.fromId, r.fromName, r.data && r.data.fromCountry], [r.toId, r.toName, r.data && r.data.toCountry]]) {
         const c = count.get(String(id)) || { id, name, country, n: 0 };
         c.n++; if (!c.country && country) c.country = country;
         count.set(String(id), c);
@@ -396,10 +398,11 @@ ${footer}
 
 function hubHtml(h) {
     const id = String(h.id);
-    const out = routes.filter(r => String(r.fromId) === id), inb = routes.filter(r => String(r.toId) === id);
+    const dom = r => r.data && r.data.fromCountry === 'UA' && r.data.toCountry === 'UA';
+    const out = routes.filter(r => String(r.fromId) === id && !dom(r)), inb = routes.filter(r => String(r.toId) === id && !dom(r));
+    const local = routes.filter(r => String(r.fromId) === id && dom(r));
     const prices = [...out, ...inb].filter(r => r.data && r.data.currency === 'UAH').map(r => r.data.minPrice);
     const minUah = prices.length ? money(Math.min(...prices), 'UAH') : '';
-    const other = h.ua ? 'Європа' : 'Україна';
     const list = (head, arr) => arr.length ? `
 <section class="hub-block">
     <h2>${head}</h2>
@@ -407,7 +410,7 @@ function hubHtml(h) {
 ${arr.map(r => hubRow(r)).join('\n')}
     </ul>
 </section>` : '';
-    const body = list(`Відправлення: <em>${escHtml(h.name)}</em>`, out) + list(`Прибуття: <em>${escHtml(h.name)}</em>`, inb) + `
+    const body = list(`Відправлення: <em>${escHtml(h.name)}</em>`, out) + list(`Прибуття: <em>${escHtml(h.name)}</em>`, inb) + list(`По Україні: <em>${escHtml(h.name)}</em>`, local) + `
 <section class="route-intro">
     <h2>Автобуси ${escHtml(h.label)} на GoodDayBus</h2>
     <p>${escHtml(`Тут зібрані всі напрямки ${h.label}, на які є рейси перевірених перевізників: ${plural(out.length + inb.length, 'маршрут', 'маршрути', 'маршрутів')} із цінами, часом у дорозі та кількістю рейсів на день. Оберіть маршрут, щоб побачити розклад, вокзали й перевізників, або знайдіть рейс на свою дату в пошуку. Бронювання займає хвилину і не потребує реєстрації; на більшості рейсів оплата водієві при посадці.`)}</p>
