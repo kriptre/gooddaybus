@@ -43,6 +43,7 @@ jobs:
         run: node --test tests/build-output.test.js tests/i18n.test.js
 
       - name: Commit and push if anything changed
+        id: push
         run: |
           if git diff --quiet; then echo "Нічого не змінилось"; exit 0; fi
           git config user.name "github-actions[bot]"
@@ -50,3 +51,9 @@ jobs:
           git add data/route-pages.json public
           git commit -m "chore(seo): weekly refresh of route prices and schedules"
           git push
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      # Після деплою - повідомити Bing та інших учасників IndexNow про оновлені сторінки
+      - name: Notify search engines (IndexNow)
+        if: steps.push.outputs.pushed == 'true'
+        run: node tools/indexnow.js --wait
