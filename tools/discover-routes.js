@@ -115,7 +115,22 @@ const uniqTop = (arr, n) => {
 };
 const minOf = arr => arr.length ? Math.min(...arr) : null;
 
-function summarize(rides) {
+// Відстань між містами по прямій (lat_lon з довідника) - для відсіювання помилок у розкладі
+function distKm(a, b) {
+    if (!a || !b || !a.lat_lon || !b.lat_lon) return 0;
+    const [la1, lo1] = a.lat_lon.split(',').map(Number), [la2, lo2] = b.lat_lon.split(',').map(Number);
+    const R = 6371, rad = x => x * Math.PI / 180;
+    const h = Math.sin(rad(la2 - la1) / 2) ** 2 + Math.cos(rad(la1)) * Math.cos(rad(la2)) * Math.sin(rad(lo2 - lo1) / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+}
+// Автобус не їде швидше 75 км/год по прямій (дорога довша за пряму, плюс зупинки й кордон).
+// Рейс із меншим часом - помилка перевізника в часі прибуття ("Київ - Бориспіль за 0 год"):
+// у підрахунку рейсів він лишається, але "час у дорозі від ..." за ним не рахуємо.
+const MAX_KMH = 75;
+
+function summarize(rides, km = 0) {
+    const minSec = km ? km / MAX_KMH * 3600 : 0;
+    const travel = arr => arr.map(r => +r.travel_time).filter(t => t && t >= minSec);
     const direct = rides.filter(isDirect);
     const prices = rides.map(r => +r.price).filter(p => p > 0);
     const transfers = rides.filter(r => !isDirect(r))
@@ -127,8 +142,8 @@ function summarize(rides) {
         currency: rides[0] && rides[0].currency,
         minPrice: minOf(prices),
         minPriceDirect: minOf(direct.map(r => +r.price).filter(p => p > 0)),
-        minTravel: minOf(rides.map(r => +r.travel_time).filter(Boolean)),
-        minTravelDirect: minOf(direct.map(r => +r.travel_time).filter(Boolean)),
+        minTravel: minOf(travel(rides)),
+        minTravelDirect: minOf(travel(direct)),
         carriers: uniqTop(rides.map(r => r.carrier), 8),
         nCarriers: new Set(rides.map(r => r.carrier)).size,
         departures: [...new Set((direct.length ? direct : rides).map(r => r.departure_time))].sort(),
@@ -201,9 +216,10 @@ function writeNetwork(raw, cityById) {
                     let rides;
                     try { rides = await search(f, t, date); }
                     catch (e) { console.warn(`[!] ${f}->${t} ${date}: ${e.message}`); break; }
-                    if (rides.length) { hit = { date, s: summarize(rides) }; break; }
+                    if (rides.length) { hit = { date, s: summarize(rides, distKm(from, to)) }; break; }
                 }
-                if (!hit) { empty++; continue; }
+                // Без правдоподібного часу в дорозі (усі рейси з помилкою в розкладі) - лишаємо попередні дані
+                if (!hit || !hit.s.minTravel) { empty++; continue; }
                 wave[i] = { fromId: f, toId: t, fromName: from.name, toName: to.name,
                     fromCountry: from.country_code, toCountry: to.country_code, probedDate: hit.date, ...hit.s, updated: now };
                 updated++;
@@ -250,7 +266,7 @@ function writeNetwork(raw, cityById) {
                 let rides;
                 try { rides = await search(f, t, date); }
                 catch (e) { console.warn(`[!] ${f}->${t} ${date}: ${e.message}`); break; }
-                const s = rides.length ? summarize(rides) : null;
+                const s = rides.length ? summarize(rides, distKm(cityById.get(f), cityById.get(t))) : null;
                 out.write(JSON.stringify({ from: f, to: t, date, s }) + '\n');
                 if (s) { hits++; break; }
             }
