@@ -112,24 +112,12 @@
     <link rel="manifest" href="/site.webmanifest">
     <meta name="apple-mobile-web-app-title" content="GoodDayBus">
     <meta name="theme-color" content="#F06422">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- CSS веб-шрифтів вантажимо асинхронно (трюк media="print"): сторінка малюється
-         одразу системним шрифтом, веб-шрифти підтягуються слідом (прибирає блокування
-         відмальовки на мобільному 4G). Іконки - локальний SVG-спрайт /_sprite.svg, без CDN. -->
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print">
-    <script>
-        // Вмикаємо асинхронні стилі після їх завантаження.
-        // Окремий скрипт, бо inline-атрибут onload= заблокований нашим CSP (script-src-attr).
-        document.querySelectorAll('link[rel="stylesheet"][media="print"]').forEach(l => {
-            const flip = () => { l.media = 'all'; };
-            if (l.sheet) flip(); else l.addEventListener('load', flip);
-        });
-    </script>
-    <noscript>
-        <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    </noscript>
-    <link rel="stylesheet" href="/styles.min.css?v=58cf819a58">
+    <!-- Веб-шрифти - локальні (/fonts, @font-face у styles.min.css, font-display: swap): без двох
+         сторонніх доменів у ланцюжку завантаження на мобільному 4G. Кирилиця обох шрифтів - попередньо,
+         нею написані заголовок і текст першого екрана. Іконки - локальний SVG-спрайт /_sprite.svg. -->
+    <link rel="preload" href="/fonts/nunito-normal-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/cormorantgaramond-normal-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/styles.min.css?v=fc26541b3e">
 </head>
 <body>
 <!-- GTM-BODY START -->
@@ -473,7 +461,7 @@
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 
 <script>window.__ROUTE__ = {"fromId":409,"toId":97,"fromName":"Одеса","toName":"Варшава","slug":"odesa-varshava"};</script>
-<script src="/common.min.js?v=58cf819a58"></script>
-<script src="/app.min.js?v=58cf819a58"></script>
+<script src="/common.min.js?v=fc26541b3e"></script>
+<script src="/app.min.js?v=fc26541b3e"></script>
 </body>
 </html>

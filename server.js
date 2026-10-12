@@ -96,6 +96,8 @@ app.use(express.static(require('path').join(__dirname, 'public'), {
         } else if (ext === '.js' || ext === '.css') {
             // версіонуються через ?v=хеш у HTML, тож кешуємо надовго - менше запитів при переходах
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        } else if (ext === '.woff2') {
+            res.setHeader('Cache-Control', 'public, max-age=2592000'); // шрифти змінюються вкрай рідко - 30 днів
         } else if (ext === '.xml' || ext === '.txt' || ext === '.webmanifest') {
             res.setHeader('Cache-Control', 'public, max-age=3600'); // sitemap/robots/manifest оновлюються
         } else {

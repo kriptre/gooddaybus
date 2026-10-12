@@ -34,7 +34,8 @@ const kb = s => (Buffer.byteLength(s) / 1024).toFixed(0);
 const srcApp = rd('app.js'), srcCommon = rd('common.js'), srcCss = rd('styles.css');
 const minApp = await tj(srcApp);
 const minCommon = await tj(srcCommon);
-const minCss = require('csso').minify(srcCss).css;
+// @font-face локальних шрифтів - на початок CSS: один запит замість окремого файлу шрифтів
+const minCss = require('csso').minify(rd('fonts/fonts.css') + '\n' + srcCss).css;
 wr('app.min.js', minApp);
 wr('common.min.js', minCommon);
 wr('styles.min.css', minCss);
