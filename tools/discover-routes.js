@@ -181,18 +181,19 @@ function writeNetwork(raw, cityById) {
         return;
     }
 
-    // --refresh: щоденне оновлення лише опублікованих маршрутів (data/route-pages.json) прямо
-    // в data/network.json - без raw.jsonl, тож працює і в чистому середовищі (CI).
+    // --refresh: щотижневе оновлення лише опублікованих маршрутів - прямо в data/route-pages.json
+    // (там дані кожної сторінки), без raw.jsonl і network.json, тож працює в чистому середовищі (CI).
     // Пара без рейсів на всі дати проби зберігає попередні дані: один порожній день - не привід
     // знімати сторінку, а ціни "від" у ній лишаються правдою для типового дня.
     if (REFRESH) {
-        const net = JSON.parse(fs.readFileSync(NETWORK, 'utf8'));
-        const wave = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'route-pages.json'), 'utf8'));
-        const byKey = new Map(net.pairs.map(p => [`${p.fromId}|${p.toId}`, p]));
+        const WAVE = path.join(__dirname, '..', 'data', 'route-pages.json');
+        const wave = JSON.parse(fs.readFileSync(WAVE, 'utf8'));
+        const now = new Date().toISOString();
         let idx = 0, updated = 0, empty = 0;
         async function refreshWorker() {
             while (idx < wave.length) {
-                const { fromId: f, toId: t } = wave[idx++];
+                const i = idx++;
+                const { fromId: f, toId: t } = wave[i];
                 const from = cityById.get(f), to = cityById.get(t);
                 if (!from || !to) { console.warn(`[!] ${f}->${t}: місто зникло з довідника`); continue; }
                 let hit = null;
@@ -203,14 +204,13 @@ function writeNetwork(raw, cityById) {
                     if (rides.length) { hit = { date, s: summarize(rides) }; break; }
                 }
                 if (!hit) { empty++; continue; }
-                byKey.set(`${f}|${t}`, { fromId: f, toId: t, fromName: from.name, toName: to.name,
-                    fromCountry: from.country_code, toCountry: to.country_code, probedDate: hit.date, ...hit.s });
+                wave[i] = { fromId: f, toId: t, fromName: from.name, toName: to.name,
+                    fromCountry: from.country_code, toCountry: to.country_code, probedDate: hit.date, ...hit.s, updated: now };
                 updated++;
             }
         }
         await Promise.all(Array.from({ length: WORKERS }, refreshWorker));
-        const pairs = [...byKey.values()].sort((a, b) => b.nDirect - a.nDirect || b.n - a.n);
-        fs.writeFileSync(NETWORK, JSON.stringify({ generated: new Date().toISOString(), probeDates: PROBE_DATES, pairs }, null, 1));
+        fs.writeFileSync(WAVE, JSON.stringify(wave, null, 1) + '\n');
         console.log(`Оновлено маршрутів: ${updated} з ${wave.length} (без рейсів на дати проби, дані збережено: ${empty})`);
         return;
     }

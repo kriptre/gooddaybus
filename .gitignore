@@ -29,3 +29,5 @@ docs/superpowers/
 
 # Сирі результати розвідки маршрутів (tools/discover-routes.js)
 data/discovery/
+# Повна мережа маршрутів - велика й лише для відбору хвиль (tools/select-routes.js)
+data/network.json
