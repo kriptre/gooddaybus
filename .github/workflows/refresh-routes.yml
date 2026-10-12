@@ -1,0 +1,52 @@
+# Щотижневе оновлення цін і розкладу на SEO-сторінках маршрутів.
+# Опитує перевізника лише за опублікованими маршрутами (data/route-pages.json),
+# перезбирає сторінки й пушить у main - звідти сайт деплоїться автоматично.
+# Потрібні секрети репозиторію: API_LOGIN, API_PASSWORD (агентський акаунт contrabus).
+name: Refresh route data
+
+on:
+  schedule:
+    - cron: '0 2 * * 0' # неділя, 02:00 UTC - найменше трафіку на сайті й в API
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-routes
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Re-probe published routes
+        env:
+          API_LOGIN: ${{ secrets.API_LOGIN }}
+          API_PASSWORD: ${{ secrets.API_PASSWORD }}
+        run: node tools/discover-routes.js --refresh --rpm 120 --workers 4
+
+      - name: Rebuild pages
+        run: node build-routes.js
+
+      - name: Check build output
+        run: node --test tests/build-output.test.js tests/i18n.test.js
+
+      - name: Commit and push if anything changed
+        run: |
+          if git diff --quiet; then echo "Нічого не змінилось"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/route-pages.json public
+          git commit -m "chore(seo): weekly refresh of route prices and schedules"
+          git push
