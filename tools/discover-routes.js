@@ -1,5 +1,5 @@
 // Розвідка мережі маршрутів перевізника для SEO-сторінок.
-// Запуск: node --env-file=.env tools/discover-routes.js [--rpm 120] [--workers 2] [--dates 1..3] [--domestic] [--limit N] [--summary]
+// Запуск: node --env-file=.env tools/discover-routes.js [--rpm 120] [--workers 2] [--dates 1..3] [--domestic] [--limit N] [--summary] [--refresh]
 //
 // Перебирає пари "ключові міста України x ключові міста Європи" в обидва боки,
 // для кожної пари шукає рейси на 1-3 дати (до першого знайденого) і зберігає зведення:
@@ -28,6 +28,7 @@ const DOMESTIC = !!arg('domestic', false);
 const LIMIT = +arg('limit', 0);
 const WORKERS = +arg('workers', 2); // паралельні запити: API відповідає по кілька секунд, темп однаково тримає paced()
 const SUMMARY_ONLY = !!arg('summary', false);
+const REFRESH = !!arg('refresh', false); // щоденне оновлення опублікованих маршрутів, див. нижче
 const N_DATES = Math.min(3, +arg('dates', 3)); // --dates 1: швидкий перший прохід, решта дат - другим запуском
 
 // Назви - точно як у довіднику contrabus (get_cities)
@@ -177,6 +178,40 @@ function writeNetwork(raw, cityById) {
     if (SUMMARY_ONLY) {
         const pairs = writeNetwork(raw, cityById);
         console.log(`Пар з рейсами: ${pairs.length} (прямі є у ${pairs.filter(p => p.nDirect).length})`);
+        return;
+    }
+
+    // --refresh: щоденне оновлення лише опублікованих маршрутів (data/route-pages.json) прямо
+    // в data/network.json - без raw.jsonl, тож працює і в чистому середовищі (CI).
+    // Пара без рейсів на всі дати проби зберігає попередні дані: один порожній день - не привід
+    // знімати сторінку, а ціни "від" у ній лишаються правдою для типового дня.
+    if (REFRESH) {
+        const net = JSON.parse(fs.readFileSync(NETWORK, 'utf8'));
+        const wave = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'route-pages.json'), 'utf8'));
+        const byKey = new Map(net.pairs.map(p => [`${p.fromId}|${p.toId}`, p]));
+        let idx = 0, updated = 0, empty = 0;
+        async function refreshWorker() {
+            while (idx < wave.length) {
+                const { fromId: f, toId: t } = wave[idx++];
+                const from = cityById.get(f), to = cityById.get(t);
+                if (!from || !to) { console.warn(`[!] ${f}->${t}: місто зникло з довідника`); continue; }
+                let hit = null;
+                for (const date of PROBE_DATES) {
+                    let rides;
+                    try { rides = await search(f, t, date); }
+                    catch (e) { console.warn(`[!] ${f}->${t} ${date}: ${e.message}`); break; }
+                    if (rides.length) { hit = { date, s: summarize(rides) }; break; }
+                }
+                if (!hit) { empty++; continue; }
+                byKey.set(`${f}|${t}`, { fromId: f, toId: t, fromName: from.name, toName: to.name,
+                    fromCountry: from.country_code, toCountry: to.country_code, probedDate: hit.date, ...hit.s });
+                updated++;
+            }
+        }
+        await Promise.all(Array.from({ length: WORKERS }, refreshWorker));
+        const pairs = [...byKey.values()].sort((a, b) => b.nDirect - a.nDirect || b.n - a.n);
+        fs.writeFileSync(NETWORK, JSON.stringify({ generated: new Date().toISOString(), probeDates: PROBE_DATES, pairs }, null, 1));
+        console.log(`Оновлено маршрутів: ${updated} з ${wave.length} (без рейсів на дати проби, дані збережено: ${empty})`);
         return;
     }
 
