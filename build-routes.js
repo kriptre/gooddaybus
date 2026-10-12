@@ -269,6 +269,7 @@ ${JSON.stringify(faqSchema, null, 2)}
     </script>
     ${iconsFonts.trim()}
     <link rel="stylesheet" href="/styles.min.css?v=${ASSET_V}">
+    <link rel="preload" href="/common.min.js?v=${ASSET_V}" as="script">
 </head>
 <body>
 ${gtmBody}
@@ -373,6 +374,7 @@ function shellHtml({ slug, title, desc, h1, lead, body }) {
     <meta name="twitter:image" content="${SITE}/og-image.jpg">
     ${iconsFonts.trim()}
     <link rel="stylesheet" href="/styles.min.css?v=${ASSET_V}">
+    <link rel="preload" href="/common.min.js?v=${ASSET_V}" as="script">
 </head>
 <body>
 ${gtmBody}

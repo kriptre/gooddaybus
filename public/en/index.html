@@ -50,6 +50,9 @@
     <link rel="preload" href="/fonts/nunito-normal-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/cormorantgaramond-normal-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles.min.css?v=fc26541b3e">
+    <!-- common.js малює cookie-банер - найбільший текст першого екрана на телефоні (LCP). Без preload
+         браузер дізнається про скрипт лише наприкінці HTML. -->
+    <link rel="preload" href="/common.min.js?v=fc26541b3e" as="script">
 </head>
 <body>
 <!-- GTM-BODY START -->
