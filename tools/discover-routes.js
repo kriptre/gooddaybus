@@ -1,5 +1,5 @@
 // Розвідка мережі маршрутів перевізника для SEO-сторінок.
-// Запуск: node --env-file=.env tools/discover-routes.js [--rpm 120] [--dates 1..3] [--domestic] [--limit N] [--summary]
+// Запуск: node --env-file=.env tools/discover-routes.js [--rpm 120] [--workers 2] [--dates 1..3] [--domestic] [--limit N] [--summary]
 //
 // Перебирає пари "ключові міста України x ключові міста Європи" в обидва боки,
 // для кожної пари шукає рейси на 1-3 дати (до першого знайденого) і зберігає зведення:
@@ -26,6 +26,7 @@ const arg = (name, def) => {
 const RPM = +arg('rpm', 120);
 const DOMESTIC = !!arg('domestic', false);
 const LIMIT = +arg('limit', 0);
+const WORKERS = +arg('workers', 2); // паралельні запити: API відповідає по кілька секунд, темп однаково тримає paced()
 const SUMMARY_ONLY = !!arg('summary', false);
 const N_DATES = Math.min(3, +arg('dates', 3)); // --dates 1: швидкий перший прохід, решта дат - другим запуском
 
@@ -139,7 +140,9 @@ function summarize(rides) {
 
 function loadRaw() {
     if (!fs.existsSync(RAW)) return [];
-    return fs.readFileSync(RAW, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l));
+    // Недописаний останній рядок (процес перервали посеред запису) пропускаємо - пару перевіримо знову
+    return fs.readFileSync(RAW, 'utf8').split('\n').filter(Boolean)
+        .map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
 }
 
 function writeNetwork(raw, cityById) {
@@ -201,7 +204,7 @@ function writeNetwork(raw, cityById) {
     let done = 0, hits = 0;
     const t0 = Date.now();
 
-    // 2 паралельні воркери; темп однаково тримає paced()
+    // Паралельні воркери; загальний темп однаково обмежує paced()
     let idx = 0;
     async function worker() {
         while (idx < queue.length) {
@@ -223,7 +226,7 @@ function writeNetwork(raw, cityById) {
             }
         }
     }
-    await Promise.all([worker(), worker()]);
+    await Promise.all(Array.from({ length: WORKERS }, worker));
     await new Promise(r => out.end(r));
 
     const net = writeNetwork(loadRaw(), cityById);
