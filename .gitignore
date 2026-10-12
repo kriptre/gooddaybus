@@ -26,3 +26,6 @@ docs/superpowers/
 
 # dev server logs
 *.log
+
+# Сирі результати розвідки маршрутів (tools/discover-routes.js)
+data/discovery/
